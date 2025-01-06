@@ -140,7 +140,7 @@ describe("AIGambling", function () {
         await wTx.wait()
 
         const userBalanceAfterWithdraw = await aiGambling.getBalance(user.address);
-        expect(userBalanceAfterWithdraw).to.equal(0.1);
+        expect(userBalanceAfterWithdraw).to.equal(0);
     });
 
     it("should update minimum bet amount", async function () {
