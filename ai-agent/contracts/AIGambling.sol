@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import {AIOracle} from "./AIOracle.sol";
 import {House} from "./House.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract AIGambling is House {
     struct Bet {
@@ -36,7 +35,7 @@ contract AIGambling is House {
     function placeBet(uint256 guessedNumber) external payable {
         require(bets[msg.sender].amount == 0 || bets[msg.sender].resolved, "Resolve your current bet first");
         require(msg.value >= minBetAmount, "Bet amount is too low");
-        require(msg.value <= address(this).balance * (100 - maxBetAmountPercentage) / 100, "Bet amount is too high");
+        require(msg.value <= address(this).balance * maxBetAmountPercentage / 100, "Bet amount is too high");
 
         uint64 promptId = aiOracle.submitPrompt(PROMPT);
 
@@ -57,7 +56,8 @@ contract AIGambling is House {
 
         string memory correctNumberStr = aiOracle.getAnswer(bet.promptId);
 
-        uint256 correctNumber = SignedMath.parseUint(correctNumberStr);
+        // TODO: Use OpenZeppelin's Strings.parseUint256 method after v5.2.0 is released.
+        uint256 correctNumber = stringToUint(correctNumberStr);
 
         bet.resolved = true;
 
@@ -72,6 +72,16 @@ contract AIGambling is House {
         } else {
             emit BetResult(msg.sender, bet.guessedNumber, correctNumber, false, 0);
         }
+    }
+
+    function stringToUint(string memory s) internal pure returns (uint256) {
+        bytes memory b = bytes(s);
+        uint256 result = 0;
+        for (uint256 i = 0; i < b.length; i++) {
+            require(b[i] >= 0x30 && b[i] <= 0x39, "Invalid character in string");
+            result = result * 10 + (uint256(uint8(b[i])) - 48);
+        }
+        return result;
     }
 
     function updateMinBetAmount(uint256 newAmount) external onlyOwner {

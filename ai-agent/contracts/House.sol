@@ -8,8 +8,6 @@ contract House is Ownable {
 
     constructor(address initialOwner) Ownable(initialOwner) {}
 
-    function depositSupply() external payable onlyOwner {}
-
     function withdrawSupply(uint256 amount) external onlyOwner {
         payable(msg.sender).transfer(amount);
     }
@@ -31,4 +29,10 @@ contract House is Ownable {
     function reduceBalance(address user, uint256 amount) internal {
         balances[user] -= amount;
     }
+
+    function getBalance(address user) external view returns (uint256) {
+        return balances[user];
+    }
+
+    receive() external payable {}
 }
