@@ -41,6 +41,8 @@ This project consists of multiple Solidity smart contracts working together to m
 
 2. **AI Agent**: The AI Agent is an off-chain component that interacts with the AI model. It fetches prompts from the AI Oracle contract, processes them, and sends back the AI Oracle. It serves as the bridge between the blockchain and the AI, ensuring the integrity of the prompting process.
 
+![agent](docs/ai_agent.jpg)
+
 3. **AIGambling and House contracts**: The AIGambling contract acts as the main interface for users. It integrates other contracts to streamline the betting process, from user interactions to resolving outcomes. Users interact with this contract to place their bets. The House contract manages the prize pool and payouts. It handles bet deposits, maintains the house balance, and distributes rewards to winning participants.
 
 4. **Helpers: Whitelist and EventManager contracts**: The Whitelist contract ensures that only authorized addresses can interact with specific parts of the system. This maintains security and restricts access to trusted participants or administrators. The EventManager contract manages the lifecycle of betting events. It allows the creation, tracking, and resolution of events associated with the derived contract. 
