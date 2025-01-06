@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 
 import "./EventManager.sol";
 
+/**
+ * @title EventManagerMock
+ * @dev A mock contract for testing EventManager
+ */
 contract EventManagerMock is EventManager {
     constructor(uint bufferSize) EventManager(bufferSize) {}
 

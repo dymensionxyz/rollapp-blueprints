@@ -6,14 +6,14 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"randomnessgenerator/agent/contract"
-	"randomnessgenerator/agent/external"
-	"randomnessgenerator/agent/repository"
 	"strconv"
 	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"randomnessgenerator/agent/contract"
+	"randomnessgenerator/agent/external"
+	"randomnessgenerator/agent/repository"
 )
 
 type Agent struct {

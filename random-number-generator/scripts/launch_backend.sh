@@ -57,7 +57,7 @@ echo "Running randomservice-binary..."
 bin/randomservice-binary &  # Запуск в фоновом режиме
 RANDOMSERVICE_PID=$!
 
-# Ожидание завершения процессов
+# Wait until the process is finished
 wait $AGENT_PID
 wait $RANDOMSERVICE_PID
 

@@ -3,12 +3,12 @@ package external
 import (
 	"context"
 	"fmt"
-	"github.com/google/uuid"
 	"log/slog"
 	"math/big"
-	"randomnessgenerator/agent/config"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/google/uuid"
+	"randomnessgenerator/agent/config"
 )
 
 type RNGServiceClient struct {

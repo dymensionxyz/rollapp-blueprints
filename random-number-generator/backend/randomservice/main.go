@@ -8,11 +8,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	"github.com/syndtr/goleveldb/leveldb"
 	"log"
 	"math/big"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/syndtr/goleveldb/leveldb"
 )
 
 type Config struct {
