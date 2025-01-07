@@ -2,11 +2,8 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import { MdClose } from 'react-icons/md'
 
-// Exporta los componentes personalizados de AlertDialog
 export const AlertDialog = Dialog.Root
-export const AlertDialogTrigger = Dialog.Trigger
 
-// Actualiza AlertDialogContent para incluir el ícono de cierre
 export const AlertDialogContent = ({ children, className }) => (
     <Dialog.Content className={`bg-gray-800 text-white p-6 rounded-lg relative ${className}`}>
         <Dialog.Close asChild>

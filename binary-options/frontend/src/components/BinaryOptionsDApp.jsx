@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowUpCircle, ArrowDownCircle, Wallet, Clock, ChevronRight, AlertCircle } from 'lucide-react';
+import { ArrowUpCircle, ArrowDownCircle, Wallet, Clock, ChevronRight } from 'lucide-react';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -12,13 +12,17 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const BinaryOptionsDApp = () => {
-    const [currentPrice, setCurrentPrice] = useState(45123.45);
+    const countDownInterval = 60; // 60 seconds
+
+    const [currentPrice, setCurrentPrice] = useState(null); // Initially null to handle loading state
     const [balance, setBalance] = useState(0.5);
-    const [timeLeft, setTimeLeft] = useState(300); // 5 minutes in seconds
+    const [timeLeft, setTimeLeft] = useState(countDownInterval); // 60 seconds timer
     const [selectedDirection, setSelectedDirection] = useState(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [betResult, setBetResult] = useState(null);
     const [showHistory, setShowHistory] = useState(false);
+    const [isLoading, setIsLoading] = useState(true); // Loading state
+    const [error, setError] = useState(null); // Error state
     const fixedBetAmount = 0.01; // Fixed bet amount in BTC
 
     // Simulated bet history
@@ -26,6 +30,36 @@ const BinaryOptionsDApp = () => {
         { direction: 'up', entryPrice: 44950.20, finalPrice: 45100.30, result: 'win' },
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
     ]);
+
+    // Function to fetch BTC price from CoinGecko
+    const fetchBTCPrice = async () => {
+        try {
+            setIsLoading(true);
+            setError(null);
+            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+            if (!response.ok) {
+                throw new Error('Error fetching BTC price');
+            }
+            const data = await response.json();
+            setCurrentPrice(data.bitcoin.usd);
+        } catch (err) {
+            console.error(err);
+            setError('Could not fetch BTC price. Please try again later.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Fetch BTC price on component mount and set up interval for updates
+    useEffect(() => {
+        fetchBTCPrice(); // Initial fetch
+
+        const interval = setInterval(() => {
+            fetchBTCPrice();
+        }, 60000); // Update every 60 seconds
+
+        return () => clearInterval(interval); // Clean up interval on unmount
+    }, []);
 
     // Timer effect
     useEffect(() => {
@@ -47,6 +81,7 @@ const BinaryOptionsDApp = () => {
     const handleDirectionSelect = (direction) => {
         if (balance < fixedBetAmount) {
             // Show insufficient balance error
+            alert('Insufficient balance to place the bet.');
             return;
         }
         setSelectedDirection(direction);
@@ -85,14 +120,20 @@ const BinaryOptionsDApp = () => {
                 {/* Price Display */}
                 <div className="text-center">
                     <h2 className="text-gray-400 mb-2">Current BTC Price</h2>
-                    <div className="text-4xl font-bold">${currentPrice.toLocaleString()}</div>
+                    {isLoading ? (
+                        <div className="text-2xl">Loading...</div>
+                    ) : error ? (
+                        <div className="text-red-500">{error}</div>
+                    ) : (
+                        <div className="text-4xl font-bold">${currentPrice.toLocaleString()}</div>
+                    )}
                 </div>
 
                 {/* Timer Progress Bar */}
                 <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
                     <div
                         className="bg-blue-500 h-full transition-all duration-1000"
-                        style={{ width: `${(timeLeft / 300) * 100}%` }}
+                        style={{ width: `${(timeLeft / countDownInterval) * 100}%` }}
                     />
                 </div>
 
@@ -101,6 +142,7 @@ const BinaryOptionsDApp = () => {
                     <button
                         onClick={() => handleDirectionSelect('up')}
                         className="bg-green-600 hover:bg-green-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
+                        disabled={isLoading || error} // Disable if loading or error
                     >
                         <ArrowUpCircle className="w-12 h-12 mb-2" />
                         <span className="text-xl font-semibold">Up</span>
@@ -109,6 +151,7 @@ const BinaryOptionsDApp = () => {
                     <button
                         onClick={() => handleDirectionSelect('down')}
                         className="bg-red-600 hover:bg-red-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
+                        disabled={isLoading || error} // Disable if loading or error
                     >
                         <ArrowDownCircle className="w-12 h-12 mb-2" />
                         <span className="text-xl font-semibold">Down</span>
@@ -147,8 +190,8 @@ const BinaryOptionsDApp = () => {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Your Bet</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-300">
-                            You are betting {fixedBetAmount} BTC that the price will go
-                            {selectedDirection === 'up' ? ' up ' : ' down '}
+                            You are betting {fixedBetAmount} BTC that the price will
+                            {selectedDirection === 'up' ? ' go up ' : ' go down '}
                             in the next {Math.floor(timeLeft / 60)} minutes.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
@@ -194,8 +237,8 @@ const BinaryOptionsDApp = () => {
                                     </div>
                                 </div>
                                 <span className={bet.result === 'win' ? 'text-green-500' : 'text-red-500'}>
-                  {bet.result.toUpperCase()}
-                </span>
+                                    {bet.result.toUpperCase()}
+                                </span>
                             </div>
                         ))}
                     </div>
@@ -211,6 +254,7 @@ const BinaryOptionsDApp = () => {
             </AlertDialog>
         </div>
     );
+
 };
 
 export default BinaryOptionsDApp;
