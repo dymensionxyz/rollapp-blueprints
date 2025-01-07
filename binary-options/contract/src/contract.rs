@@ -1,7 +1,13 @@
-use cosmwasm_std::{entry_point, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult, Uint128};
-use cw_storage_plus::Bound;
-use crate::msg::{Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg};
+use crate::msg::{
+    Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg,
+};
+use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
+use cosmwasm_std::{
+    entry_point, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order,
+    Response, StdError, StdResult, Uint128,
+};
+use cw_storage_plus::Bound;
 
 #[entry_point]
 pub fn instantiate(
@@ -22,19 +28,10 @@ pub fn instantiate(
 }
 
 #[entry_point]
-pub fn execute(
-    deps: DepsMut,
-    env: Env,
-    info: MessageInfo,
-    msg: ExecuteMsg,
-) -> StdResult<Response> {
+pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> StdResult<Response> {
     match msg {
-        ExecuteMsg::PlaceOption(msg_place) => {
-            execute_place_option(deps, env, info, msg_place)
-        }
-        ExecuteMsg::SettleOption { option_id } => {
-            execute_settle_option(deps, env, info, option_id)
-        }
+        ExecuteMsg::PlaceOption(msg_place) => execute_place_option(deps, env, info, msg_place),
+        ExecuteMsg::SettleOption { option_id } => execute_settle_option(deps, env, info, option_id),
     }
 }
 
@@ -51,10 +48,21 @@ fn execute_place_option(
     let sent_coin = &info.funds[0];
 
     if sent_coin.amount != msg.bet_amount.amount || sent_coin.denom != msg.bet_amount.denom {
-        return Err(StdError::generic_err("Please, send the correct amount and denom"));
+        return Err(StdError::generic_err(
+            "Please, send the correct amount and denom",
+        ));
     }
 
-    let current_price = 1000u128;
+    let config = CONFIG.load(deps.storage)?;
+
+    let current_price = OracleQueryMsg::get_price(
+        &deps.querier,
+        &config.oracle_addr,
+        &msg.market.base,
+        &msg.market.quote,
+    )?
+    .price
+    .ok_or(StdError::generic_err("Price is required"))?;
 
     let mut option_counter = OPTION_COUNTER.load(deps.storage)?;
     option_counter += 1;
@@ -63,6 +71,7 @@ fn execute_place_option(
     let option_info = OptionInfo {
         id: option_counter,
         owner: info.sender.clone(),
+        market: msg.market,
         direction: msg.direction,
         strike_price: current_price,
         expiration: msg.expiration,
@@ -88,7 +97,9 @@ fn execute_settle_option(
 ) -> StdResult<Response> {
     let mut option = OPTIONS.load(deps.storage, option_id)?;
     if option.settled {
-        return Err(StdError::generic_err("This option has already been settled"));
+        return Err(StdError::generic_err(
+            "This option has already been settled",
+        ));
     }
 
     let current_time = env.block.time.seconds();
@@ -98,7 +109,14 @@ fn execute_settle_option(
 
     let config = CONFIG.load(deps.storage)?;
 
-    let current_price = 1200u128;
+    let current_price = OracleQueryMsg::get_price(
+        &deps.querier,
+        &config.oracle_addr,
+        &option.market.base,
+        &option.market.quote,
+    )?
+    .price
+    .ok_or(StdError::generic_err("Price is required"))?;
 
     let is_call = matches!(option.direction, Direction::Up);
     let did_win = if is_call {
@@ -113,13 +131,7 @@ fn execute_settle_option(
     OPTIONS.save(deps.storage, option_id, &option)?;
 
     if did_win {
-        let payout_amount = option
-            .bet_amount
-            .amount
-            .checked_mul(Uint128::from(config.payout_multiplier as u128))
-            .map_err(|_| StdError::generic_err("Overflow when calculating payout"))?
-            / Uint128::from(100u128);
-
+        let payout_amount = option.bet_amount.amount * config.payout_multiplier;
         let send_msg = BankMsg::Send {
             to_address: option.owner.to_string(),
             amount: vec![Coin {
@@ -149,9 +161,7 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::ListOptions { start_after, limit } => {
             to_json_binary(&query_list_options(deps, start_after, limit)?)
         }
-        QueryMsg::GetConfig {} => to_json_binary(
-            &query_config(deps)?
-        ),
+        QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
     }
 }
 
@@ -190,9 +200,11 @@ fn query_config(deps: Deps) -> StdResult<Config> {
 mod tests {
     use super::*;
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json, Addr, Attribute, BankMsg, Timestamp, Uint128};
+    use cosmwasm_std::{coins, from_json, Addr, Attribute, BankMsg, Decimal, Timestamp, Uint128};
 
-    use crate::msg::{Config, Direction, ExecuteMsg, PlaceOptionMsg, QueryMsg, OptionInfo, ListOptionsResponse};
+    use crate::msg::{
+        Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg,
+    };
 
     #[test]
     fn test_instantiate() {
@@ -202,7 +214,7 @@ mod tests {
 
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
+            payout_multiplier: Decimal::percent(100),
         };
 
         let res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
@@ -211,7 +223,10 @@ mod tests {
         assert_eq!(res.attributes[0], Attribute::new("method", "instantiate"));
         assert_eq!(res.attributes[1], Attribute::new("owner", "creator"));
         assert_eq!(res.attributes[2], Attribute::new("oracle_addr", "oracle"));
-        assert_eq!(res.attributes[3], Attribute::new("payout_multiplier", "200"));
+        assert_eq!(
+            res.attributes[3],
+            Attribute::new("payout_multiplier", "200")
+        );
     }
 
     fn query_config_helper(deps: &Deps) -> Config {
@@ -227,7 +242,7 @@ mod tests {
 
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 250,
+            payout_multiplier: Decimal::percent(150),
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -261,16 +276,24 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::PlaceOption(option_msg.clone()),
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(res.attributes.len(), 4);
         assert_eq!(res.attributes[0], Attribute::new("action", "place_option"));
 
         assert_eq!(res.attributes[1].value, "1");
         assert_eq!(res.attributes[2], Attribute::new("strike_price", "1000"));
-        assert_eq!(res.attributes[3], Attribute::new("expiration", "1700000000"));
+        assert_eq!(
+            res.attributes[3],
+            Attribute::new("expiration", "1700000000")
+        );
 
-        let bin_opt = query(deps.as_ref(), env.clone(), QueryMsg::GetOption { option_id: 1 }).unwrap();
+        let bin_opt = query(
+            deps.as_ref(),
+            env.clone(),
+            QueryMsg::GetOption { option_id: 1 },
+        )
+        .unwrap();
         let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
         assert_eq!(opt_info.id, 1);
         assert_eq!(opt_info.owner, Addr::unchecked("alice"));
@@ -300,10 +323,19 @@ mod tests {
             expiration: 1_700_000_000,
             bet_amount: coins(100, "token")[0].clone(),
         };
-        let info_user = mock_info("alice", &[
-            Coin { denom: "token".into(), amount: Uint128::new(100) },
-            Coin { denom: "other".into(), amount: Uint128::new(50) },
-        ]);
+        let info_user = mock_info(
+            "alice",
+            &[
+                Coin {
+                    denom: "token".into(),
+                    amount: Uint128::new(100),
+                },
+                Coin {
+                    denom: "other".into(),
+                    amount: Uint128::new(50),
+                },
+            ],
+        );
 
         let err = execute(
             deps.as_mut(),
@@ -311,8 +343,11 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::PlaceOption(option_msg.clone()),
         )
-            .unwrap_err();
-        assert_eq!(err.to_string(), "Generic error: Please, send exactly one coin");
+        .unwrap_err();
+        assert_eq!(
+            err.to_string(),
+            "Generic error: Please, send exactly one coin"
+        );
 
         let info_user2 = mock_info("alice", &coins(200, "token")); // enviamos 200 en lugar de 100
         let err2 = execute(
@@ -321,7 +356,7 @@ mod tests {
             info_user2,
             ExecuteMsg::PlaceOption(option_msg.clone()),
         )
-            .unwrap_err();
+        .unwrap_err();
         assert_eq!(
             err2.to_string(),
             "Generic error: Please, send the correct amount and denom"
@@ -352,7 +387,7 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::PlaceOption(place_msg.clone()),
         )
-            .unwrap();
+        .unwrap();
 
         let mut env_expired = mock_env();
         env_expired.block.time = Timestamp::from_seconds(1_700_000_001); // > expiration
@@ -363,10 +398,13 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::SettleOption { option_id: 1 },
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(settle_res.attributes.len(), 4);
-        assert_eq!(settle_res.attributes[0], Attribute::new("action", "settle_option"));
+        assert_eq!(
+            settle_res.attributes[0],
+            Attribute::new("action", "settle_option")
+        );
         assert_eq!(settle_res.attributes[1], Attribute::new("option_id", "1"));
         assert_eq!(settle_res.attributes[2], Attribute::new("result", "won"));
         assert_eq!(settle_res.attributes[3], Attribute::new("payout", "200"));
@@ -386,7 +424,7 @@ mod tests {
             env_expired.clone(),
             QueryMsg::GetOption { option_id: 1 },
         )
-            .unwrap();
+        .unwrap();
         let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
         assert!(opt_info.settled);
         assert_eq!(opt_info.outcome, Some(true));
@@ -417,7 +455,7 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::PlaceOption(place_msg.clone()),
         )
-            .unwrap();
+        .unwrap();
 
         let mut env_expired = mock_env();
         env_expired.block.time = Timestamp::from_seconds(1_700_000_001); // > expiration
@@ -428,10 +466,13 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::SettleOption { option_id: 1 },
         )
-            .unwrap();
+        .unwrap();
 
         assert_eq!(settle_res.attributes.len(), 3);
-        assert_eq!(settle_res.attributes[0], Attribute::new("action", "settle_option"));
+        assert_eq!(
+            settle_res.attributes[0],
+            Attribute::new("action", "settle_option")
+        );
         assert_eq!(settle_res.attributes[1], Attribute::new("option_id", "1"));
         assert_eq!(settle_res.attributes[2], Attribute::new("result", "lost"));
 
@@ -442,7 +483,7 @@ mod tests {
             env_expired.clone(),
             QueryMsg::GetOption { option_id: 1 },
         )
-            .unwrap();
+        .unwrap();
         let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
         assert!(opt_info.settled);
         assert_eq!(opt_info.outcome, Some(false));
@@ -473,7 +514,7 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::PlaceOption(place_msg),
         )
-            .unwrap();
+        .unwrap();
 
         let settle_err = execute(
             deps.as_mut(),
@@ -481,7 +522,7 @@ mod tests {
             info_user.clone(),
             ExecuteMsg::SettleOption { option_id: 1 },
         )
-            .unwrap_err();
+        .unwrap_err();
 
         assert_eq!(
             settle_err.to_string(),
@@ -513,7 +554,7 @@ mod tests {
             mock_info("alice", &coins(50, "token")),
             ExecuteMsg::PlaceOption(msg1),
         )
-            .unwrap();
+        .unwrap();
 
         let msg2 = PlaceOptionMsg {
             direction: Direction::Down,
@@ -526,7 +567,7 @@ mod tests {
             mock_info("bob", &coins(100, "token")),
             ExecuteMsg::PlaceOption(msg2),
         )
-            .unwrap();
+        .unwrap();
 
         let bin_options = query(
             deps.as_ref(),
@@ -536,7 +577,7 @@ mod tests {
                 limit: None,
             },
         )
-            .unwrap();
+        .unwrap();
         let list: ListOptionsResponse = from_json(&bin_options).unwrap();
         assert_eq!(list.options.len(), 2);
         assert_eq!(list.options[0].id, 1);
