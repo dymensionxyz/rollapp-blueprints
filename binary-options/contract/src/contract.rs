@@ -203,7 +203,10 @@ mod tests {
     use crate::oracle_api::QueryGetPriceResponse;
     use crate::state::{CONFIG, OPTION_COUNTER};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coin, coins, from_binary, from_json, to_binary, Addr, ContractResult, Decimal, SystemError, SystemResult, WasmQuery};
+    use cosmwasm_std::{
+        attr, coin, coins, from_binary, from_json, to_binary, Addr, ContractResult, Decimal,
+        SystemError, SystemResult, WasmQuery,
+    };
     use std::str::FromStr;
 
     #[test]
@@ -813,5 +816,301 @@ mod tests {
             }
             e => panic!("unexpected error: {e}"),
         }
+    }
+
+    #[test]
+    fn test_settle_option_not_expired() {
+        // -------------------------------------------------------------------
+        // 1) Setup
+        // -------------------------------------------------------------------
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info("owner", &[]);
+
+        // Instantiate
+        let config = Config {
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::one(),
+        };
+        instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
+
+        // Insert one option that expires in the future (not expired)
+        let option_id = 1u64;
+        let future_expiration = env.block.time.seconds() + 1000; // not expired
+        let option_info = OptionInfo {
+            id: option_id,
+            owner: Addr::unchecked("trader"),
+            market: MarketPair {
+                base: "BTC".into(),
+                quote: "USD".into(),
+            },
+            direction: Direction::Up,
+            strike_price: Decimal::from_str("30000").unwrap(),
+            expiration: future_expiration,
+            bet_amount: coin(1_000_000, "uatom"),
+            settled: false,
+            outcome: None,
+        };
+        OPTIONS
+            .save(&mut deps.storage, option_id, &option_info)
+            .unwrap();
+        OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
+
+        // -------------------------------------------------------------------
+        // 2) Attempt to settle the option => Should fail (not expired yet)
+        // -------------------------------------------------------------------
+        let settle_msg = ExecuteMsg::SettleOption { option_id };
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap_err();
+
+        match err {
+            StdError::GenericErr { msg, .. } => {
+                assert_eq!(msg, "This option has not expired yet");
+            }
+            _ => panic!("unexpected error"),
+        }
+    }
+
+    #[test]
+    fn test_settle_option_already_settled() {
+        // -------------------------------------------------------------------
+        // 1) Setup
+        // -------------------------------------------------------------------
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info("owner", &[]);
+
+        // Instantiate
+        let config = Config {
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::one(),
+        };
+        instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
+
+        // Insert an option that is *already settled*
+        let option_id = 2u64;
+        let past_expiration = env.block.time.seconds() - 1000; // definitely expired
+        let option_info = OptionInfo {
+            id: option_id,
+            owner: Addr::unchecked("trader"),
+            market: MarketPair {
+                base: "BTC".into(),
+                quote: "USD".into(),
+            },
+            direction: Direction::Up,
+            strike_price: Decimal::from_str("30000").unwrap(),
+            expiration: past_expiration,
+            bet_amount: coin(1_000_000, "uatom"),
+            settled: true, // already settled
+            outcome: Some(true),
+        };
+        OPTIONS
+            .save(&mut deps.storage, option_id, &option_info)
+            .unwrap();
+        OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
+
+        // -------------------------------------------------------------------
+        // 2) Attempt to settle again => Should fail (already settled)
+        // -------------------------------------------------------------------
+        let settle_msg = ExecuteMsg::SettleOption { option_id };
+        let err = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap_err();
+
+        match err {
+            StdError::GenericErr { msg, .. } => {
+                assert_eq!(msg, "This option has already been settled");
+            }
+            _ => panic!("unexpected error"),
+        }
+    }
+
+    #[test]
+    fn test_settle_option_win_scenario() {
+        // -------------------------------------------------------------------
+        // 1) Setup + store an option that is expired
+        // -------------------------------------------------------------------
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info("owner", &[]);
+
+        // Instantiate
+        let config = Config {
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::from_str("1.5").unwrap(), // e.g. 1.50
+        };
+        instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
+
+        // Create an option that expired in the past, so it's eligible for settlement
+        let option_id = 10u64;
+        let past_expiration = env.block.time.seconds() - 1; // 1 second in the past => expired
+        let option_info = OptionInfo {
+            id: option_id,
+            owner: Addr::unchecked("winner"),
+            market: MarketPair {
+                base: "BTC".into(),
+                quote: "USD".into(),
+            },
+            direction: Direction::Up, // user wins if final price > strike_price
+            strike_price: Decimal::from_str("30000").unwrap(),
+            expiration: past_expiration,
+            bet_amount: coin(1_000_000, "uatom"),
+            settled: false,
+            outcome: None,
+        };
+        OPTIONS
+            .save(&mut deps.storage, option_id, &option_info)
+            .unwrap();
+        OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
+
+        // -------------------------------------------------------------------
+        // 2) Mock the oracle => final price is 31,000 => user should win
+        // -------------------------------------------------------------------
+        deps.querier.update_wasm(|query| match query {
+            WasmQuery::Smart { contract_addr, msg } => {
+                if contract_addr == "oracle_contract" {
+                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                        if base == "BTC" && quote == "USD" {
+                            let resp = QueryGetPriceResponse {
+                                price: Some(Decimal::from_str("31000").unwrap()),
+                            };
+                            return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
+                        }
+                    }
+                }
+                SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: format!("{query:?}"),
+                })
+            }
+            _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                kind: format!("{query:?}"),
+            }),
+        });
+
+        // -------------------------------------------------------------------
+        // 3) Execute "SettleOption"
+        // -------------------------------------------------------------------
+        let settle_msg = ExecuteMsg::SettleOption { option_id };
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap();
+
+        // -------------------------------------------------------------------
+        // 4) Check the Response
+        // -------------------------------------------------------------------
+        // Expect a BankMsg::Send -> user "winner" with payout = bet * payout_multiplier
+        // Bet = 1_000_000, multiplier = 1.5 => payout = 1_500_000
+        let expected_payout = 1_500_000u128;
+        assert_eq!(
+            res.messages[0].msg,
+            cosmwasm_std::CosmosMsg::Bank(BankMsg::Send {
+                to_address: "winner".to_string(),
+                amount: vec![coin(expected_payout, "uatom")],
+            })
+        );
+
+        // Check attributes
+        // "action" => "settle_option"
+        // "option_id" => 10
+        // "result" => "won"
+        // "payout" => "1500000"
+        assert_eq!(res.attributes.len(), 4);
+        assert_eq!(res.attributes[0], attr("action", "settle_option"));
+        assert_eq!(res.attributes[1], attr("option_id", "10"));
+        assert_eq!(res.attributes[2], attr("result", "won"));
+        assert_eq!(res.attributes[3], attr("payout", "1500000"));
+
+        // -------------------------------------------------------------------
+        // 5) Confirm storage was updated => outcome & settled
+        // -------------------------------------------------------------------
+        let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
+        assert!(updated_option.settled);
+        assert_eq!(updated_option.outcome, Some(true)); // user won
+    }
+
+    #[test]
+    fn test_settle_option_lost_scenario() {
+        // -------------------------------------------------------------------
+        // 1) Setup + store an option
+        // -------------------------------------------------------------------
+        let mut deps = mock_dependencies();
+        let mut env = mock_env();
+        let info = mock_info("owner", &[]);
+
+        // Instantiate
+        let config = Config {
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::from_str("2").unwrap(), // x2, irrelevant if lost
+        };
+        instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
+
+        // Create an option that expired in the past => eligible for settlement
+        let option_id = 100u64;
+        let past_expiration = env.block.time.seconds() - 50;
+        let option_info = OptionInfo {
+            id: option_id,
+            owner: Addr::unchecked("loser"),
+            market: MarketPair {
+                base: "ETH".into(),
+                quote: "USD".into(),
+            },
+            direction: Direction::Up, // user wins if final price > strike_price
+            strike_price: Decimal::from_str("2000").unwrap(),
+            expiration: past_expiration,
+            bet_amount: coin(2000, "uluna"),
+            settled: false,
+            outcome: None,
+        };
+        OPTIONS
+            .save(&mut deps.storage, option_id, &option_info)
+            .unwrap();
+        OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
+
+        // -------------------------------------------------------------------
+        // 2) Mock the oracle => final price is 1500 => user should lose
+        // -------------------------------------------------------------------
+        deps.querier.update_wasm(|query| match query {
+            WasmQuery::Smart { contract_addr, msg } => {
+                if contract_addr == "oracle_contract" {
+                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                        if base == "ETH" && quote == "USD" {
+                            let resp = QueryGetPriceResponse {
+                                price: Some(Decimal::from_str("1500").unwrap()),
+                            };
+                            return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
+                        }
+                    }
+                }
+                SystemResult::Err(SystemError::UnsupportedRequest {
+                    kind: format!("{query:?}"),
+                })
+            }
+            _ => SystemResult::Err(SystemError::UnsupportedRequest {
+                kind: format!("{query:?}"),
+            }),
+        });
+
+        // -------------------------------------------------------------------
+        // 3) Execute "SettleOption"
+        // -------------------------------------------------------------------
+        let settle_msg = ExecuteMsg::SettleOption { option_id };
+        let res = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap();
+
+        // -------------------------------------------------------------------
+        // 4) Check the Response
+        // -------------------------------------------------------------------
+        // The user should lose, so no BankMsg::Send is expected
+        assert_eq!(res.messages.len(), 0);
+
+        // Check attributes
+        // "action" => "settle_option"
+        // "option_id" => "100"
+        // "result" => "lost"
+        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes[0], attr("action", "settle_option"));
+        assert_eq!(res.attributes[1], attr("option_id", "100"));
+        assert_eq!(res.attributes[2], attr("result", "lost"));
+
+        // -------------------------------------------------------------------
+        // 5) Confirm storage was updated => outcome & settled
+        // -------------------------------------------------------------------
+        let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
+        assert!(updated_option.settled);
+        assert_eq!(updated_option.outcome, Some(false)); // user lost
     }
 }
