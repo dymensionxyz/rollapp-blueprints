@@ -57,9 +57,9 @@ func (a *Agent) Run(ctx context.Context) {
 		}
 	}()
 
-	prompts := a.contract.ListenSmartContractEvents(ctx)
+	rands := a.contract.ListenSmartContractEvents(ctx)
 
-	for ps := range prompts {
+	for ps := range rands {
 		a.logger.Info("Got unprocessed randomness", "count", len(ps), "randomness", ps)
 		// We don't care about batching. We can process each event individually.
 		// If there are any errors, we will skip the event and try processing it on the next poll.
@@ -73,11 +73,11 @@ func (a *Agent) Run(ctx context.Context) {
 				r, err := a.external.GetRandomness(ctx)
 				if err != nil {
 					a.logger.With("error", err, "randID", p.RandomnessId).
-						Error("Error on submitting prompt to AI")
+						Error("Error on submitting randomness")
 					return
 				}
 
-				a.logger.Info("Got prompt answer", "randID", p.RandomnessId, "answer", r.Randomness)
+				a.logger.Info("Got randomness", "randID", p.RandomnessId, "answer", r.Randomness)
 				// Committing the result is a stateful operation. If it fails, we do not want to
 				// save the result to the repository. Contract should ensure that commit is atomic.
 				err = a.contract.PostRandomness(ctx, p.RandomnessId, r.Randomness)
