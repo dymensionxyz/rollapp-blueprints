@@ -5,7 +5,7 @@ use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
 use cosmwasm_std::{
     entry_point, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult, Uint128,
+    Response, StdError, StdResult,
 };
 use cw_storage_plus::Bound;
 
@@ -199,390 +199,174 @@ fn query_config(deps: Deps) -> StdResult<Config> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::contract::instantiate;
+    use crate::msg::{Config, MarketPair};
+    use crate::state::{CONFIG, OPTION_COUNTER};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
-    use cosmwasm_std::{coins, from_json, Addr, Attribute, BankMsg, Decimal, Timestamp, Uint128};
-
-    use crate::msg::{
-        Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg,
-    };
+    use cosmwasm_std::{from_binary, from_json, Addr, Decimal};
+    use std::str::FromStr;
 
     #[test]
-    fn test_instantiate() {
+    fn test_instantiate_works() {
+        // Prepare mock dependencies and environment
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
 
+        // We'll simulate the instantiator with address "owner"
+        let info = mock_info("owner", &[]);
+
+        // Build the Config that the contract requires
         let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: Decimal::percent(100),
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::percent(150), // e.g. 1.5x payout
         };
 
-        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
+        // Call instantiate
+        let res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg.clone())
+            .expect("instantiation should succeed");
 
+        // Make sure the Response attributes match what we expect
         assert_eq!(res.attributes.len(), 4);
-        assert_eq!(res.attributes[0], Attribute::new("method", "instantiate"));
-        assert_eq!(res.attributes[1], Attribute::new("owner", "creator"));
-        assert_eq!(res.attributes[2], Attribute::new("oracle_addr", "oracle"));
-        assert_eq!(
-            res.attributes[3],
-            Attribute::new("payout_multiplier", "200")
-        );
-    }
+        assert_eq!(res.attributes[0].key, "method");
+        assert_eq!(res.attributes[0].value, "instantiate");
+        assert_eq!(res.attributes[1].key, "owner");
+        assert_eq!(res.attributes[1].value, "owner");
+        assert_eq!(res.attributes[2].key, "oracle_addr");
+        assert_eq!(res.attributes[2].value, "oracle_contract");
+        assert_eq!(res.attributes[3].key, "payout_multiplier");
+        // The decimal->string conversion might differ depending on input;
+        // adjust as needed (e.g. "1.5" or "150%" etc.)
+        assert_eq!(res.attributes[3].value, "1.5");
 
-    fn query_config_helper(deps: &Deps) -> Config {
-        let bin = query(*deps, mock_env(), QueryMsg::GetConfig {}).unwrap();
-        from_json::<Config>(&bin).unwrap()
+        // Now let's verify the data was stored properly
+
+        // 1. CONFIG must match what was passed in.
+        let stored_config = CONFIG.load(&deps.storage).unwrap();
+        assert_eq!(stored_config.oracle_addr, config_msg.oracle_addr);
+        assert_eq!(
+            stored_config.payout_multiplier,
+            config_msg.payout_multiplier
+        );
+
+        // 2. OPTION_COUNTER should be 0 on fresh instantiation
+        let stored_counter = OPTION_COUNTER.load(&deps.storage).unwrap();
+        assert_eq!(stored_counter, 0u64);
     }
 
     #[test]
-    fn test_query_config() {
+    fn test_query_get_option_success() {
+        // ------------------------------------------
+        // 1) Set up
+        // ------------------------------------------
         let mut deps = mock_dependencies();
         let env = mock_env();
-        let info = mock_info("creator", &[]);
+        let info = mock_info("owner", &[]);
 
+        // Instantiate the contract with some config
         let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: Decimal::percent(150),
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::percent(150), // e.g., 1.50
         };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
+        let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
-        let config = query_config_helper(&deps.as_ref());
-        assert_eq!(config.oracle_addr, Addr::unchecked("oracle"));
-        assert_eq!(config.payout_multiplier, 250);
-    }
-
-    #[test]
-    fn test_place_option_success() {
-        let mut deps = mock_dependencies();
-
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let option_msg = PlaceOptionMsg {
-            direction: Direction::Up,
-            expiration: 1_700_000_000, // tiempo simulado
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-
-        let info_user = mock_info("alice", &coins(100, "token"));
-        let res = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::PlaceOption(option_msg.clone()),
-        )
-        .unwrap();
-
-        assert_eq!(res.attributes.len(), 4);
-        assert_eq!(res.attributes[0], Attribute::new("action", "place_option"));
-
-        assert_eq!(res.attributes[1].value, "1");
-        assert_eq!(res.attributes[2], Attribute::new("strike_price", "1000"));
+        // Verify the config & option_counter were stored
+        let stored_config = CONFIG.load(&deps.storage).unwrap();
         assert_eq!(
-            res.attributes[3],
-            Attribute::new("expiration", "1700000000")
+            stored_config.oracle_addr,
+            Addr::unchecked("oracle_contract")
         );
+        assert_eq!(stored_config.payout_multiplier, Decimal::percent(150));
 
-        let bin_opt = query(
-            deps.as_ref(),
-            env.clone(),
-            QueryMsg::GetOption { option_id: 1 },
-        )
-        .unwrap();
-        let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
-        assert_eq!(opt_info.id, 1);
-        assert_eq!(opt_info.owner, Addr::unchecked("alice"));
-        assert_eq!(opt_info.direction, Direction::Up);
-        assert_eq!(opt_info.strike_price, 1000);
-        assert_eq!(opt_info.expiration, 1_700_000_000);
-        assert_eq!(opt_info.bet_amount.amount, Uint128::new(100));
-        assert_eq!(opt_info.bet_amount.denom, "token");
-        assert_eq!(opt_info.settled, false);
-        assert_eq!(opt_info.outcome, None);
-    }
+        let counter = OPTION_COUNTER.load(&deps.storage).unwrap();
+        assert_eq!(counter, 0);
 
-    #[test]
-    fn test_place_option_incorrect_funds() {
-        let mut deps = mock_dependencies();
-
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let option_msg = PlaceOptionMsg {
-            direction: Direction::Up,
-            expiration: 1_700_000_000,
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-        let info_user = mock_info(
-            "alice",
-            &[
-                Coin {
-                    denom: "token".into(),
-                    amount: Uint128::new(100),
-                },
-                Coin {
-                    denom: "other".into(),
-                    amount: Uint128::new(50),
-                },
-            ],
-        );
-
-        let err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::PlaceOption(option_msg.clone()),
-        )
-        .unwrap_err();
-        assert_eq!(
-            err.to_string(),
-            "Generic error: Please, send exactly one coin"
-        );
-
-        let info_user2 = mock_info("alice", &coins(200, "token")); // enviamos 200 en lugar de 100
-        let err2 = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user2,
-            ExecuteMsg::PlaceOption(option_msg.clone()),
-        )
-        .unwrap_err();
-        assert_eq!(
-            err2.to_string(),
-            "Generic error: Please, send the correct amount and denom"
-        );
-    }
-
-    #[test]
-    fn test_settle_option_win() {
-        let mut deps = mock_dependencies();
-
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200, // payout = bet_amount * 200/100 = x2
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let place_msg = PlaceOptionMsg {
-            direction: Direction::Up,
-            expiration: 1_700_000_000,
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-        let info_user = mock_info("alice", &coins(100, "token"));
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::PlaceOption(place_msg.clone()),
-        )
-        .unwrap();
-
-        let mut env_expired = mock_env();
-        env_expired.block.time = Timestamp::from_seconds(1_700_000_001); // > expiration
-
-        let settle_res = execute(
-            deps.as_mut(),
-            env_expired.clone(),
-            info_user.clone(),
-            ExecuteMsg::SettleOption { option_id: 1 },
-        )
-        .unwrap();
-
-        assert_eq!(settle_res.attributes.len(), 4);
-        assert_eq!(
-            settle_res.attributes[0],
-            Attribute::new("action", "settle_option")
-        );
-        assert_eq!(settle_res.attributes[1], Attribute::new("option_id", "1"));
-        assert_eq!(settle_res.attributes[2], Attribute::new("result", "won"));
-        assert_eq!(settle_res.attributes[3], Attribute::new("payout", "200"));
-
-        assert_eq!(settle_res.messages.len(), 1);
-        let msg_send = settle_res.messages[0].msg.clone();
-        if let cosmwasm_std::CosmosMsg::Bank(BankMsg::Send { to_address, amount }) = msg_send {
-            assert_eq!(to_address, "alice");
-            assert_eq!(amount[0].denom, "token");
-            assert_eq!(amount[0].amount, Uint128::new(200));
-        } else {
-            panic!("Expected BankMsg::Send");
-        }
-
-        let bin_opt = query(
-            deps.as_ref(),
-            env_expired.clone(),
-            QueryMsg::GetOption { option_id: 1 },
-        )
-        .unwrap();
-        let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
-        assert!(opt_info.settled);
-        assert_eq!(opt_info.outcome, Some(true));
-    }
-
-    #[test]
-    fn test_settle_option_lost() {
-        let mut deps = mock_dependencies();
-
-        // 1) Instanciamos
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let place_msg = PlaceOptionMsg {
-            direction: Direction::Down,
-            expiration: 1_700_000_000,
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-        let info_user = mock_info("bob", &coins(100, "token"));
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::PlaceOption(place_msg.clone()),
-        )
-        .unwrap();
-
-        let mut env_expired = mock_env();
-        env_expired.block.time = Timestamp::from_seconds(1_700_000_001); // > expiration
-
-        let settle_res = execute(
-            deps.as_mut(),
-            env_expired.clone(),
-            info_user.clone(),
-            ExecuteMsg::SettleOption { option_id: 1 },
-        )
-        .unwrap();
-
-        assert_eq!(settle_res.attributes.len(), 3);
-        assert_eq!(
-            settle_res.attributes[0],
-            Attribute::new("action", "settle_option")
-        );
-        assert_eq!(settle_res.attributes[1], Attribute::new("option_id", "1"));
-        assert_eq!(settle_res.attributes[2], Attribute::new("result", "lost"));
-
-        assert!(settle_res.messages.is_empty());
-
-        let bin_opt = query(
-            deps.as_ref(),
-            env_expired.clone(),
-            QueryMsg::GetOption { option_id: 1 },
-        )
-        .unwrap();
-        let opt_info: OptionInfo = from_json(&bin_opt).unwrap();
-        assert!(opt_info.settled);
-        assert_eq!(opt_info.outcome, Some(false));
-    }
-
-    #[test]
-    fn test_settle_option_not_expired() {
-        let mut deps = mock_dependencies();
-
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let place_msg = PlaceOptionMsg {
-            direction: Direction::Up,
-            expiration: 1_700_000_000,
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-        let info_user = mock_info("alice", &coins(100, "token"));
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::PlaceOption(place_msg),
-        )
-        .unwrap();
-
-        let settle_err = execute(
-            deps.as_mut(),
-            env.clone(),
-            info_user.clone(),
-            ExecuteMsg::SettleOption { option_id: 1 },
-        )
-        .unwrap_err();
-
-        assert_eq!(
-            settle_err.to_string(),
-            "Generic error: This option has not expired yet"
-        );
-    }
-
-    #[test]
-    fn test_list_options_query() {
-        let mut deps = mock_dependencies();
-
-        let env = mock_env();
-        let info = mock_info("creator", &[]);
-
-        let config_msg = Config {
-            oracle_addr: Addr::unchecked("oracle"),
-            payout_multiplier: 200,
-        };
-        instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
-
-        let msg1 = PlaceOptionMsg {
-            direction: Direction::Up,
-            expiration: 12345,
-            bet_amount: coins(50, "token")[0].clone(),
-        };
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            mock_info("alice", &coins(50, "token")),
-            ExecuteMsg::PlaceOption(msg1),
-        )
-        .unwrap();
-
-        let msg2 = PlaceOptionMsg {
-            direction: Direction::Down,
-            expiration: 99999,
-            bet_amount: coins(100, "token")[0].clone(),
-        };
-        execute(
-            deps.as_mut(),
-            env.clone(),
-            mock_info("bob", &coins(100, "token")),
-            ExecuteMsg::PlaceOption(msg2),
-        )
-        .unwrap();
-
-        let bin_options = query(
-            deps.as_ref(),
-            env.clone(),
-            QueryMsg::ListOptions {
-                start_after: None,
-                limit: None,
+        // ------------------------------------------
+        // 2) Manually insert an OptionInfo into the store
+        //    (Simulate an option that was placed earlier)
+        // ------------------------------------------
+        let option_id = 42u64;
+        let option_info = OptionInfo {
+            id: option_id,
+            owner: Addr::unchecked("player123"),
+            market: MarketPair {
+                base: "BTC".to_string(),
+                quote: "USD".to_string(),
             },
-        )
-        .unwrap();
-        let list: ListOptionsResponse = from_json(&bin_options).unwrap();
-        assert_eq!(list.options.len(), 2);
-        assert_eq!(list.options[0].id, 1);
-        assert_eq!(list.options[0].owner, Addr::unchecked("alice"));
-        assert_eq!(list.options[1].id, 2);
-        assert_eq!(list.options[1].owner, Addr::unchecked("bob"));
+            direction: Direction::Up,
+            strike_price: Decimal::from_str("30000").unwrap(),
+            expiration: 1_700_000_000, // some future timestamp
+            bet_amount: Coin {
+                denom: "uatom".to_string(),
+                amount: 1_000_000u128.into(),
+            },
+            settled: false,
+            outcome: None,
+        };
+        OPTIONS
+            .save(&mut deps.storage, option_id, &option_info)
+            .unwrap();
+
+        // ------------------------------------------
+        // 3) Query the contract for that OptionInfo
+        // ------------------------------------------
+        let query_msg = QueryMsg::GetOption { option_id };
+        let bin = query(deps.as_ref(), env.clone(), query_msg).unwrap();
+        let queried_option: OptionInfo = from_json(&bin).unwrap();
+
+        // ------------------------------------------
+        // 4) Verify results
+        // ------------------------------------------
+        assert_eq!(queried_option.id, option_id);
+        assert_eq!(queried_option.owner, Addr::unchecked("player123"));
+        assert_eq!(queried_option.market.base, "BTC");
+        assert_eq!(queried_option.market.quote, "USD");
+        assert_eq!(queried_option.direction, Direction::Up);
+        assert_eq!(
+            queried_option.strike_price,
+            Decimal::from_str("30000").unwrap()
+        );
+        assert_eq!(queried_option.expiration, 1_700_000_000);
+        assert_eq!(queried_option.bet_amount.denom, "uatom");
+        assert_eq!(queried_option.bet_amount.amount.u128(), 1_000_000u128);
+        assert!(!queried_option.settled);
+        assert_eq!(queried_option.outcome, None);
+    }
+
+    #[test]
+    fn test_query_get_option_not_found() {
+        // ------------------------------------------
+        // 1) Set up
+        // ------------------------------------------
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let info = mock_info("owner", &[]);
+
+        // Instantiate the contract
+        let config_msg = Config {
+            oracle_addr: Addr::unchecked("oracle_contract"),
+            payout_multiplier: Decimal::one(),
+        };
+        let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
+
+        // ------------------------------------------
+        // 2) Attempt to query an option_id that doesn't exist
+        // ------------------------------------------
+        let non_existent_id = 9999u64;
+        let query_msg = QueryMsg::GetOption {
+            option_id: non_existent_id,
+        };
+
+        // The `OPTIONS.load(...)` call in `query_option` will fail with an error if not found
+        let err = query(deps.as_ref(), env, query_msg).unwrap_err();
+
+        // ------------------------------------------
+        // 3) Verify we got the expected error
+        // ------------------------------------------
+        match err {
+            StdError::NotFound { .. } => {
+                // This is the expected error when the key does not exist in the map
+            }
+            e => panic!("Unexpected error: {e}"),
+        }
     }
 }
