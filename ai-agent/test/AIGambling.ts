@@ -36,14 +36,8 @@ describe("AIGambling", function () {
     });
 
     async function depositHouse() {
-        const aiGamblingAddr = await aiGambling.getAddress()
-        const txData = {
-            to: await aiGamblingAddr,
-            value: ethers.parseEther("10.0") // Sending 1 ether as initial balance
-        }
-
         // Send some initial balance to the aiGambling contract
-        const tx =  await owner.sendTransaction(txData);
+        const tx =  await aiGambling.connect(owner).depositSupply({ value: ethers.parseEther("10.0") });
         await tx.wait();
     }
 

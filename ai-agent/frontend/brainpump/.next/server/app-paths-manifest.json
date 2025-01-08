@@ -1,0 +1,4 @@
+{
+  "/api/get-answer/[promptId]/route": "app/api/get-answer/[promptId]/route.js",
+  "/page": "app/page.js"
+}

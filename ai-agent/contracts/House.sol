@@ -18,6 +18,11 @@ contract House is Ownable {
     // Mapping to store the balance of each player
     mapping(address => uint256) private balances;
 
+    // Tracks the total "active" balance – the balance used by users in the games.
+    // The actual contract balance may be higher due to the owner's supply.
+    // The owner can only withdraw the "inactive" balance: total - "active".
+    uint256 public activeBalance;
+
     /**
      * @dev Constructor that sets the initial owner of the contract.
      * @param initialOwner The address of the initial owner.
@@ -25,10 +30,16 @@ contract House is Ownable {
     constructor(address initialOwner) Ownable(initialOwner) {}
 
     /**
+     * @dev Allows the owner to deposit funds into the house.
+     */
+    function depositSupply() external payable onlyOwner {}
+
+    /**
      * @dev Allows the owner to withdraw a specified amount from the contract.
      * @param amount The amount to withdraw.
      */
     function withdrawSupply(uint256 amount) external onlyOwner {
+        require(amount <= address(this).balance - activeBalance, "House: insufficient inactive balance");
         payable(msg.sender).transfer(amount);
     }
 
@@ -38,6 +49,7 @@ contract House is Ownable {
      */
     function deposit() external payable {
         balances[msg.sender] += msg.value;
+        activeBalance += msg.value;
     }
 
     /**
@@ -47,6 +59,7 @@ contract House is Ownable {
     function withdraw() external {
         uint256 amount = balances[msg.sender];
         balances[msg.sender] = 0;
+        activeBalance -= amount;
         payable(msg.sender).transfer(amount);
     }
 
@@ -58,7 +71,9 @@ contract House is Ownable {
      * @param amount The amount to add.
      */
     function addBalance(address user, uint256 amount) internal {
+        require(address(this).balance >= activeBalance + amount, "House: insufficient balance");
         balances[user] += amount;
+        activeBalance += amount;
     }
 
     /**
@@ -69,7 +84,9 @@ contract House is Ownable {
      * @param amount The amount to reduce.
      */
     function reduceBalance(address user, uint256 amount) internal {
+        require(balances[user] >= amount, "House: insufficient balance");
         balances[user] -= amount;
+        activeBalance -= amount;
     }
 
     /**
@@ -82,8 +99,25 @@ contract House is Ownable {
     }
 
     /**
+     * @dev Returns the total supply of the house.
+     */
+    function houseSupply() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    /**
+     * @dev Returns the total active balance of the house.
+     */
+    function houseActiveBalance() external view returns (uint256) {
+        return activeBalance;
+    }
+
+    /**
      * @dev Fallback function to accept Ether. This function is called when
      * Ether is sent to the contract.
      */
-    receive() external payable {}
+    receive() external payable {
+        balances[msg.sender] += msg.value;
+        activeBalance += msg.value;
+    }
 }
