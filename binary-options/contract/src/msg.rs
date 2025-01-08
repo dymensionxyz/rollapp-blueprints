@@ -35,7 +35,7 @@ pub enum QueryMsg {
     #[returns(ListOptionsResponse)]
     ListOptions {
         start_after: Option<u64>,
-        limit: Option<u32>,
+        limit: Option<u64>,
     },
     #[returns(Config)]
     GetConfig {},
