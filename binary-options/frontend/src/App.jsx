@@ -1,5 +1,3 @@
-// src/App.jsx
-import React from 'react';
 import BinaryOptionsDApp from './components/BinaryOptionsDApp';
 
 function App() {

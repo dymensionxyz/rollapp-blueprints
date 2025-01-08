@@ -11,9 +11,20 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+
+const DYMENSION_CONNECT_URL = 'https://portal.dymension.xyz';
+const DYMENSION_CONNECT_NETWORK_IDS = ['dymension_1100-1'];
+const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adym'
+
 const BinaryOptionsDApp = () => {
     const countDownInterval = 60; // 60 seconds
 
+    const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);
+    const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
+    const [address, setAddress] = useState('');
+    const [hexAddress, setHexAddress] = useState('');
+    const [broadcasting, setBroadcasting] = useState(false);
+    const [notifications, setNotifications] = useState([]);
     const [currentPrice, setCurrentPrice] = useState(null); // Initially null to handle loading state
     const [balance, setBalance] = useState(0.5);
     const [timeLeft, setTimeLeft] = useState(countDownInterval); // 60 seconds timer
@@ -106,13 +117,20 @@ const BinaryOptionsDApp = () => {
             {/* Status Bar */}
             <div className="flex justify-between items-center mb-6">
                 <div className="flex items-center space-x-2">
-                    <Wallet className="w-5 h-5" />
+                    <Wallet className="w-5 h-5"/>
                     <span className="font-medium">{balance.toFixed(4)} BTC</span>
                 </div>
                 <div className="flex items-center text-gray-400">
-                    <Clock className="w-4 h-4 mr-1" />
+                    <Clock className="w-4 h-4 mr-1"/>
                     <span>{formatTime(timeLeft)}</span>
                 </div>
+                <iframe
+                    style={{display: dymensionConnectOpen ? 'block' : 'none'}}
+                    allow='clipboard-read; clipboard-write; camera'
+                    title='dymension-connect'
+                    className='dymension-connect-iframe'
+                    src={`${DYMENSION_CONNECT_URL}/connect?networkIds=${DYMENSION_CONNECT_NETWORK_IDS.join(',')}`}
+                />
             </div>
 
             {/* Main Content */}
