@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
@@ -22,18 +22,19 @@ import {
 
 const formSchema = z.object({
   guessedNumber: z.number()
-    .int()
-    .min(1, { message: "Guess must be at least 1" })
-    .max(10, { message: "Guess must be at most 10" }),
+      .int()
+      .min(1, { message: "Guess must be at least 1" })
+      .max(10, { message: "Guess must be at most 10" }),
   betAmount: z.number()
-    .positive({ message: "Bet amount must be positive" })
-    .min(0.0001, { message: "Minimum bet is 0.0001 ETH" })
+      .positive({ message: "Bet amount must be positive" })
+      .min(0.0001, { message: "Minimum bet is 0.0001 ETH" })
 })
 
 export function BetForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { placeBet, isConnected, currentBet } = useContract()
+  const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
+  const { placeBet, isConnected, currentBet, estimateReward } = useContract()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -59,6 +60,7 @@ export function BetForm() {
         description: "Your bet has been successfully placed!",
       })
       form.reset()
+      setEstimatedReward(null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to place bet')
     } finally {
@@ -66,79 +68,105 @@ export function BetForm() {
     }
   }
 
+  useEffect(() => {
+    const updateEstimatedReward = async () => {
+      const betAmount = form.getValues('betAmount')
+      if (betAmount) {
+        try {
+          const reward = await estimateReward(betAmount.toString())
+          setEstimatedReward(reward)
+        } catch (err) {
+          console.error('Failed to estimate reward:', err)
+          setEstimatedReward(null)
+        }
+      } else {
+        setEstimatedReward(null)
+      }
+    }
+
+    updateEstimatedReward()
+  }, [form.watch('betAmount'), estimateReward])
+
+  const canPlaceBet = !currentBet || currentBet.resolved || Number(currentBet.promptId) === 0
+
   return (
-    <Card className="neon-border glass-effect border-0">
-      <CardHeader>
-        <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Place Your Bet</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {error && <ErrorDisplay title="Bet Error" message={error} />}
-        {currentBet && currentBet.active ? (
-          <div className="text-center py-4">
-            <p className="text-[rgb(var(--neon-green))]">You have an active bet</p>
-            <p className="text-sm text-gray-300 mt-2">Resolve your current bet before placing a new one</p>
-          </div>
-        ) : (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="guessedNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm text-gray-300">Guess a number (1-10)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                        className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="betAmount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm text-gray-300">Bet amount (ETH)</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        {...field}
-                        onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
-                        step="0.0001"
-                        className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                        disabled={isLoading}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button 
-                type="submit"
-                className="w-full bg-[rgb(var(--neon-green))] text-black hover:bg-[rgb(var(--neon-green))] hover:opacity-90"
-                disabled={isLoading || !isConnected}
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Placing Bet...
-                  </>
-                ) : (
-                  'Place Bet'
-                )}
-              </Button>
-            </form>
-          </Form>
-        )}
-      </CardContent>
-    </Card>
+      <Card className="neon-border glass-effect border-0">
+        <CardHeader>
+          <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Place Your Bet</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error && <ErrorDisplay title="Bet Error" message={error} />}
+          {!canPlaceBet ? (
+              <div className="text-center py-4">
+                <p className="text-[rgb(var(--neon-green))]">You have an active bet</p>
+                <p className="text-sm text-gray-300 mt-2">Resolve your current bet before placing a new one</p>
+              </div>
+          ) : (
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                  <FormField
+                      control={form.control}
+                      name="guessedNumber"
+                      render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-gray-300">Guess a number (1-10)</FormLabel>
+                            <FormControl>
+                              <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
+                                  disabled={isLoading}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name="betAmount"
+                      render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-gray-300">Bet amount (ETH)</FormLabel>
+                            <FormControl>
+                              <Input
+                                  type="number"
+                                  {...field}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  step="0.0001"
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
+                                  disabled={isLoading}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  {estimatedReward && (
+                      <div className="text-sm text-gray-300">
+                        Estimated reward: <span className="text-[rgb(var(--neon-green))]">{estimatedReward} ETH</span>
+                      </div>
+                  )}
+                  <Button
+                      type="submit"
+                      className="w-full bg-[rgb(var(--neon-green))] text-black hover:bg-[rgb(var(--neon-green))] hover:opacity-90"
+                      disabled={isLoading || !isConnected}
+                  >
+                    {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Placing Bet...
+                        </>
+                    ) : (
+                        'Place Bet'
+                    )}
+                  </Button>
+                </form>
+              </Form>
+          )}
+        </CardContent>
+      </Card>
   )
 }
 

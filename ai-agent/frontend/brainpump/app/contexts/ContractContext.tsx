@@ -12,7 +12,6 @@ interface BetInfo {
   correctNumber: number
   resolved: boolean
   won: boolean
-  active: boolean
 }
 
 interface GameInfo {
@@ -21,7 +20,6 @@ interface GameInfo {
   minBetAmount: string
   maxBetAmount: string
   maxBetAmountPercentage: number
-  houseFeePercentage: number
 }
 
 interface ContractContextType {
@@ -43,11 +41,13 @@ interface ContractContextType {
   refreshGameInfo: () => Promise<void>
   refreshWalletBalance: () => Promise<void>
   refreshBetHistory: () => Promise<void>
+  estimateReward: (betAmount: string) => Promise<string>
+  checkAnswerStatus: (promptId: BigNumberish) => Promise<{ answer: string, exists: boolean }>
 }
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0x669bf6c1378fe9cA58d53D42D3B301D5F341B5E6" // Replace with actual address
+const CONTRACT_ADDRESS = "0xEdaC964FDf64Da8981d6c9319FA72d0C8A3Ca06b" // Replace with actual address
 
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contract, setContract] = useState<Contract | null>(null)
@@ -144,8 +144,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         guessedNumber: Number(bet[2]),
         correctNumber: Number(bet[3]),
         resolved: bet[4],
-        won: bet[5],
-        active: bet[6]
+        won: bet[5]
       })
     } catch (error) {
       console.error('Error getting bet info:', error)
@@ -173,8 +172,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         houseActiveBalance: ethers.formatEther(info.houseActiveBalance),
         minBetAmount: ethers.formatEther(info.minBetAmount),
         maxBetAmount: ethers.formatEther(info.maxBetAmount),
-        maxBetAmountPercentage: Number(info.maxBetAmountPercentage),
-        houseFeePercentage: Number(info.houseFeePercentage)
+        maxBetAmountPercentage: Number(info.maxBetAmountPercentage)
       })
     } catch (error) {
       console.error('Error getting game info:', error)
@@ -222,6 +220,28 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     ])
   }
 
+  const estimateReward = async (betAmount: string) => {
+    if (!contract) throw new Error('Not connected')
+    try {
+      const reward = await contract.estimateReward(ethers.parseEther(betAmount))
+      return ethers.formatEther(reward)
+    } catch (error) {
+      console.error('Error estimating reward:', error)
+      throw new Error('Failed to estimate reward')
+    }
+  }
+
+  const checkAnswerStatus = async (promptId: BigNumberish) => {
+    if (!contract) throw new Error('Not connected')
+    try {
+      const [answer, exists] = await contract.checkAnswerStatus(promptId)
+      return { answer, exists }
+    } catch (error) {
+      console.error('Error checking answer status:', error)
+      throw new Error('Failed to check answer status')
+    }
+  }
+
   useEffect(() => {
     if (isConnected) {
       refreshAllInfo()
@@ -267,7 +287,9 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       refreshBalance,
       refreshGameInfo,
       refreshWalletBalance,
-      refreshBetHistory
+      refreshBetHistory,
+      estimateReward,
+      checkAnswerStatus
     }}>
       {children}
     </ContractContext.Provider>

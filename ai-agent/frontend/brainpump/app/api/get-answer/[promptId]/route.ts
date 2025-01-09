@@ -4,9 +4,9 @@ const AgentHost = 'http://localhost:8080'
 
 export async function GET(
     request: NextRequest,
-    {params}: { params: { promptId: string } }
+    {params}: { params: Promise<{ promptId: string }> }
 ) {
-    const promptId = params.promptId
+    const { promptId } = await params
 
     if (!promptId) {
         return NextResponse.json({error: 'Prompt ID is required'}, {status: 400})

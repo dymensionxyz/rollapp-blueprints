@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
+import { OpenAILink } from './OpenAILink'
 
 interface BetDetailsProps {
     promptId: string
@@ -67,26 +68,26 @@ export function BetDetails({ promptId }: BetDetailsProps) {
         <Card className="mt-4 neon-border glass-effect border-0">
             <CardContent className="p-4">
                 <h4 className="text-lg font-semibold mb-2 text-[rgb(var(--neon-green))]">Bet Details</h4>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-2">
                     <div>
                         <p className="text-sm text-gray-400">AI Answer</p>
                         <p className="text-lg">{details.answer}</p>
                     </div>
                     <div>
                         <p className="text-sm text-gray-400">Message ID</p>
-                        <p className="text-xs truncate">{details.message_id}</p>
+                        <OpenAILink type="message" id={details.message_id} threadId={details.thread_id} />
                     </div>
                     <div>
                         <p className="text-sm text-gray-400">Thread ID</p>
-                        <p className="text-xs truncate">{details.thread_id}</p>
+                        <OpenAILink type="thread" id={details.thread_id} />
                     </div>
                     <div>
                         <p className="text-sm text-gray-400">Run ID</p>
-                        <p className="text-xs truncate">{details.run_id}</p>
+                        <OpenAILink type="run" id={details.run_id} threadId={details.thread_id} />
                     </div>
                     <div>
                         <p className="text-sm text-gray-400">Assistant ID</p>
-                        <p className="text-xs truncate">{details.assistant_id}</p>
+                        <OpenAILink type="assistant" id={details.assistant_id} />
                     </div>
                 </div>
             </CardContent>

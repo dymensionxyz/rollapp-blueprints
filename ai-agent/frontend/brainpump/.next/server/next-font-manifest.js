@@ -1,1 +1,0 @@
-self.__NEXT_FONT_MANIFEST="{\"pages\":{},\"app\":{\"/Users/keruch/Development/Dymension/rollapp-blueprints/ai-agent/frontend/brainpump/app/layout\":[\"static/media/bb3ef058b751a6ad-s.p.woff2\"]},\"appUsingSizeAdjust\":true,\"pagesUsingSizeAdjust\":false}"

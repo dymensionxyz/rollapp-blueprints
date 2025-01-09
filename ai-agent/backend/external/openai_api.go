@@ -103,19 +103,23 @@ func (c *OpenAIClient) listMessages(ctx context.Context, threadID string, queryP
 func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role, content string, promptID uint64) (ThreadRun, error) {
 	var result ThreadRun
 
+	promptIDMeta := map[string]string{
+		"prompt_id": fmt.Sprintf("%d", promptID),
+	}
+
 	resp, err := c.http.R().
 		SetContext(ctx).
 		SetBody(CreateRunReq{
 			AssistantId: defaultAssistantID,
 			Thread: CreateThreadReq{
 				Messages: []CreateMessageReq{{
-					Role:    role,
-					Content: content,
+					Role:     role,
+					Content:  content,
+					Metadata: promptIDMeta,
 				}},
-				Metadata: map[string]string{
-					"prompt_id": fmt.Sprintf("%d", promptID),
-				},
+				Metadata: promptIDMeta,
 			},
+			Metadata: promptIDMeta,
 		}).
 		SetResult(&result).
 		SetError(&ErrorResp{}).

@@ -27,7 +27,6 @@ contract AIGambling is House {
         uint256 correctNumber;
         bool resolved;
         bool won;
-        bool active;
     }
     // Mapping to store active bets by user address
     mapping(address => Bet) public bets;
@@ -56,7 +55,6 @@ contract AIGambling is House {
      * @param minBetAmount The minimum bet amount.
      * @param maxBetAmount The maximum bet amount.
      * @param maxBetAmountPercentage The maximum bet amount as a percentage of the house balance.
-     * @param houseFeePercentage The house fee percentage on winnings.
      */
     struct GameInfo {
         uint256 houseSupply;
@@ -64,7 +62,6 @@ contract AIGambling is House {
         uint256 minBetAmount;
         uint256 maxBetAmount;
         uint256 maxBetAmountPercentage;
-        uint256 houseFeePercentage;
     }
 
     // Constant prompt to be sent to the AI system
@@ -87,7 +84,7 @@ contract AIGambling is House {
     function placeBet(uint256 guessedNumber) external payable {
         require(bets[msg.sender].amount == 0 || bets[msg.sender].resolved, "Resolve your current bet first");
         require(msg.value >= minBetAmount, "Bet amount is too low");
-        require(msg.value <= address(this).balance * maxBetAmountPercentage / 100, "Bet amount is too high");
+        require(msg.value <= calculateMaxBetAmount(), "Bet amount is too high");
 
         uint64 promptId = aiOracle.submitPrompt(PROMPT);
 
@@ -97,8 +94,7 @@ contract AIGambling is House {
             guessedNumber: guessedNumber,
             correctNumber: 0,
             resolved: false,
-            won: false,
-            active: true
+            won: false
         });
 
         emit BetPlaced(msg.sender, msg.value, guessedNumber);
@@ -108,7 +104,7 @@ contract AIGambling is House {
      * @dev Function to resolve a bet. The user must call this function to resolve their bet.
      */
     function resolveBet() external {
-        Bet memory bet = bets[msg.sender];
+        Bet storage bet = bets[msg.sender];
         require(!bet.resolved, "Bet already resolved");
 
         string memory correctNumberStr = aiOracle.getAnswer(bet.promptId);
@@ -121,17 +117,13 @@ contract AIGambling is House {
 
         uint256 reward = 0;
         if (bet.guessedNumber == correctNumber) {
-            // We generate a number between 1 and 10, inclusive. So the win chance is 1 of 10.
-            // The reward multiplier is 10 minus the house fee percentage F.
-            // So the reward is 10B - F, where B is a bet amount.
-            reward = (10 * bet.amount * (100 - houseFeePercentage)) / 100;
+            reward = calculateReward(bet.amount);
             bet.won = true;
             addBalance(msg.sender, reward);
         }
 
         // Store the bet in the history and reset the active bet
         history[msg.sender].push(bet);
-        delete bets[msg.sender];
 
         emit BetResult(msg.sender, bet.guessedNumber, correctNumber, bet.won, reward);
     }
@@ -161,17 +153,56 @@ contract AIGambling is House {
     }
 
     /**
+     * @dev Function to estimate the reward for a given bet amount.
+     * @param betAmount The bet amount.
+     * @return The estimated reward.
+     */
+    function estimateReward(uint256 betAmount) external view returns (uint256) {
+        return calculateReward(betAmount);
+    }
+
+    /**
+     * @dev Function to estimate the maximum bet amount.
+     * @return The estimated maximum bet amount.
+     */
+    function calculateReward(uint256 betAmount) internal view returns (uint256) {
+        // We generate a number between 1 and 10, inclusive. So the win chance is 1 of 10.
+        // The reward multiplier is 10 minus the house fee percentage F.
+        // So the reward is 10B - F, where B is a bet amount.
+        return (10 * betAmount * (100 - houseFeePercentage)) / 100;
+    }
+
+    /**
+     * @dev Function to calculate the maximum bet amount based on the house balance and the percentage.
+     * @return The maximum bet amount.
+     */
+    function calculateMaxBetAmount() internal view returns (uint256) {
+        return calculateNonWithdrawalBalance() * maxBetAmountPercentage / 100;
+    }
+
+    /**
+     * @dev Function to check the status of the answer for a given prompt ID.
+     * @param promptId The ID of the prompt.
+     */
+    function checkAnswerStatus(uint64 promptId) external view returns (string memory answer, bool exists) {
+        try aiOracle.getAnswer(promptId) returns (string memory _answer) {
+            return (_answer, true);
+        } catch {
+            return ("", false);
+        }
+    }
+
+    /**
      * @dev Function to get the game information.
      * @return The game information.
      */
     function getGameInfo() external view returns (GameInfo memory) {
         return GameInfo({
             houseSupply: address(this).balance,
-            houseActiveBalance: activeBalance,
+            houseActiveBalance: withdrawalBalance,
             minBetAmount: minBetAmount,
-            maxBetAmount: address(this).balance * maxBetAmountPercentage / 100,
-            maxBetAmountPercentage: maxBetAmountPercentage,
-            houseFeePercentage: houseFeePercentage
+            maxBetAmount: calculateMaxBetAmount(),
+            maxBetAmountPercentage: maxBetAmountPercentage
         });
     }
 

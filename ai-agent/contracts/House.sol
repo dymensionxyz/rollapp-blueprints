@@ -18,10 +18,10 @@ contract House is Ownable {
     // Mapping to store the balance of each player
     mapping(address => uint256) private balances;
 
-    // Tracks the total "active" balance – the balance used by users in the games.
-    // The actual contract balance may be higher due to the owner's supply.
-    // The owner can only withdraw the "inactive" balance: total - "active".
-    uint256 public activeBalance;
+    // Tracks the withdrawal balance – the balance the users might immediately
+    // withdraw. The actual contract balance may be higher. The owner can only
+    // withdraw the non-withdrawal balance: total - withdrawal.
+    uint256 public withdrawalBalance;
 
     /**
      * @dev Constructor that sets the initial owner of the contract.
@@ -39,7 +39,7 @@ contract House is Ownable {
      * @param amount The amount to withdraw.
      */
     function withdrawSupply(uint256 amount) external onlyOwner {
-        require(amount <= address(this).balance - activeBalance, "House: insufficient inactive balance");
+        require(amount <= calculateNonWithdrawalBalance(), "House: insufficient non-withdrawal balance");
         payable(msg.sender).transfer(amount);
     }
 
@@ -49,7 +49,7 @@ contract House is Ownable {
      */
     function deposit() external payable {
         balances[msg.sender] += msg.value;
-        activeBalance += msg.value;
+        withdrawalBalance += msg.value;
     }
 
     /**
@@ -59,7 +59,7 @@ contract House is Ownable {
     function withdraw() external {
         uint256 amount = balances[msg.sender];
         balances[msg.sender] = 0;
-        activeBalance -= amount;
+        withdrawalBalance -= amount;
         payable(msg.sender).transfer(amount);
     }
 
@@ -71,9 +71,9 @@ contract House is Ownable {
      * @param amount The amount to add.
      */
     function addBalance(address user, uint256 amount) internal {
-        require(address(this).balance >= activeBalance + amount, "House: insufficient balance");
+        require(address(this).balance >= withdrawalBalance + amount, "House: insufficient supply");
         balances[user] += amount;
-        activeBalance += amount;
+        withdrawalBalance += amount;
     }
 
     /**
@@ -86,7 +86,7 @@ contract House is Ownable {
     function reduceBalance(address user, uint256 amount) internal {
         require(balances[user] >= amount, "House: insufficient balance");
         balances[user] -= amount;
-        activeBalance -= amount;
+        withdrawalBalance -= amount;
     }
 
     /**
@@ -99,6 +99,21 @@ contract House is Ownable {
     }
 
     /**
+     * @dev Returns the total non-withdrawal balance of the house.
+     */
+    function getNonWithdrawalBalance() external view returns (uint256) {
+        return calculateNonWithdrawalBalance();
+    }
+
+    /**
+     * @dev Internal function to calculate the non-withdrawal balance of the house.
+     * @return The non-withdrawal balance.
+     */
+    function calculateNonWithdrawalBalance() internal view returns (uint256) {
+        return address(this).balance - withdrawalBalance;
+    }
+
+    /**
      * @dev Returns the total supply of the house.
      */
     function houseSupply() external view returns (uint256) {
@@ -108,8 +123,8 @@ contract House is Ownable {
     /**
      * @dev Returns the total active balance of the house.
      */
-    function houseActiveBalance() external view returns (uint256) {
-        return activeBalance;
+    function houseWithdrawalBalance() external view returns (uint256) {
+        return withdrawalBalance;
     }
 
     /**
@@ -118,6 +133,6 @@ contract House is Ownable {
      */
     receive() external payable {
         balances[msg.sender] += msg.value;
-        activeBalance += msg.value;
+        withdrawalBalance += msg.value;
     }
 }
