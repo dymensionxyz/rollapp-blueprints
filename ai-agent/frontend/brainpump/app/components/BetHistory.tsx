@@ -14,15 +14,18 @@ export function BetHistory() {
         setExpandedBetIndex(expandedBetIndex === index ? null : index)
     }
 
+    // Sort betHistory in descending order by promptId (newer bets on top)
+    const sortedBetHistory = [...betHistory].sort((a, b) => Number(b.promptId) - Number(a.promptId));
+
     return (
         <Card className="neon-border glass-effect border-0 w-full mt-8">
             <CardHeader>
                 <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Bet History</CardTitle>
             </CardHeader>
             <CardContent>
-                {betHistory.length > 0 ? (
+                {sortedBetHistory.length > 0 ? (
                     <div className="space-y-4">
-                        {betHistory.map((bet, index) => (
+                        {sortedBetHistory.map((bet, index) => (
                             <div key={index}>
                                 <div
                                     className="bg-[rgb(var(--dark-gray))] p-4 rounded-md cursor-pointer hover:bg-[rgb(var(--graphite))] transition-colors duration-200"
