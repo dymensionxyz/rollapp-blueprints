@@ -14,12 +14,12 @@ import (
 )
 
 func (a *RNGClient) ListenSmartContractEvents(ctx context.Context) <-chan []RandomnessGeneratorUnprocessedRandomness {
-	prompts := make(chan []RandomnessGeneratorUnprocessedRandomness)
+	rands := make(chan []RandomnessGeneratorUnprocessedRandomness)
 
 	ticker := time.NewTicker(a.config.PollInterval)
 
 	go func() {
-		defer close(prompts)
+		defer close(rands)
 		defer ticker.Stop()
 
 		for {
@@ -36,12 +36,12 @@ func (a *RNGClient) ListenSmartContractEvents(ctx context.Context) <-chan []Rand
 					continue
 				}
 
-				prompts <- p
+				rands <- p
 			}
 		}
 	}()
 
-	return prompts
+	return rands
 }
 
 func (a *RNGClient) PostRandomness(ctx context.Context, randID uint64, randomness *big.Int) error {

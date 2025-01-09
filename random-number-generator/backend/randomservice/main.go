@@ -154,7 +154,7 @@ func main() {
 
 	config := Config{
 		HTTPServerAddr: ":8090",
-		LevelDBPath:    "./db",
+		LevelDBPath:    "./db_randomness_service",
 	}
 
 	rs, err := NewRandomnessService(config)
