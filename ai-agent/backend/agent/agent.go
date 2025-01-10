@@ -57,56 +57,56 @@ func (a *Agent) Run(ctx context.Context) {
 		}
 	}()
 
-	prompts := a.contract.ListenSmartContractEvents(ctx)
+	a.contract.ListenSmartContractEvents(ctx, a.handleEvents)
+}
 
-	for ps := range prompts {
-		a.logger.Info("Got unprocessed prompts", "count", len(ps), "prompts", ps)
-		// We don't care about batching. We can process each event individually.
-		// If there are any errors, we will skip the event and try processing it on the next poll.
-		var wg sync.WaitGroup
-		wg.Add(len(ps))
-		for _, p := range ps {
-			// OpenAI calls may be time-consuming, so we process them concurrently.
-			go func() {
-				defer wg.Done()
-				a.logger.Info("Processing prompt", "promptId", p.PromptId, "prompt", p.Prompt)
-				// External query is not a stateful operation, it can fail without side effects.
-				r, err := a.external.SubmitPrompt(ctx, p.PromptId, p.Prompt)
-				if err != nil {
-					a.logger.With("error", err, "promptId", p.PromptId).
-						Error("Error on submitting prompt to AI")
-					return
-				}
+func (a *Agent) handleEvents(ctx context.Context, ps []contract.AIOracleUnprocessedPrompt) {
+	a.logger.Info("Got unprocessed prompts", "count", len(ps), "prompts", ps)
+	// We don't care about batching. We can process each event individually.
+	// If there are any errors, we will skip the event and try processing it on the next poll.
+	var wg sync.WaitGroup
+	wg.Add(len(ps))
+	for _, p := range ps {
+		// OpenAI calls may be time-consuming, so we process them concurrently.
+		go func() {
+			defer wg.Done()
+			a.logger.Info("Processing prompt", "promptId", p.PromptId, "prompt", p.Prompt)
+			// External query is not a stateful operation, it can fail without side effects.
+			r, err := a.external.SubmitPrompt(ctx, p.PromptId, p.Prompt)
+			if err != nil {
+				a.logger.With("error", err, "promptId", p.PromptId).
+					Error("Error on submitting prompt to AI")
+				return
+			}
 
-				a.logger.Info("Got prompt answer", "promptId", p.PromptId, "answer", r.Answer)
-				// Committing the result is a stateful operation. If it fails, we do not want to
-				// save the result to the repository. Contract should ensure that commit is atomic.
-				err = a.contract.SubmitAnswer(ctx, p.PromptId, r.Answer)
-				if err != nil {
-					a.logger.With("error", err, "promptId", p.PromptId).
-						Info("Error on submitting answer to contract")
-					return
-				}
+			a.logger.Info("Got prompt answer", "promptId", p.PromptId, "answer", r.Answer)
+			// Committing the result is a stateful operation. If it fails, we do not want to
+			// save the result to the repository. Contract should ensure that commit is atomic.
+			err = a.contract.SubmitAnswer(ctx, p.PromptId, r.Answer)
+			if err != nil {
+				a.logger.With("error", err, "promptId", p.PromptId).
+					Info("Error on submitting answer to contract")
+				return
+			}
 
-				a.logger.Info("Answer committed to contract", "promptId", p.PromptId, "answer", r.Answer)
-				// It's not a big deal if we fail to save the response. At this point, the result
-				// is already committed to the contract, so this event will not be processed again.
-				err = a.repo.Save(p.PromptId, repository.Answer{
-					Answer:      r.Answer,
-					MessageID:   r.MessageID,
-					ThreadID:    r.ThreadID,
-					RunID:       r.RunID,
-					AssistantID: r.AssistantID,
-				})
-				if err != nil {
-					a.logger.With("error", err, "promptId", p.PromptId).
-						Info("Error on saving response to DB")
-					return
-				}
-			}()
-		}
-		wg.Wait()
+			a.logger.Info("Answer committed to contract", "promptId", p.PromptId, "answer", r.Answer)
+			// It's not a big deal if we fail to save the response. At this point, the result
+			// is already committed to the contract, so this event will not be processed again.
+			err = a.repo.Save(p.PromptId, repository.Answer{
+				Answer:      r.Answer,
+				MessageID:   r.MessageID,
+				ThreadID:    r.ThreadID,
+				RunID:       r.RunID,
+				AssistantID: r.AssistantID,
+			})
+			if err != nil {
+				a.logger.With("error", err, "promptId", p.PromptId).
+					Info("Error on saving response to DB")
+				return
+			}
+		}()
 	}
+	wg.Wait()
 }
 
 func (a *Agent) Close() error {

@@ -28,10 +28,6 @@ describe("AIGambling", function () {
 
         const aiGamblingAddr = await aiGambling.getAddress()
 
-        await expect(aiOracle.connect(owner).addWhitelisted(aiGamblingAddr))
-            .to.emit(aiOracle, "AddWhitelisted")
-            .withArgs(aiGamblingAddr);
-
         expect(aiOracleAddr).to.properAddress;
     });
 
@@ -48,7 +44,7 @@ describe("AIGambling", function () {
         // Fund the house with 10 ETH
         await depositHouse();
 
-        await expect(aiGambling.connect(user).placeBet(guessedNumber, { value: betAmount }))
+        await expect(aiGambling.connect(user).placeBet(guessedNumber, "", { value: betAmount }))
             .to.emit(aiGambling, "BetPlaced")
             .withArgs(user.address, betAmount, guessedNumber);
 
@@ -66,7 +62,7 @@ describe("AIGambling", function () {
         const betAmount = ethers.parseEther("0.2");
         const guessedNumber = 5;
 
-        await expect(aiGambling.connect(user).placeBet(guessedNumber, { value: betAmount }))
+        await expect(aiGambling.connect(user).placeBet(guessedNumber, "", { value: betAmount }))
             .to.be.revertedWith("Bet amount is too high")
 
         const bet = await aiGambling.bets(user.address);
@@ -82,7 +78,7 @@ describe("AIGambling", function () {
         // Fund the house with 10 ETH
         await depositHouse();
 
-        await aiGambling.connect(user).placeBet(guessedNumber, { value: betAmount });
+        await aiGambling.connect(user).placeBet(guessedNumber, "", { value: betAmount });
 
         // Submit the answer using the real AIOracle contract
         const promptId = (await aiGambling.bets(user.address)).promptId;
@@ -113,7 +109,38 @@ describe("AIGambling", function () {
         // Fund the house with 10 ETH
         await depositHouse();
 
-        await aiGambling.connect(user).placeBet(guessedNumber, { value: betAmount });
+        await aiGambling.connect(user).placeBet(guessedNumber, "", { value: betAmount });
+
+        // Submit the answer using the real AIOracle contract
+        const promptId = (await aiGambling.bets(user.address)).promptId;
+        await aiOracle.connect(owner).submitAnswer(promptId, "6");
+
+        await expect(aiGambling.connect(user).resolveBet())
+            .to.emit(aiGambling, "BetResult")
+            .withArgs(user.address, guessedNumber, 6, false, ethers.parseEther("0"));
+
+        const bet = await aiGambling.bets(user.address);
+        expect(bet.resolved).to.be.true;
+        expect(bet.won).to.be.false;
+
+        const userBalance = await aiGambling.getBalance(user.address);
+        expect(userBalance).to.equal(ethers.parseEther("0"));
+
+        const wTx = await aiGambling.connect(user).withdraw()
+        await wTx.wait()
+
+        const userBalanceAfterWithdraw = await aiGambling.getBalance(user.address);
+        expect(userBalanceAfterWithdraw).to.equal(0);
+    });
+
+    it("should resolve a bet with reasoning correctly", async function () {
+        const betAmount = ethers.parseEther("0.1");
+        const guessedNumber = 5;
+
+        // Fund the house with 10 ETH
+        await depositHouse();
+
+        await aiGambling.connect(user).placeBet(guessedNumber, "My favorite number is 7", { value: betAmount });
 
         // Submit the answer using the real AIOracle contract
         const promptId = (await aiGambling.bets(user.address)).promptId;

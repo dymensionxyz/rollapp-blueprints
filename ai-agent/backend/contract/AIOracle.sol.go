@@ -32,12 +32,12 @@ var (
 // AIOracleUnprocessedPrompt is an auto generated low-level Go binding around an user-defined struct.
 type AIOracleUnprocessedPrompt struct {
 	PromptId uint64
-	Prompt   string
+	Prompt   []string
 }
 
 // AIOracleMetaData contains all meta data concerning the AIOracle contract.
 var AIOracleMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"initialOwner\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"OwnableInvalidOwner\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"OwnableUnauthorizedAccount\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"}],\"name\":\"AnswerSubmitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"prompt\",\"type\":\"string\"}],\"name\":\"PromptSubmitted\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"answers\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"}],\"name\":\"getAnswer\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUnprocessedPrompts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"string\",\"name\":\"prompt\",\"type\":\"string\"}],\"internalType\":\"structAIOracle.UnprocessedPrompt[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestPromptId\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"}],\"name\":\"submitAnswer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"prompt\",\"type\":\"string\"}],\"name\":\"submitPrompt\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"initialOwner\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"OwnableInvalidOwner\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"OwnableUnauthorizedAccount\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"}],\"name\":\"AnswerSubmitted\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"string[]\",\"name\":\"prompt\",\"type\":\"string[]\"}],\"name\":\"PromptSubmitted\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"name\":\"answers\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"}],\"name\":\"getAnswer\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getUnprocessedPrompts\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"string[]\",\"name\":\"prompt\",\"type\":\"string[]\"}],\"internalType\":\"structAIOracle.UnprocessedPrompt[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"latestPromptId\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"}],\"name\":\"submitAnswer\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string[]\",\"name\":\"prompt\",\"type\":\"string[]\"}],\"name\":\"submitPrompt\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"\",\"type\":\"uint64\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // AIOracleABI is the input ABI used to generate the binding from.
@@ -250,7 +250,7 @@ func (_AIOracle *AIOracleCallerSession) GetAnswer(promptId uint64) (string, erro
 
 // GetUnprocessedPrompts is a free data retrieval call binding the contract method 0xd860dfb5.
 //
-// Solidity: function getUnprocessedPrompts() view returns((uint64,string)[])
+// Solidity: function getUnprocessedPrompts() view returns((uint64,string[])[])
 func (_AIOracle *AIOracleCaller) GetUnprocessedPrompts(opts *bind.CallOpts) ([]AIOracleUnprocessedPrompt, error) {
 	var out []interface{}
 	err := _AIOracle.contract.Call(opts, &out, "getUnprocessedPrompts")
@@ -267,14 +267,14 @@ func (_AIOracle *AIOracleCaller) GetUnprocessedPrompts(opts *bind.CallOpts) ([]A
 
 // GetUnprocessedPrompts is a free data retrieval call binding the contract method 0xd860dfb5.
 //
-// Solidity: function getUnprocessedPrompts() view returns((uint64,string)[])
+// Solidity: function getUnprocessedPrompts() view returns((uint64,string[])[])
 func (_AIOracle *AIOracleSession) GetUnprocessedPrompts() ([]AIOracleUnprocessedPrompt, error) {
 	return _AIOracle.Contract.GetUnprocessedPrompts(&_AIOracle.CallOpts)
 }
 
 // GetUnprocessedPrompts is a free data retrieval call binding the contract method 0xd860dfb5.
 //
-// Solidity: function getUnprocessedPrompts() view returns((uint64,string)[])
+// Solidity: function getUnprocessedPrompts() view returns((uint64,string[])[])
 func (_AIOracle *AIOracleCallerSession) GetUnprocessedPrompts() ([]AIOracleUnprocessedPrompt, error) {
 	return _AIOracle.Contract.GetUnprocessedPrompts(&_AIOracle.CallOpts)
 }
@@ -383,24 +383,24 @@ func (_AIOracle *AIOracleTransactorSession) SubmitAnswer(promptId uint64, answer
 	return _AIOracle.Contract.SubmitAnswer(&_AIOracle.TransactOpts, promptId, answer)
 }
 
-// SubmitPrompt is a paid mutator transaction binding the contract method 0x28b43144.
+// SubmitPrompt is a paid mutator transaction binding the contract method 0x9fbf4007.
 //
-// Solidity: function submitPrompt(string prompt) returns(uint64)
-func (_AIOracle *AIOracleTransactor) SubmitPrompt(opts *bind.TransactOpts, prompt string) (*types.Transaction, error) {
+// Solidity: function submitPrompt(string[] prompt) returns(uint64)
+func (_AIOracle *AIOracleTransactor) SubmitPrompt(opts *bind.TransactOpts, prompt []string) (*types.Transaction, error) {
 	return _AIOracle.contract.Transact(opts, "submitPrompt", prompt)
 }
 
-// SubmitPrompt is a paid mutator transaction binding the contract method 0x28b43144.
+// SubmitPrompt is a paid mutator transaction binding the contract method 0x9fbf4007.
 //
-// Solidity: function submitPrompt(string prompt) returns(uint64)
-func (_AIOracle *AIOracleSession) SubmitPrompt(prompt string) (*types.Transaction, error) {
+// Solidity: function submitPrompt(string[] prompt) returns(uint64)
+func (_AIOracle *AIOracleSession) SubmitPrompt(prompt []string) (*types.Transaction, error) {
 	return _AIOracle.Contract.SubmitPrompt(&_AIOracle.TransactOpts, prompt)
 }
 
-// SubmitPrompt is a paid mutator transaction binding the contract method 0x28b43144.
+// SubmitPrompt is a paid mutator transaction binding the contract method 0x9fbf4007.
 //
-// Solidity: function submitPrompt(string prompt) returns(uint64)
-func (_AIOracle *AIOracleTransactorSession) SubmitPrompt(prompt string) (*types.Transaction, error) {
+// Solidity: function submitPrompt(string[] prompt) returns(uint64)
+func (_AIOracle *AIOracleTransactorSession) SubmitPrompt(prompt []string) (*types.Transaction, error) {
 	return _AIOracle.Contract.SubmitPrompt(&_AIOracle.TransactOpts, prompt)
 }
 
@@ -783,13 +783,13 @@ func (it *AIOraclePromptSubmittedIterator) Close() error {
 // AIOraclePromptSubmitted represents a PromptSubmitted event raised by the AIOracle contract.
 type AIOraclePromptSubmitted struct {
 	PromptId uint64
-	Prompt   string
+	Prompt   []string
 	Raw      types.Log // Blockchain specific contextual infos
 }
 
-// FilterPromptSubmitted is a free log retrieval operation binding the contract event 0x403d8c597e4843d65753f1349184b185e2b87f88a8e542de450ce29f733d31e0.
+// FilterPromptSubmitted is a free log retrieval operation binding the contract event 0x46965f516fe290cf07287adfc4a64ce7a6756c115e4eb44df24acf0b849460e5.
 //
-// Solidity: event PromptSubmitted(uint64 promptId, string prompt)
+// Solidity: event PromptSubmitted(uint64 promptId, string[] prompt)
 func (_AIOracle *AIOracleFilterer) FilterPromptSubmitted(opts *bind.FilterOpts) (*AIOraclePromptSubmittedIterator, error) {
 
 	logs, sub, err := _AIOracle.contract.FilterLogs(opts, "PromptSubmitted")
@@ -799,9 +799,9 @@ func (_AIOracle *AIOracleFilterer) FilterPromptSubmitted(opts *bind.FilterOpts) 
 	return &AIOraclePromptSubmittedIterator{contract: _AIOracle.contract, event: "PromptSubmitted", logs: logs, sub: sub}, nil
 }
 
-// WatchPromptSubmitted is a free log subscription operation binding the contract event 0x403d8c597e4843d65753f1349184b185e2b87f88a8e542de450ce29f733d31e0.
+// WatchPromptSubmitted is a free log subscription operation binding the contract event 0x46965f516fe290cf07287adfc4a64ce7a6756c115e4eb44df24acf0b849460e5.
 //
-// Solidity: event PromptSubmitted(uint64 promptId, string prompt)
+// Solidity: event PromptSubmitted(uint64 promptId, string[] prompt)
 func (_AIOracle *AIOracleFilterer) WatchPromptSubmitted(opts *bind.WatchOpts, sink chan<- *AIOraclePromptSubmitted) (event.Subscription, error) {
 
 	logs, sub, err := _AIOracle.contract.WatchLogs(opts, "PromptSubmitted")
@@ -836,9 +836,9 @@ func (_AIOracle *AIOracleFilterer) WatchPromptSubmitted(opts *bind.WatchOpts, si
 	}), nil
 }
 
-// ParsePromptSubmitted is a log parse operation binding the contract event 0x403d8c597e4843d65753f1349184b185e2b87f88a8e542de450ce29f733d31e0.
+// ParsePromptSubmitted is a log parse operation binding the contract event 0x46965f516fe290cf07287adfc4a64ce7a6756c115e4eb44df24acf0b849460e5.
 //
-// Solidity: event PromptSubmitted(uint64 promptId, string prompt)
+// Solidity: event PromptSubmitted(uint64 promptId, string[] prompt)
 func (_AIOracle *AIOracleFilterer) ParsePromptSubmitted(log types.Log) (*AIOraclePromptSubmitted, error) {
 	event := new(AIOraclePromptSubmitted)
 	if err := _AIOracle.contract.UnpackLog(event, "PromptSubmitted", log); err != nil {

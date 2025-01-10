@@ -54,8 +54,12 @@ export function BetHistory() {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-gray-400">Result</p>
-                                            <p className={`text-lg ${bet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'}`}>
-                                                {bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'N/A'}
+                                            <p className={`text-lg ${
+                                                bet.canceled ? 'text-yellow-500' :
+                                                    bet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'
+                                            }`}>
+                                                {bet.canceled ? 'Canceled' :
+                                                    bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'N/A'}
                                             </p>
                                         </div>
                                     </div>
@@ -63,12 +67,12 @@ export function BetHistory() {
                                         {expandedBetIndex === index ? (
                                             <ChevronUp className="h-5 w-5 text-[rgb(var(--neon-green))]"/>
                                         ) : (
-                                            <ChevronDown className="h-5 w-5 text-[rgb(var(--neon-green))]" />
+                                            <ChevronDown className="h-5 w-5 text-[rgb(var(--neon-green))]"/>
                                         )}
                                     </div>
                                 </div>
                                 {expandedBetIndex === index && (
-                                    <BetDetails promptId={bet.promptId.toString()} />
+                                    <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} />
                                 )}
                             </div>
                         ))}

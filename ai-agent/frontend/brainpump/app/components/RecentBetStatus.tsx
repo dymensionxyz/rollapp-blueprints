@@ -10,34 +10,31 @@ import { Loader2 } from 'lucide-react'
 import { BetDetails } from './BetDetails'
 
 export function RecentBetStatus() {
-    const [aiAnswer, setAiAnswer] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const { currentBet, resolveBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
+    const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
+    const { currentBet, resolveBet, cancelBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
     const { toast } = useToast()
 
     useEffect(() => {
         const fetchAiAnswer = async () => {
-            if (currentBet?.promptId && currentBet.resolved) {
+            if (currentBet?.promptId && (currentBet.resolved || isAnswerRevealed)) {
                 try {
                     const response = await fetch(`/api/get-answer/${currentBet.promptId}`)
                     if (!response.ok) {
                         throw new Error('Failed to fetch AI answer')
                     }
                     const data = await response.json()
-                    setAiAnswer(data.answer)
                 } catch (err) {
                     console.error('Error fetching AI answer:', err)
                     setError('Failed to fetch AI answer')
                 }
-            } else {
-                setAiAnswer(null)
             }
         }
 
         fetchAiAnswer()
-    }, [currentBet])
+    }, [currentBet, isAnswerRevealed])
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -74,7 +71,7 @@ export function RecentBetStatus() {
 
     useEffect(() => {
         if (isConnected) {
-            const interval = setInterval(refreshBetInfo, 5000) // Poll every 5 seconds
+            const interval = setInterval(refreshBetInfo, 2000) // Poll every 2 seconds
             return () => clearInterval(interval)
         }
     }, [isConnected, refreshBetInfo])
@@ -92,7 +89,29 @@ export function RecentBetStatus() {
             setError(err instanceof Error ? err.message : 'Failed to resolve bet')
         } finally {
             setIsLoading(false)
+            setIsAnswerRevealed(false)
         }
+    }
+
+    const handleCancelBet = async () => {
+        setIsLoading(true)
+        setError(null)
+        try {
+            await cancelBet()
+            toast({
+                title: "Bet Canceled",
+                description: "Your bet has been successfully canceled and refunded.",
+            })
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to cancel bet')
+        } finally {
+            setIsLoading(false)
+            setIsAnswerRevealed(false)
+        }
+    }
+
+    const handleRevealAnswer = () => {
+        setIsAnswerRevealed(true);
     }
 
     return (
@@ -122,22 +141,26 @@ export function RecentBetStatus() {
                                 <p className="text-lg">{currentBet.resolved ? 'Resolved' : 'Pending'}</p>
                             </div>
                         </div>
-                        {currentBet.resolved && (
-                            <div className="grid grid-cols-2 gap-4">
+                        {(currentBet.resolved) && (
+                            <>
                                 <div className="space-y-1">
                                     <p className="text-sm text-gray-400">Result</p>
-                                    <p className={`text-lg ${currentBet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'}`}>
-                                        {currentBet.won ? 'Won' : 'Lost'}
+                                    <p className={`text-lg ${
+                                        currentBet.canceled ? 'text-yellow-500' :
+                                            currentBet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'
+                                    }`}>
+                                        {currentBet.canceled ? 'Canceled' :
+                                            currentBet.resolved ? (currentBet.won ? 'Won' : 'Lost') : 'N/A'}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm text-gray-400">Correct Number</p>
-                                    <p className="text-lg">{aiAnswer}</p>
+                                    <p className="text-lg">{currentBet.correctNumber}</p>
                                 </div>
-                            </div>
+                            </>
                         )}
                         {!currentBet.resolved && (
-                            <>
+                            <div className="space-y-4">
                                 <Button
                                     onClick={handleResolveBet}
                                     className="w-full mt-4 bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]"
@@ -152,6 +175,23 @@ export function RecentBetStatus() {
                                         'Resolve Bet'
                                     )}
                                 </Button>
+                                <Button
+                                    onClick={handleRevealAnswer}
+                                    className="w-full bg-blue-500 hover:bg-blue-600 text-white"
+                                    disabled={isLoading || !answerStatus?.exists}
+                                >
+                                    Reveal Answer
+                                </Button>
+                                <Button
+                                    onClick={handleCancelBet}
+                                    className="w-full bg-red-500 hover:bg-red-600 text-white"
+                                    disabled={isLoading}
+                                >
+                                    Cancel Bet
+                                </Button>
+                                <p className="text-sm text-gray-300 my-2">
+                                    Feel free to cancel the bet and submit fraud in case of any problems.
+                                </p>
                                 <div className="text-sm text-gray-300 mt-2">
                                     {answerStatus?.exists ? (
                                         <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve the bet now.</p>
@@ -159,10 +199,12 @@ export function RecentBetStatus() {
                                         <p>Waiting for AI answer...</p>
                                     )}
                                 </div>
-                            </>
+                            </div>
                         )}
-                        {currentBet.resolved && (
-                            <BetDetails promptId={currentBet.promptId.toString()} />
+                        {(currentBet.resolved || isAnswerRevealed) && (
+                            <>
+                                <BetDetails promptId={currentBet.promptId.toString()} persuasion={currentBet.persuasion} />
+                            </>
                         )}
                     </div>
                 ) : (

@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useContract } from '../contexts/ContractContext'
 import { useToast } from '@/components/ui/use-toast'
@@ -27,7 +28,8 @@ const formSchema = z.object({
       .max(10, { message: "Guess must be at most 10" }),
   betAmount: z.number()
       .positive({ message: "Bet amount must be positive" })
-      .min(0.0001, { message: "Minimum bet is 0.0001 ETH" })
+      .min(0.000001, { message: "Minimum bet is 0.000001 ETH" }),
+  persuasion: z.string().max(500, { message: "Persuasion must be 500 characters or less" }).optional()
 })
 
 export function BetForm() {
@@ -42,6 +44,7 @@ export function BetForm() {
     defaultValues: {
       guessedNumber: undefined,
       betAmount: undefined,
+      persuasion: '',
     },
   })
 
@@ -54,7 +57,7 @@ export function BetForm() {
     setIsLoading(true)
     setError(null)
     try {
-      await placeBet(values.guessedNumber, values.betAmount.toString())
+      await placeBet(values.guessedNumber, values.betAmount.toString(), values.persuasion || '')
       toast({
         title: "Bet Placed",
         description: "Your bet has been successfully placed!",
@@ -115,6 +118,24 @@ export function BetForm() {
                                   type="number"
                                   {...field}
                                   onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
+                                  disabled={isLoading}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )}
+                  />
+                  <FormField
+                      control={form.control}
+                      name="persuasion"
+                      render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-sm text-gray-300">Persuasion (optional)</FormLabel>
+                            <FormControl>
+                              <Textarea
+                                  {...field}
+                                  placeholder="Enter your persuasion message here..."
                                   className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                   disabled={isLoading}
                               />

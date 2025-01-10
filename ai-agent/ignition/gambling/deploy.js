@@ -4,7 +4,7 @@ const { ethers } = require("hardhat");
 async function main() {
     // 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     [ deployer ] = await ethers.getSigners();
-    const aiOracleAddr = "0xf7849A073015BA78135f372068c7eD9b65e1a3a1";
+    const aiOracleAddr = "0xF4Da41310a4Ef4254476d08EC7b163E5f930Fddb";
     console.log("Deploying contracts with the account:", deployer.address);
 
     const deployOptions = {

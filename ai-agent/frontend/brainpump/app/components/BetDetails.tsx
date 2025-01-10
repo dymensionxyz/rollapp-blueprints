@@ -4,9 +4,12 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
 import { OpenAILink } from './OpenAILink'
+import { FraudForm } from './FraudForm'
+import { Button } from '@/components/ui/button'
 
 interface BetDetailsProps {
     promptId: string
+    persuasion?: string
 }
 
 interface BetDetailsData {
@@ -15,12 +18,14 @@ interface BetDetailsData {
     thread_id: string
     run_id: string
     assistant_id: string
+    persuasion: string
 }
 
-export function BetDetails({ promptId }: BetDetailsProps) {
+export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
     const [details, setDetails] = useState<BetDetailsData | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
+    const [isFraudFormOpen, setIsFraudFormOpen] = useState(false)
 
     useEffect(() => {
         const fetchBetDetails = async () => {
@@ -32,6 +37,7 @@ export function BetDetails({ promptId }: BetDetailsProps) {
                     throw new Error('Failed to fetch bet details')
                 }
                 const data: BetDetailsData = await response.json()
+                data.persuasion = persuasion || data.persuasion
                 setDetails(data)
             } catch (err) {
                 setError('Failed to load bet details')
@@ -74,6 +80,10 @@ export function BetDetails({ promptId }: BetDetailsProps) {
                         <p className="text-lg">{details.answer}</p>
                     </div>
                     <div>
+                        <p className="text-sm text-gray-400">Persuasion</p>
+                        <p className="text-lg">{details.persuasion || 'No persuasion provided'}</p>
+                    </div>
+                    <div>
                         <p className="text-sm text-gray-400">Message ID</p>
                         <OpenAILink type="message" id={details.message_id} threadId={details.thread_id} />
                     </div>
@@ -90,6 +100,19 @@ export function BetDetails({ promptId }: BetDetailsProps) {
                         <OpenAILink type="assistant" id={details.assistant_id} />
                     </div>
                 </div>
+                <Button
+                    onClick={() => setIsFraudFormOpen(true)}
+                    className="w-full mt-4 bg-gray-500 hover:bg-gray-600 text-white"
+                >
+                    Submit Fraud
+                </Button>
+
+                {isFraudFormOpen && (
+                    <FraudForm
+                        onClose={() => setIsFraudFormOpen(false)}
+                        promptId={promptId}
+                    />
+                )}
             </CardContent>
         </Card>
     )

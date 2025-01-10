@@ -100,11 +100,20 @@ func (c *OpenAIClient) listMessages(ctx context.Context, threadID string, queryP
 }
 
 // CreateThreadAndRunMessage creates a thread and runs it with the message constructed from the given role and content.
-func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role, content string, promptID uint64) (ThreadRun, error) {
+func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role string, content []string, promptID uint64) (ThreadRun, error) {
 	var result ThreadRun
 
 	promptIDMeta := map[string]string{
 		"prompt_id": fmt.Sprintf("%d", promptID),
+	}
+
+	var msgs []CreateMessageReq
+	for _, msg := range content {
+		msgs = append(msgs, CreateMessageReq{
+			Role:     role,
+			Content:  msg,
+			Metadata: promptIDMeta,
+		})
 	}
 
 	resp, err := c.http.R().
@@ -112,11 +121,7 @@ func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role, cont
 		SetBody(CreateRunReq{
 			AssistantId: defaultAssistantID,
 			Thread: CreateThreadReq{
-				Messages: []CreateMessageReq{{
-					Role:     role,
-					Content:  content,
-					Metadata: promptIDMeta,
-				}},
+				Messages: msgs,
 				Metadata: promptIDMeta,
 			},
 			Metadata: promptIDMeta,
@@ -149,7 +154,14 @@ func (c *OpenAIClient) PollRunResult(ctx context.Context, threadID, runID string
 			c.logger.Debug("Polling run status...", "threadId", threadID, "runId", runID)
 			return r.Result().(*ThreadRun).Status != "completed"
 		})
-	return retrieveRun(ctx, pollingClient, threadID, runID)
+	run, err := retrieveRun(ctx, pollingClient, threadID, runID)
+	if err != nil {
+		return ThreadRun{}, err
+	}
+	if run.Status != "completed" {
+		return ThreadRun{}, fmt.Errorf("run is not completed after all retries: %s", run.Status)
+	}
+	return run, nil
 }
 
 func retrieveRun(ctx context.Context, client *resty.Client, threadID, runID string) (ThreadRun, error) {
@@ -312,7 +324,7 @@ type ThreadRun struct {
 	MaxPromptTokens     int                `json:"max_prompt_tokens"`
 	MaxCompletionTokens int                `json:"max_completion_tokens"`
 	TruncationStrategy  TruncationStrategy `json:"truncation_strategy"`
-	ResponseFormat      string             `json:"response_format"`
+	ResponseFormat      interface{}        `json:"response_format"`
 	ToolChoice          string             `json:"tool_choice"`
 	ParallelToolCalls   bool               `json:"parallel_tool_calls"`
 }

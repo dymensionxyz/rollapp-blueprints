@@ -10,8 +10,10 @@ interface BetInfo {
   amount: string
   guessedNumber: number
   correctNumber: number
+  persuasion: string
   resolved: boolean
   won: boolean
+  canceled: boolean
 }
 
 interface GameInfo {
@@ -33,7 +35,7 @@ interface ContractContextType {
   betHistory: BetInfo[]
   connect: () => Promise<void>
   disconnect: () => void
-  placeBet: (guessedNumber: number, amount: string) => Promise<void>
+  placeBet: (guessedNumber: number, amount: string, persuasion: string) => Promise<void>
   resolveBet: () => Promise<void>
   withdraw: () => Promise<void>
   refreshBetInfo: () => Promise<void>
@@ -43,11 +45,12 @@ interface ContractContextType {
   refreshBetHistory: () => Promise<void>
   estimateReward: (betAmount: string) => Promise<string>
   checkAnswerStatus: (promptId: BigNumberish) => Promise<{ answer: string, exists: boolean }>
+  cancelBet: () => Promise<void>
 }
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0xEdaC964FDf64Da8981d6c9319FA72d0C8A3Ca06b" // Replace with actual address
+const CONTRACT_ADDRESS = "0x50afEF9b35ac8Fa7D7395ff7acdb78C49E71dc3b" // Replace with actual address
 
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contract, setContract] = useState<Contract | null>(null)
@@ -93,13 +96,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     setBetHistory([])
   }
 
-  const placeBet = async (guessedNumber: number, amount: string) => {
+  const placeBet = async (guessedNumber: number, amount: string, persuasion: string) => {
     if (!contract) throw new Error('Not connected')
     if (guessedNumber < 1 || guessedNumber > 10) throw new Error('Invalid guess number')
     if (parseFloat(amount) <= 0) throw new Error('Invalid bet amount')
 
     try {
-      const tx = await contract.placeBet(guessedNumber, {
+      const tx = await contract.placeBet(guessedNumber, persuasion, {
         value: ethers.parseEther(amount)
       })
       await tx.wait()
@@ -143,8 +146,10 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         amount: ethers.formatEther(bet[1]),
         guessedNumber: Number(bet[2]),
         correctNumber: Number(bet[3]),
-        resolved: bet[4],
-        won: bet[5]
+        persuasion: bet[4],
+        resolved: bet[5],
+        won: bet[6],
+        canceled: bet[7]
       })
     } catch (error) {
       console.error('Error getting bet info:', error)
@@ -201,8 +206,10 @@ export function ContractProvider({ children }: { children: ReactNode }) {
         amount: ethers.formatEther(bet[1]),
         guessedNumber: Number(bet[2]),
         correctNumber: Number(bet[3]),
-        resolved: bet[4],
-        won: bet[5]
+        persuasion: bet[4],
+        resolved: bet[5],
+        won: bet[6],
+        canceled: bet[7]
       })))
     } catch (error) {
       console.error('Error getting bet history:', error)
@@ -239,6 +246,26 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error checking answer status:', error)
       throw new Error('Failed to check answer status')
+    }
+  }
+
+  const cancelBet = async () => {
+    if (!contract) throw new Error('Not connected')
+    try {
+      const tx = await contract.cancelBet()
+      await tx.wait()
+      await refreshAllInfo()
+    } catch (error: any) {
+      console.error('Error canceling bet:', error)
+      if (error.code === 4001) {
+        throw new Error('Transaction rejected by user')
+      } else if (error.data && error.data.message) {
+        throw new Error(error.data.message)
+      } else if (error.message) {
+        throw new Error(error.message)
+      } else {
+        throw new Error('Failed to cancel bet')
+      }
     }
   }
 
@@ -289,7 +316,8 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       refreshWalletBalance,
       refreshBetHistory,
       estimateReward,
-      checkAnswerStatus
+      checkAnswerStatus,
+      cancelBet
     }}>
       {children}
     </ContractContext.Provider>
