@@ -12,10 +12,10 @@
       "db_path": "db"
     },
     "contract": {
-      "poll_interval": 10000000000,
-      "node_url": "http://127.0.0.1:8545",
-      "mnemonic": "depend version wrestle document episode celery nuclear main penalty hundred trap scale candy donate search glory build valve round athlete become beauty indicate hamster",
-      "contract_address": "0x676E400d0200Ac8f3903A3CDC7cc3feaF21004d0",
+      "poll_interval": 1000000000,
+      "node_url": "https://json-rpc.ra-1.rollapp.network",
+      "mnemonic": "chalk excess welcome pool sea session pencil health region lamp library today",
+      "contract_address": "0xeC1AfdB4f65f3122D46c81f21f6A3F7C647015cf",
       "derivation_path": "m/44'/60'/0'/0/0",
       "gas_limit": 100000000,
       "gas_fee_cap": 30000000000000000,
