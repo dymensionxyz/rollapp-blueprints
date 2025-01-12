@@ -14,8 +14,33 @@
   }
 }
 
+
+
 body {
   color: var(--foreground);
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.dymension-connect-iframe {
+  position: absolute;
+  border: none;
+  outline: none;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.snack-bar-messages {
+  position: fixed;
+  bottom: 24px;
+  margin: 0 auto;
+}
+
+.snack-bar-messages .message {
+  background-color: lightblue;
+  border: 1px solid green;
+  padding: 8px 16px;
+  margin-top: 8px;
 }

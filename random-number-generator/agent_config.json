@@ -18,7 +18,7 @@
       "contract_address": "0xeC1AfdB4f65f3122D46c81f21f6A3F7C647015cf",
       "derivation_path": "m/44'/60'/0'/0/0",
       "gas_limit": 100000000,
-      "gas_fee_cap": 30000000000000000,
-      "gas_tip_cap": 10000000000000
+      "gas_fee_cap": 30000000000,
+      "gas_tip_cap": 10000000000
     }
 }

@@ -6,6 +6,7 @@ import { Button, TextField, Radio, RadioGroup, FormControlLabel } from '@mui/mat
 import { toast } from 'react-hot-toast';
 import { ethers } from 'ethers';
 import CoinFlipABI from './CoinFlipABI.json';
+import DymensionConnectWidget from "@/components/DymensionConnectWidget";
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -26,8 +27,10 @@ export default function CoinFlipGame() {
   const [gameStatus, setGameStatus] = useState<'pending' | 'completed' | null>(null);
   const [winStatus, setWinStatus] = useState<'win' | 'lose' | null>(null)
   const [houseBalance, setHouseBalance] = useState('0');
+  const [maxBet, setMaxBet] = useState<any>(null)
+  const [minBet, setMinBet] = useState<any>(null)
 
-  const CONTRACT_ADDRESS = '0x4AE5Faa5278798ff3CF7C17c659A973f2b5B1abD';
+  const CONTRACT_ADDRESS = '0xfae52eaFEB6bac9413a7210228D78AE036D348c9';
 
   const refreshWalletBalance = async () => {
     try {
@@ -52,6 +55,32 @@ export default function CoinFlipGame() {
     }
   }
 
+  const refreshMaxBet = async () => {
+    if (!coinFlipContract) return
+    try {
+      const _maxBet = await coinFlipContract.calculateMaxBetAmount() ;
+      setMaxBet(ethers.formatEther(_maxBet))
+    } catch (error) {
+      console.error('Error getting max bet:', error)
+      setHouseBalance('0')
+    }
+  }
+
+  const refreshMinBet = async () => {
+    if (!coinFlipContract) return
+    try {
+      const _minBet = await coinFlipContract.minBetAmount()
+      setMinBet(ethers.formatEther(_minBet))
+    } catch (error) {
+      console.error('Error getting min bet:', error)
+      setHouseBalance('0')
+    }
+  }
+
+  const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz/rollapps';
+  const DYMENSION_CONNECT_NETWORK_IDS = ['dymflip_248217-1'];
+  const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adym'
+
   const withdraw = async () => {
     if (!coinFlipContract) throw new Error('Not connected')
     try {
@@ -68,6 +97,8 @@ export default function CoinFlipGame() {
     await refreshWalletBalance()
     await refreshHouseBalance()
     await fetchGameStatus()
+    await refreshMaxBet()
+    await refreshMinBet()
   }
   useEffect(() => {
     if (provider && signer && coinFlipContract && connected) {
@@ -76,10 +107,10 @@ export default function CoinFlipGame() {
   }, [provider, signer, coinFlipContract, connected]);  // Зависимости от переменных
 
   useEffect(() => {
-    if (window.ethereum) {
+    if (typeof window !== 'undefined') {
       const initWeb3 = async () => {
         const ethereum = window.ethereum;
-        if (typeof ethereum !== 'undefined') {
+        if (ethereum) {
           try {
             const web3Provider = new ethers.BrowserProvider(ethereum);
             const network = await web3Provider.getNetwork();
@@ -238,7 +269,8 @@ export default function CoinFlipGame() {
   };
 
   return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 relative">
+      <div
+          className="flex items-center justify-center min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 relative">
         {/* Container for coin flip and house info */}
         <div className="relative flex items-center justify-center space-x-8 w-full max-w-screen-lg">
 
@@ -294,7 +326,7 @@ export default function CoinFlipGame() {
                     label="Your Bet (eth)"
                     type="number"
                     value={bet}
-                    onChange={(e) => setBet(Math.max(1, parseInt(e.target.value)))}
+                    onChange={(e) => setBet(parseFloat(e.target.value))}
                     fullWidth
                     inputProps={{min: 1, max: balance}}
                 />
@@ -332,7 +364,9 @@ export default function CoinFlipGame() {
               className="absolute top-1/2 right-0 transform -translate-y-1/2 p-4 bg-white rounded-lg shadow-xl w-auto max-w-xs z-20">
             <h3 className="text-lg font-semibold text-center mb-4">House Information</h3>
             <div className="text-xl font-bold text-center whitespace-nowrap">
-              House Balance: {houseBalance} ETH
+              <div>House Balance: {houseBalance} ETH</div>
+              <div>Min bet: {minBet} ETH</div>
+              <div>Max bet: {maxBet} ETH</div>
             </div>
             {/* Withdraw Button */}
             <div className="mt-4 text-center">
