@@ -11,8 +11,17 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
+import { GasPrice } from "@cosmjs/stargate";
+import {coin} from "@cosmjs/proto-signing";
+
+const CONTRACT_ADDRESS = "rol1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqg3zqxw";
+const BINARY_OPTIONS_CONTRACT_ADDRESS = "rol17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgss2u902";
+const FEE_DENOM = "awsm";
+
+
 const BinaryOptionsDApp = () => {
-    const countDownInterval = 60; // 60 segundos
+    const countDownInterval = 60;
 
     const [currentPrice, setCurrentPrice] = useState(null);
     const [balance, setBalance] = useState(0.5);
@@ -25,7 +34,6 @@ const BinaryOptionsDApp = () => {
     const [error, setError] = useState(null);
     const fixedBetAmount = 0.01; // Monto fijo de la apuesta en awsm
 
-    // Estado para Keplr
     const [walletAddress, setWalletAddress] = useState(null);
     const [keplrConnected, setKeplrConnected] = useState(false);
 
@@ -47,7 +55,7 @@ const BinaryOptionsDApp = () => {
             coinGeckoId: "local-coin",
         },
         bip44: {
-            coinType: 60,
+            coinType: 118,
         },
         bech32Config: {
             bech32PrefixAccAddr: "rol",
@@ -71,11 +79,10 @@ const BinaryOptionsDApp = () => {
                 coinDecimals: 6,
             },
         ],
-        coinType: 118,
         gasPriceStep: {
-            low: 0.01,
-            average: 0.025,
-            high: 0.04,
+            low: 0.9,
+            average: 1,
+            high: 1.2,
         },
     };
 
@@ -104,7 +111,7 @@ const BinaryOptionsDApp = () => {
     const disconnectKeplr = () => {
         setWalletAddress(null);
         setKeplrConnected(false);
-        setBalance(0.0); // Opcional: restablecer el saldo
+        setBalance(0.0);
     };
 
     const getBalance = async (address) => {
@@ -126,16 +133,108 @@ const BinaryOptionsDApp = () => {
         }
     };
 
+    const placeOption = async (direction) => {
+        if (!keplrConnected || !walletAddress) {
+            alert("Por favor, conecta tu cartera primero.");
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            console.log("creando mensaje")
+
+            const betAmount = fixedBetAmount * Math.pow(10, chainConfig.stakeCurrency.coinDecimals);
+
+
+            const msg = {
+                place_option: {
+                    direction: direction === "up" ? "up" : "down",
+                    expiration: Math.floor(Date.now() / 1000) + countDownInterval,
+                    bet_amount: {
+                        denom: chainConfig.stakeCurrency.coinMinimalDenom,
+                        amount: betAmount.toString()
+                    },
+                    market: {
+                        base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
+                        quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
+                    },
+                },
+            };
+
+            const funds = [coin(betAmount.toString(), chainConfig.stakeCurrency.coinMinimalDenom)];
+
+            console.log(msg);
+
+            const offlineSigner = window.getOfflineSigner(chainConfig.chainId);
+            const client = await SigningCosmWasmClient.connectWithSigner(
+                chainConfig.rpc,
+                offlineSigner,
+                {
+                    gasPrice: GasPrice.fromString(`1000000000awsm`),
+                }
+            );
+
+            console.log("enviando transaccion desde ", walletAddress);
+
+
+
+            // Enviar la transacción
+            const result = await client.execute(
+                walletAddress.toString(),
+                BINARY_OPTIONS_CONTRACT_ADDRESS,
+                msg,
+                250000,
+                `Apuesta ${direction === "up" ? "Sube" : "Baja"} de ${fixedBetAmount} AWSM`,
+                funds,
+            );
+
+            console.log("Transacción exitosa:", result);
+            alert("Apuesta realizada exitosamente.");
+            getBalance(walletAddress);
+        } catch (error) {
+            console.error("Error al realizar la apuesta:", error);
+            if (error instanceof Error) {
+                console.log(`Error al realizar la apuesta: ${error.message}`);
+            } else {
+                console.log("Error al realizar la apuesta. Revisa la consola para más detalles.");
+            }
+        } finally {
+            setIsLoading(false);
+            setShowConfirmation(false);
+        }
+    };
+
     const fetchBTCPrice = async () => {
         try {
             setIsLoading(true);
             setError(null);
-            const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+
+            const queryMsg = {
+                get_price: {
+                    base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
+                    quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc"
+                }
+            };
+
+            const base64Query = btoa(JSON.stringify(queryMsg));
+
+            const url = `${chainConfig.rest}/cosmwasm/wasm/v1/contract/${CONTRACT_ADDRESS}/smart/${base64Query}`;
+
+            const response = await fetch(url);
             if (!response.ok) {
-                throw new Error('Error al obtener el precio de BTC');
+                throw new Error('Error al consultar precio de BTC en el contrato');
             }
-            const data = await response.json();
-            setCurrentPrice(data.bitcoin.usd);
+
+            const result = await response.json();
+
+            const priceString = result.data?.price;
+            if (!priceString) {
+                throw new Error('La respuesta no contiene la propiedad "price"');
+            }
+
+            const priceNumber = parseFloat(priceString);
+            setCurrentPrice(priceNumber);
         } catch (err) {
             console.error(err);
             setError('No se pudo obtener el precio de BTC. Por favor, intenta de nuevo más tarde.');
@@ -149,9 +248,9 @@ const BinaryOptionsDApp = () => {
 
         const interval = setInterval(() => {
             fetchBTCPrice();
-        }, 60000); // Actualizar cada 60 segundos
+        }, 60000);
 
-        return () => clearInterval(interval); // Limpiar intervalo al desmontar
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -179,16 +278,10 @@ const BinaryOptionsDApp = () => {
     };
 
     const handleConfirmBet = () => {
-        setShowConfirmation(false);
-        setBalance(prev => prev - fixedBetAmount);
-
-        setTimeout(() => {
-            const won = Math.random() > 0.5;
-            setBetResult(won ? 'win' : 'loss');
-            if (won) {
-                setBalance(prev => prev + (fixedBetAmount * 1.9));
-            }
-        }, timeLeft * 1000);
+        console.log('Confirmando apuesta...');
+        if (selectedDirection) {
+            placeOption(selectedDirection);
+        }
     };
 
     return (

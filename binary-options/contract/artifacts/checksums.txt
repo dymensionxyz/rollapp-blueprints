@@ -1,1 +1,1 @@
-03cf75db3389667107a14ede56ea2d54bae50f57611b0f7e2a1760eedc59e014  binary_options.wasm
+3e90659eda3f858342d3b436d0f94ea51be7a715c25e1a2d437f0b644a81fb86  binary_options.wasm

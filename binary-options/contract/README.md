@@ -77,8 +77,6 @@ This outputs .json schema files in the schema/ directory.
 
 Below is a generic guide to deploying the contract to a CosmWasm-compatible chain (e.g., a local wasmd or a testnet/mainnet).
 
-Note: The exact commands may vary slightly depending on the chain you are deploying to and the CLI tool you use (e.g., wasmd, starsd, junod, etc.). Here, we will use the wasmd CLI as an example.
-
 ### 1. Start or Connect to a Node
    Local Node: If you are using a local wasmd environment, ensure it’s running and configured.
    Testnet or Mainnet: Make sure your CLI is configured to point to the correct node/RPC.
@@ -87,15 +85,11 @@ Note: The exact commands may vary slightly depending on the chain you are deploy
    First, you’ll store the optimized Wasm code on the chain:
 
 ```bash
-    wasmd tx wasm store artifacts/cosmwasm_options_contract.wasm \
-    --from <YOUR_KEY_NAME> \
-    --gas auto \
-    --gas-adjustment 1.9 \
-    --gas-prices 0.025stake \
-    -y
-    <YOUR_KEY_NAME> is the name of your local key or testnet/mainnet key configured in wasmd.
-    --gas auto --gas-adjustment 1.9 automatically estimates gas usage.
-    --gas-prices sets the gas price in the chain staking token or another token.
+rollapp-wasm tx wasm store artifacts/binary_options.wasm \
+--from rol-user \
+--gas auto \
+--gas-adjustment 1.9 \
+--fees 3791065000000000awsm
 ```
 
 After the transaction is included, look for the "code_id" in the logs (e.g., code_id: 5). You’ll need that code_id to instantiate the contract.

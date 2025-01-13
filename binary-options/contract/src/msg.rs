@@ -51,7 +51,7 @@ pub struct OptionInfo {
     pub expiration: u64,
     pub bet_amount: Coin,
     pub settled: bool,
-    pub outcome: Option<bool>, // true = ganó, false = perdió
+    pub outcome: Option<bool>,
 }
 
 #[cw_serde]
