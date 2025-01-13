@@ -61,12 +61,14 @@ func (a *Agent) Run(ctx context.Context) {
 }
 
 func (a *Agent) handleEvents(ctx context.Context, ps []contract.AIOracleUnprocessedPrompt) {
-	a.logger.Info("Got unprocessed prompts", "count", len(ps), "prompts", ps)
+	a.logger.Debug("Poll unprocessed prompts", "count", len(ps), "prompts", ps)
 	// We don't care about batching. We can process each event individually.
 	// If there are any errors, we will skip the event and try processing it on the next poll.
 	var wg sync.WaitGroup
 	wg.Add(len(ps))
 	for _, p := range ps {
+		a.logger.Info("Got unprocessed prompts", "count", len(ps), "prompts", ps)
+
 		// OpenAI calls may be time-consuming, so we process them concurrently.
 		go func() {
 			defer wg.Done()
