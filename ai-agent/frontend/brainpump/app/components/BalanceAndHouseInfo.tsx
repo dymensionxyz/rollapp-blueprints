@@ -40,29 +40,29 @@ export function BalanceAndHouseInfo() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Your House Balance</p>
-                        <p className="text-2xl font-mono text-[rgb(var(--neon-green))]">{balance} ETH</p>
+                        <p className="text-2xl font-mono text-[rgb(var(--neon-green))]">{balance} DESMOS</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Your Wallet Balance</p>
-                        <p className="text-lg">{walletBalance} ETH</p>
+                        <p className="text-lg">{walletBalance} DESMOS</p>
                     </div>
                     {gameInfo && (
                         <>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">House Supply</p>
-                                <p className="text-lg">{gameInfo.houseSupply} ETH</p>
+                                <p className="text-lg">{gameInfo.houseSupply} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">House Withdrawal Balance</p>
-                                <p className="text-lg">{gameInfo.houseActiveBalance} ETH</p>
+                                <p className="text-lg">{gameInfo.houseActiveBalance} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Min Bet Amount</p>
-                                <p className="text-lg">{gameInfo.minBetAmount} ETH</p>
+                                <p className="text-lg">{gameInfo.minBetAmount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Max Bet Amount</p>
-                                <p className="text-lg">{gameInfo.maxBetAmount} ETH</p>
+                                <p className="text-lg">{gameInfo.maxBetAmount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Max Bet Amount %</p>

@@ -38,7 +38,7 @@ export function BetHistory() {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-gray-400">Amount</p>
-                                            <p className="text-lg">{bet.amount} ETH</p>
+                                            <p className="text-lg">{bet.amount} DESMOS</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-gray-400">Guessed Number</p>

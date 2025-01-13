@@ -126,7 +126,7 @@ export function RecentBetStatus() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Amount</p>
-                                <p className="text-lg">{currentBet.amount} ETH</p>
+                                <p className="text-lg">{currentBet.amount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Your Guess</p>

@@ -28,7 +28,7 @@ const formSchema = z.object({
       .max(10, { message: "Guess must be at most 10" }),
   betAmount: z.number()
       .positive({ message: "Bet amount must be positive" })
-      .min(0.000001, { message: "Minimum bet is 0.000001 ETH" }),
+      .min(0.000001, { message: "Minimum bet is 0.000001 DESMOS" }),
   persuasion: z.string().max(500, { message: "Persuasion must be 500 characters or less" }).optional()
 })
 
@@ -149,7 +149,7 @@ export function BetForm() {
                       name="betAmount"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm text-gray-300">Bet amount (ETH)</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Bet amount (DESMOS)</FormLabel>
                             <FormControl>
                               <Input
                                   type="number"
@@ -166,7 +166,7 @@ export function BetForm() {
                   />
                   {estimatedReward && (
                       <div className="text-sm text-gray-300">
-                        Estimated reward: <span className="text-[rgb(var(--neon-green))]">{estimatedReward} ETH</span>
+                        Estimated reward: <span className="text-[rgb(var(--neon-green))]">{estimatedReward} DESMOS</span>
                       </div>
                   )}
                   <Button
