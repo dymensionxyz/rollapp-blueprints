@@ -84,14 +84,14 @@ func (a *Agent) handleEvents(ctx context.Context, ps []contract.AIOracleUnproces
 			a.logger.Info("Got prompt answer", "promptId", p.PromptId, "answer", r.Answer)
 			// Committing the result is a stateful operation. If it fails, we do not want to
 			// save the result to the repository. Contract should ensure that commit is atomic.
-			err = a.contract.SubmitAnswer(ctx, p.PromptId, r.Answer)
+			tx, err := a.contract.SubmitAnswer(ctx, p.PromptId, r.Answer)
 			if err != nil {
 				a.logger.With("error", err, "promptId", p.PromptId).
 					Info("Error on submitting answer to contract")
 				return
 			}
 
-			a.logger.Info("Answer committed to contract", "promptId", p.PromptId, "answer", r.Answer)
+			a.logger.Info("Answer committed to contract", "promptId", p.PromptId, "answer", r.Answer, "txHash", tx.Hash().String())
 			// It's not a big deal if we fail to save the response. At this point, the result
 			// is already committed to the contract, so this event will not be processed again.
 			err = a.repo.Save(p.PromptId, repository.Answer{
@@ -106,6 +106,7 @@ func (a *Agent) handleEvents(ctx context.Context, ps []contract.AIOracleUnproces
 					Info("Error on saving response to DB")
 				return
 			}
+			a.logger.Info("Answer stored in database", "promptId", p.PromptId)
 		}()
 	}
 	wg.Wait()

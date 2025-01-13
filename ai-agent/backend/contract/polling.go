@@ -34,16 +34,16 @@ func (a *AIOracleClient) ListenSmartContractEvents(ctx context.Context, eh Event
 	}
 }
 
-func (a *AIOracleClient) SubmitAnswer(ctx context.Context, promptID uint64, answer string) error {
+func (a *AIOracleClient) SubmitAnswer(ctx context.Context, promptID uint64, answer string) (*types.Transaction, error) {
 	tx, err := a.contractAPI.SubmitAnswer(a.txAuth, promptID, answer)
 	if err != nil {
-		return fmt.Errorf("submit answer: %w", err)
+		return nil, fmt.Errorf("submit answer: %w", err)
 	}
 	err = a.waitForTransaction(ctx, tx)
 	if err != nil {
-		return fmt.Errorf("wait for transaction: %w", err)
+		return nil, fmt.Errorf("wait for transaction: %w", err)
 	}
-	return nil
+	return tx, nil
 }
 
 func (a *AIOracleClient) waitForTransaction(ctx context.Context, tx *types.Transaction) error {
