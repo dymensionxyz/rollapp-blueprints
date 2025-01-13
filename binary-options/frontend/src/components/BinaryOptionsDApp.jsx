@@ -17,7 +17,7 @@ import {
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
-import { GasPrice } from "@cosmjs/stargate";
+import {calculateFee, GasPrice} from "@cosmjs/stargate";
 import { coin } from "@cosmjs/proto-signing";
 
 // Contract Addresses
@@ -26,8 +26,6 @@ const BINARY_OPTIONS_CONTRACT_ADDRESS = "rol17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfk
 
 // Fixed Values
 const FIXED_EXPIRATION = 1700000000;
-const FIXED_GAS = "250000";
-const FIXED_GAS_PRICE = "1000000000awsm";
 const FIXED_BET_AMOUNT_AWSM = "10000"; // 0.01 AWSM
 
 // Chain Configuration
@@ -39,7 +37,7 @@ const chainConfig = {
     stakeCurrency: {
         coinDenom: "AWSM",
         coinMinimalDenom: "awsm",
-        coinDecimals: 6,
+        coinDecimals: 18,
         coinGeckoId: "local-coin",
     },
     bip44: {
@@ -57,21 +55,16 @@ const chainConfig = {
         {
             coinDenom: "AWSM",
             coinMinimalDenom: "awsm",
-            coinDecimals: 6,
+            coinDecimals: 18,
         },
     ],
     feeCurrencies: [
         {
             coinDenom: "AWSM",
             coinMinimalDenom: "awsm",
-            coinDecimals: 6,
+            coinDecimals: 18,
         },
     ],
-    gasPriceStep: {
-        low: 0.9,
-        average: 1,
-        high: 1.2,
-    },
 };
 
 const BinaryOptionsDApp = () => {
@@ -174,27 +167,32 @@ const BinaryOptionsDApp = () => {
             const client = await SigningCosmWasmClient.connectWithSigner(
                 chainConfig.rpc,
                 offlineSigner,
-                {
-                    gasPrice: GasPrice.fromString(FIXED_GAS_PRICE),
-                    prefix: chainConfig.bech32Config.bech32PrefixAccAddr,
-                }
             );
+
+            let fee = {
+                gas: "2500000000000",
+                amount: [
+                    {
+                        denom: "awsm",
+                        amount: "10000000000",
+                    },
+                ],
+            };
 
             const result = await client.execute(
                 walletAddress,
                 BINARY_OPTIONS_CONTRACT_ADDRESS,
                 msg,
-                FIXED_GAS,
+                fee,
                 `Bet ${direction === "up" ? "Up" : "Down"} ${FIXED_BET_AMOUNT} AWSM`,
                 funds,
             );
 
             console.log("Transaction successful:", result);
-            alert("Bet placed successfully.");
+
             await getBalance(walletAddress);
         } catch (error) {
             console.error("Error placing bet:", error);
-            alert('Could not place the bet. Please check the console for more details.');
         } finally {
             setIsLoading(false);
             setShowConfirmation(false);
