@@ -1,11 +1,11 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-    const aiGamblingAddr = "0x50afEF9b35ac8Fa7D7395ff7acdb78C49E71dc3b";
+    const aiGamblingAddr = "0x2BCC5563fB9E958Bd25156A4964e9db8923a420b";
     // owner address: 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     [ owner ] = await ethers.getSigners();
 
-    console.log(`Executing AIGambling contract with: AIAgent: ${owner.address}`);
+    console.log(`Depositing supply to AIGambling contract with the account: ${owner.address}`);
 
     const AIGambling = await ethers.getContractAt("AIGambling", aiGamblingAddr);
 

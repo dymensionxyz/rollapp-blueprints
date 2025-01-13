@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from 'react
 import { ethers } from 'ethers'
 import type { Contract, BigNumberish } from 'ethers'
 import AIGamblingABI from './AIGamblingABI.json';
+import { useToast } from '@/components/ui/use-toast'
 
 interface BetInfo {
   promptId: BigNumberish
@@ -33,6 +34,7 @@ interface ContractContextType {
   gameInfo: GameInfo | null
   walletBalance: string
   betHistory: BetInfo[]
+  hexAddress: string
   connect: () => Promise<void>
   disconnect: () => void
   placeBet: (guessedNumber: number, amount: string, persuasion: string) => Promise<void>
@@ -50,25 +52,43 @@ interface ContractContextType {
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0x50afEF9b35ac8Fa7D7395ff7acdb78C49E71dc3b" // Replace with actual address
+const CONTRACT_ADDRESS = "0x2BCC5563fB9E958Bd25156A4964e9db8923a420b" // Replace with actual address
+
+const NETWORK_PARAMS = {
+    chainId: '0x69D6F', // 433519 in hexadecimal
+    chainName: 'Desmos Testnet',
+    nativeCurrency: {
+        name: 'DESMOS',
+        symbol: 'DESMOS',
+        decimals: 18
+    },
+    rpcUrls: ['https://json-rpc.ra-2.rollapp.network'],
+    blockExplorerUrls: []
+}
 
 export function ContractProvider({ children }: { children: ReactNode }) {
   const [contract, setContract] = useState<Contract | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [address, setAddress] = useState('')
+  const [hexAddress, setHexAddress] = useState('')
   const [currentBet, setCurrentBet] = useState<BetInfo | null>(null)
   const [balance, setBalance] = useState('0')
   const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
   const [walletBalance, setWalletBalance] = useState('0')
   const [betHistory, setBetHistory] = useState<BetInfo[]>([])
+  const { toast } = useToast()
 
   const connect = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
+        await checkAndAddNetwork()
+
         await window.ethereum.request({ method: 'eth_requestAccounts' })
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner()
         const contract = new ethers.Contract(CONTRACT_ADDRESS, AIGamblingABI, signer)
+
+        console.log('Signer:', signer)
 
         setContract(contract)
         setAddress(await signer.getAddress())
@@ -85,10 +105,43 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const checkAndAddNetwork = async () => {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        // Check if the network is already added
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: NETWORK_PARAMS.chainId }],
+        })
+      } catch (switchError: any) {
+        // This error code indicates that the chain has not been added to MetaMask
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [NETWORK_PARAMS],
+            })
+            toast({
+              title: "Network Added",
+              description: "The Dymension RollApp network has been added to your wallet.",
+            })
+          } catch (addError) {
+            console.error('Error adding network:', addError)
+            setError('Failed to add network to wallet')
+          }
+        } else {
+          console.error('Error switching network:', switchError)
+          setError('Failed to switch network')
+        }
+      }
+    }
+  }
+
   const disconnect = () => {
     setContract(null)
     setIsConnected(false)
     setAddress('')
+    setHexAddress('')
     setCurrentBet(null)
     setBalance('0')
     setGameInfo(null)
@@ -300,6 +353,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       contract,
       isConnected,
       address,
+      hexAddress,
       currentBet,
       balance,
       gameInfo,
