@@ -78,13 +78,13 @@ export default function CoinFlipGame() {
 
   const NETWORK_PARAMS = {
     chainId: '0x3C999', // 433519 in hexadecimal
-    chainName: 'Desmos Testnet',
+    chainName: 'CoinFlip Testnet',
     nativeCurrency: {
-      name: 'DESMOS',
-      symbol: 'DESMOS',
+      name: 'DYM',
+      symbol: 'DYM',
       decimals: 18
     },
-    rpcUrls: ['https://json-rpc.ra-2.rollapp.network'],
+    rpcUrls: ['https://json-rpc.ra-1.rollapp.network'],
     blockExplorerUrls: []
   }
 
@@ -124,9 +124,9 @@ export default function CoinFlipGame() {
   const refreshWalletBalance = async () => {
     if (!address) return
     try {
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const balance = await provider.getBalance(hexAddress)
-        setBalance(ethers.formatEther(balance));
+      const provider = new ethers.BrowserProvider(window.ethereum)
+      const balance = await provider.getBalance(hexAddress)
+      setBalance(ethers.formatEther(balance));
     } catch (error) {
       console.error('Error getting wallet balance:', error);
       setBalance('0');
@@ -566,4 +566,3 @@ export default function CoinFlipGame() {
       </div>
   );
 }
-
