@@ -52,7 +52,7 @@ interface ContractContextType {
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0xfDF642436fC929D0E2B291EEA7D17BB470d4be90" // Replace with actual address
+const CONTRACT_ADDRESS = "0x3741EB714B68d4378dBF80bB22c125776AD0B233" // Replace with actual address
 
 const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
