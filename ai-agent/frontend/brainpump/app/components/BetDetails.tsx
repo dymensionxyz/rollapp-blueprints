@@ -83,10 +83,9 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
                         <p className="text-sm text-gray-400">Jail Break</p>
                         <p className="text-lg">{details.persuasion || 'No Jail Break provided'}</p>
                     </div>
-                    <div>
-                        <p className="text-sm text-gray-400">Verify Game Result</p>
-                        <OpenAILink type="thread" id={details.thread_id} />
-                    </div>
+                </div>
+                <div>
+                    <OpenAILink type="thread" id={details.thread_id}/>
                 </div>
                 <Button
                     onClick={() => setIsFraudFormOpen(true)}

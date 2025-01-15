@@ -193,7 +193,7 @@ export function RecentBetStatus() {
                             </div>
                         )}
                         {currentBet.resolved && (
-                            <BetDetails promptId={currentBet.promptId.toString()} />
+                            <BetDetails promptId={currentBet.promptId.toString()} persuasion={currentBet.persuasion} />
                         )}
                     </div>
                 ) : (

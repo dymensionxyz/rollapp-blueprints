@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 
 interface OpenAILinkProps {
     type: 'thread' | 'message' | 'run' | 'assistant'
@@ -26,13 +27,13 @@ export function OpenAILink({ type, id, threadId }: OpenAILinkProps) {
     }
 
     return (
-        <button
+        <Button
             onClick={handleClick}
-            className="text-[rgb(var(--neon-green))] hover:underline focus:outline-none"
+            className="w-full bg-blue-500 hover:bg-blue-600 text-white"
             disabled={isLoading}
         >
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin inline-block" /> : id}
-        </button>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin inline-block" /> : 'Verify Game Result'}
+        </Button>
     )
 }
 
