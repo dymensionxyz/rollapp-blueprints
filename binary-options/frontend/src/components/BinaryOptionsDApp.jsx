@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useCallback, useRef} from 'react';
 import {
     ArrowUpCircle,
     ArrowDownCircle,
@@ -27,6 +27,10 @@ const BINARY_OPTIONS_CONTRACT_ADDRESS = "rol17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfk
 // Fixed Values
 const FIXED_EXPIRATION = 1700000000;
 const FIXED_BET_AMOUNT_AWSM = "10000"; // 0.01 AWSM
+
+const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
+const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
+const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'uuod'
 
 // Chain Configuration
 const chainConfig = {
@@ -71,6 +75,37 @@ const BinaryOptionsDApp = () => {
     // Constants
     const COUNT_DOWN_INTERVAL = 60;
     const FIXED_BET_AMOUNT = 0.01; // Fixed bet amount in AWSM
+
+    const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);
+    const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
+    const buttonRef = useRef(null);
+    const iframeRef = useRef(null);
+
+    const sendMessage = useCallback((message) => iframeRef.current?.contentWindow?.postMessage(message, DYMENSION_CONNECT_URL), []);
+
+    const updateTriggerBoundingRect = useCallback(() => {
+        const boundingRect = buttonRef.current?.getBoundingClientRect();
+        if (boundingRect) {
+            sendMessage({type: 'setTriggerBoundingRect', rect: boundingRect});
+        }
+    }, [sendMessage]);
+
+    const initModal = useCallback(() => {
+        updateTriggerBoundingRect();
+        sendMessage({
+            type: 'setStyles',
+            styles: {
+                '--black-light': 'rgb(63 81 59)',
+                '--black-light-rgb': '63, 81, 59',
+                '--black-dark': 'rgb(27 40 24)',
+                '--black-dark-rgb': '27, 40, 24',
+                '--background-color': 'rgb(42 59 42)',
+                '--background-color-secondary': 'rgb(63 78 63)'
+            }
+        });
+        sendMessage({type: 'setMenuAlign', align: 'center'});
+    }, [sendMessage, updateTriggerBoundingRect]);
+
 
     // States
     const [currentPrice, setCurrentPrice] = useState(null);
@@ -308,6 +343,17 @@ const BinaryOptionsDApp = () => {
                     <Clock className="w-4 h-4 mr-1" />
                     <span>{formatTime(timeLeft)}</span>
                 </div>
+            </div>
+            <div>
+                <iframe
+                    ref={iframeRef}
+                    onLoad={initModal}
+                    style={{display: dymensionConnectOpen ? 'block' : 'none'}}
+                    allow='clipboard-read; clipboard-write; camera'
+                    title='dymension-connect'
+                    className='dymension-connect-iframe'
+                    src={`${DYMENSION_CONNECT_URL}/connect?networkIds=${DYMENSION_CONNECT_NETWORK_IDS.join(',')}`}
+                />
             </div>
 
             {/* Keplr Connection */}
