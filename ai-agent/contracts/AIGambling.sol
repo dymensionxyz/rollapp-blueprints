@@ -127,24 +127,27 @@ contract AIGambling is House {
         require(!bet.resolved, "Bet already resolved");
 
         string memory correctNumberStr = aiOracle.getAnswer(bet.promptId);
-
-        // TODO: Use OpenZeppelin's Strings.parseUint256 method after v5.2.0 is released.
-        uint256 correctNumber = stringToUint(correctNumberStr);
-
-        bet.resolved = true;
-        bet.correctNumber = correctNumber;
-
         uint256 reward = 0;
-        if (bet.guessedNumber == correctNumber) {
-            reward = calculateReward(bet.amount);
-            bet.won = true;
-            addBalance(msg.sender, reward);
+
+        if (validateAIAnswer(correctNumberStr)) {
+            // TODO: Use OpenZeppelin's Strings.parseUint256 method after v5.2.0 is released.
+            bet.correctNumber = stringToUint(correctNumberStr);
+
+            if (bet.guessedNumber == bet.correctNumber) {
+                reward = calculateReward(bet.amount);
+                bet.won = true;
+                addBalance(msg.sender, reward);
+            }
+        } else {
+            // Refund the bet amount if the AI system returned an invalid answer
+            bet.canceled = true;
+            addBalance(msg.sender, bet.amount);
         }
 
-        // Store the bet in the history
+        bet.resolved = true;
         history[msg.sender].push(bet);
 
-        emit BetResult(msg.sender, bet.guessedNumber, correctNumber, bet.won, reward);
+        emit BetResult(msg.sender, bet.guessedNumber, bet.correctNumber, bet.won, reward);
     }
 
     /**
@@ -155,13 +158,32 @@ contract AIGambling is House {
         require(!bet.resolved, "Bet already resolved");
         require(!bet.canceled, "Bet already canceled");
 
+        (, bool exists) = checkAnswerStatus(bet.promptId);
+        require(!exists, "Cannot cancel a bet with a resolved prompt");
+
         bet.resolved = true;
         bet.canceled = true;
 
-        // Store the bet in the history
         history[msg.sender].push(bet);
 
-        payable(msg.sender).transfer(bet.amount);
+        addBalance(msg.sender, bet.amount);
+    }
+
+    function validateAIAnswer(string memory answer) internal pure returns (bool) {
+        if (bytes(answer).length == 0) {
+            return false;
+        }
+        // Now we assume that the contract may only work with numbers from 1 to 10.
+        if (bytes(answer).length > 2) {
+            return false;
+        }
+        // We expect to see only digits in the answer.
+        for (uint256 i = 0; i < bytes(answer).length; i++) {
+            if (bytes(answer)[i] < 0x30 || bytes(answer)[i] > 0x39) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**
@@ -213,14 +235,14 @@ contract AIGambling is House {
      * @return The maximum bet amount.
      */
     function calculateMaxBetAmount() internal view returns (uint256) {
-        return calculateNonWithdrawalBalance() * maxBetAmountPercentage / 100;
+        return calculateActiveBalance() * maxBetAmountPercentage / 100;
     }
 
     /**
      * @dev Function to check the status of the answer for a given prompt ID.
      * @param promptId The ID of the prompt.
      */
-    function checkAnswerStatus(uint64 promptId) external view returns (string memory answer, bool exists) {
+    function checkAnswerStatus(uint64 promptId) public view returns (string memory answer, bool exists) {
         try aiOracle.getAnswer(promptId) returns (string memory _answer) {
             return (_answer, true);
         } catch {
@@ -235,7 +257,7 @@ contract AIGambling is House {
     function getGameInfo() external view returns (GameInfo memory) {
         return GameInfo({
             houseSupply: address(this).balance,
-            houseActiveBalance: withdrawalBalance,
+            houseActiveBalance: calculateActiveBalance(),
             minBetAmount: minBetAmount,
             maxBetAmount: calculateMaxBetAmount(),
             maxBetAmountPercentage: maxBetAmountPercentage

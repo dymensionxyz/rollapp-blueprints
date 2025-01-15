@@ -52,7 +52,7 @@ interface ContractContextType {
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0x2BCC5563fB9E958Bd25156A4964e9db8923a420b" // Replace with actual address
+const CONTRACT_ADDRESS = "0xfDF642436fC929D0E2B291EEA7D17BB470d4be90" // Replace with actual address
 
 const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
@@ -83,12 +83,9 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       try {
         await checkAndAddNetwork()
 
-        await window.ethereum.request({ method: 'eth_requestAccounts' })
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner()
         const contract = new ethers.Contract(CONTRACT_ADDRESS, AIGamblingABI, signer)
-
-        console.log('Signer:', signer)
 
         setContract(contract)
         setAddress(await signer.getAddress())

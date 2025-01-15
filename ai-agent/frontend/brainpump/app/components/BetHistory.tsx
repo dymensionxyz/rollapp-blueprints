@@ -33,7 +33,7 @@ export function BetHistory() {
                                 >
                                     <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
                                         <div className="space-y-1">
-                                            <p className="text-sm text-gray-400">Prompt ID</p>
+                                            <p className="text-sm text-gray-400">Game ID</p>
                                             <p className="text-lg">{bet.promptId}</p>
                                         </div>
                                         <div className="space-y-1">

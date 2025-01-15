@@ -95,7 +95,7 @@ export function BetInfo() {
                     <p className="text-lg">{currentBet.guessedNumber}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-400">Prompt ID</p>
+                    <p className="text-sm text-gray-400">Game ID</p>
                     <p className="text-lg">{currentBet.promptId.toString()}</p>
                   </div>
                 </div>

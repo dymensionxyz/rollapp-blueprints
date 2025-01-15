@@ -36,7 +36,7 @@ func (c *OpenAIClient) CreateMessage(ctx context.Context, role, content string, 
 		return ThreadMessage{}, fmt.Errorf("failed to create message: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to create message: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessage{}, fmt.Errorf("failed to create message: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -57,7 +57,7 @@ func (c *OpenAIClient) RetrieveMessage(ctx context.Context, messageID string) (T
 		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -93,7 +93,7 @@ func (c *OpenAIClient) listMessages(ctx context.Context, threadID string, queryP
 		return ThreadMessageList{}, fmt.Errorf("failed to list messages: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessageList{}, fmt.Errorf("failed to list messages: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessageList{}, fmt.Errorf("failed to list messages: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -134,7 +134,7 @@ func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role strin
 		return ThreadRun{}, fmt.Errorf("failed to create run: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadRun{}, fmt.Errorf("failed to create run: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadRun{}, fmt.Errorf("failed to create run: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -179,7 +179,7 @@ func retrieveRun(ctx context.Context, client *resty.Client, threadID, runID stri
 		return ThreadRun{}, fmt.Errorf("failed to retrieve run: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadRun{}, fmt.Errorf("failed to retrieve run: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadRun{}, fmt.Errorf("failed to retrieve run: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil

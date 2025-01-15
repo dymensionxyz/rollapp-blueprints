@@ -80,24 +80,12 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
                         <p className="text-lg">{details.answer}</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-400">Persuasion</p>
-                        <p className="text-lg">{details.persuasion || 'No persuasion provided'}</p>
+                        <p className="text-sm text-gray-400">Jail Break</p>
+                        <p className="text-lg">{details.persuasion || 'No Jail Break provided'}</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-400">Message ID</p>
-                        <OpenAILink type="message" id={details.message_id} threadId={details.thread_id} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-400">Thread ID</p>
+                        <p className="text-sm text-gray-400">Verify Game Result</p>
                         <OpenAILink type="thread" id={details.thread_id} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-400">Run ID</p>
-                        <OpenAILink type="run" id={details.run_id} threadId={details.thread_id} />
-                    </div>
-                    <div>
-                        <p className="text-sm text-gray-400">Assistant ID</p>
-                        <OpenAILink type="assistant" id={details.assistant_id} />
                     </div>
                 </div>
                 <Button

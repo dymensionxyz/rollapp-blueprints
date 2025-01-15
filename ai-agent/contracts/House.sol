@@ -39,7 +39,7 @@ contract House is Ownable {
      * @param amount The amount to withdraw.
      */
     function withdrawSupply(uint256 amount) external onlyOwner {
-        require(amount <= calculateNonWithdrawalBalance(), "House: insufficient non-withdrawal balance");
+        require(amount <= calculateActiveBalance(), "House: insufficient non-withdrawal balance");
         payable(msg.sender).transfer(amount);
     }
 
@@ -101,15 +101,15 @@ contract House is Ownable {
     /**
      * @dev Returns the total non-withdrawal balance of the house.
      */
-    function getNonWithdrawalBalance() external view returns (uint256) {
-        return calculateNonWithdrawalBalance();
+    function activeBalance() external view returns (uint256) {
+        return calculateActiveBalance();
     }
 
     /**
      * @dev Internal function to calculate the non-withdrawal balance of the house.
      * @return The non-withdrawal balance.
      */
-    function calculateNonWithdrawalBalance() internal view returns (uint256) {
+    function calculateActiveBalance() internal view returns (uint256) {
         return address(this).balance - withdrawalBalance;
     }
 

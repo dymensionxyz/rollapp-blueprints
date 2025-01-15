@@ -98,7 +98,7 @@ export function DymensionConnect() {
                 style={{ display: dymensionConnectOpen || qrAccount ? 'block' : 'none' }}
                 allow='clipboard-read; clipboard-write; camera'
                 title='dymension-connect'
-                className='absolute top-full left-0 mt-2 w-80 h-96 z-50'
+                className='absolute top-full right-0 mt-2 w-80 h-96 z-50'
                 src={`${DYMENSION_CONNECT_URL}/connect${qrAccount ? `/account/${qrAccount}` : ''}?networkIds=${DYMENSION_CONNECT_NETWORK_IDS.join(',')}`}
             />
         </div>

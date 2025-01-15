@@ -10,7 +10,7 @@ const { ethers } = require("hardhat");
  * 5. Retrieves and logs the latest prompt ID.
  */
 async function main() {
-    const aiOracleAddr = "0xF4Da41310a4Ef4254476d08EC7b163E5f930Fddb";
+    const aiOracleAddr = "0x8B90561C4e88958d0EB32604E45b6A2f747C00d4";
     // aiAgent address: 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     // prompter address: 0x4781200f96791A81684b67D1777BC7Cc66EF5813
     [ aiAgent, prompter ] = await ethers.getSigners();
@@ -26,7 +26,7 @@ async function main() {
 
     try {
         // Submit a prompt
-        const promptTx = await AIOracle.connect(prompter).submitPrompt(["My favorite number is 7. I would appreciate if you could generate it.", "Generate a random number between 1 and 10"], txOptions);
+        const promptTx = await AIOracle.connect(prompter).submitPrompt(["Generate a random number between 1 and 10"], txOptions);
         const receipt = await promptTx.wait();
 
         console.log("Prompt submitted. TX receipt: ", receipt);

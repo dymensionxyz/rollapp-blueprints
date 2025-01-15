@@ -13,19 +13,19 @@ export function RecentBetStatus() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const [isAnswerRevealed, setIsAnswerRevealed] = useState(false)
     const { currentBet, resolveBet, cancelBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
     const { toast } = useToast()
 
     useEffect(() => {
         const fetchAiAnswer = async () => {
-            if (currentBet?.promptId && (currentBet.resolved || isAnswerRevealed)) {
+            if (currentBet?.promptId && currentBet.resolved) {
                 try {
                     const response = await fetch(`/api/get-answer/${currentBet.promptId}`)
                     if (!response.ok) {
                         throw new Error('Failed to fetch AI answer')
                     }
                     const data = await response.json()
+                    setAnswerStatus({ answer: data.answer, exists: true })
                 } catch (err) {
                     console.error('Error fetching AI answer:', err)
                     setError('Failed to fetch AI answer')
@@ -34,7 +34,7 @@ export function RecentBetStatus() {
         }
 
         fetchAiAnswer()
-    }, [currentBet, isAnswerRevealed])
+    }, [currentBet])
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -89,7 +89,6 @@ export function RecentBetStatus() {
             setError(err instanceof Error ? err.message : 'Failed to resolve bet')
         } finally {
             setIsLoading(false)
-            setIsAnswerRevealed(false)
         }
     }
 
@@ -106,18 +105,14 @@ export function RecentBetStatus() {
             setError(err instanceof Error ? err.message : 'Failed to cancel bet')
         } finally {
             setIsLoading(false)
-            setIsAnswerRevealed(false)
         }
     }
 
-    const handleRevealAnswer = () => {
-        setIsAnswerRevealed(true);
-    }
 
     return (
         <Card className="neon-border glass-effect border-0 h-full">
             <CardHeader>
-                <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Recent Bet Status</CardTitle>
+                <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Last Bet Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
                 {error && <ErrorDisplay title="Bet Error" message={error} />}
@@ -126,14 +121,14 @@ export function RecentBetStatus() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Amount</p>
-                                <p className="text-lg">{currentBet.amount} DESMOS</p>
+                                <p className="text-lg">{currentBet.amount} ETH</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Your Guess</p>
                                 <p className="text-lg">{currentBet.guessedNumber}</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-sm text-gray-400">Prompt ID</p>
+                                <p className="text-sm text-gray-400">Game ID</p>
                                 <p className="text-lg">{currentBet.promptId.toString()}</p>
                             </div>
                             <div className="space-y-1">
@@ -141,6 +136,12 @@ export function RecentBetStatus() {
                                 <p className="text-lg">{currentBet.resolved ? 'Resolved' : 'Pending'}</p>
                             </div>
                         </div>
+                        {currentBet.persuasion && (
+                            <div className="space-y-1">
+                                <p className="text-sm text-gray-400">Persuasion</p>
+                                <p className="text-lg">{currentBet.persuasion}</p>
+                            </div>
+                        )}
                         {(currentBet.resolved) && (
                             <>
                                 <div className="space-y-1">
@@ -176,22 +177,12 @@ export function RecentBetStatus() {
                                     )}
                                 </Button>
                                 <Button
-                                    onClick={handleRevealAnswer}
-                                    className="w-full bg-blue-500 hover:bg-blue-600 text-white"
-                                    disabled={isLoading || !answerStatus?.exists}
-                                >
-                                    Reveal Answer
-                                </Button>
-                                <Button
                                     onClick={handleCancelBet}
                                     className="w-full bg-red-500 hover:bg-red-600 text-white"
-                                    disabled={isLoading}
+                                    disabled={isLoading || answerStatus?.exists}
                                 >
                                     Cancel Bet
                                 </Button>
-                                <p className="text-sm text-gray-300 my-2">
-                                    Feel free to cancel the bet and submit fraud in case of any problems.
-                                </p>
                                 <div className="text-sm text-gray-300 mt-2">
                                     {answerStatus?.exists ? (
                                         <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve the bet now.</p>
@@ -201,10 +192,8 @@ export function RecentBetStatus() {
                                 </div>
                             </div>
                         )}
-                        {(currentBet.resolved || isAnswerRevealed) && (
-                            <>
-                                <BetDetails promptId={currentBet.promptId.toString()} persuasion={currentBet.persuasion} />
-                            </>
+                        {currentBet.resolved && (
+                            <BetDetails promptId={currentBet.promptId.toString()} />
                         )}
                     </div>
                 ) : (

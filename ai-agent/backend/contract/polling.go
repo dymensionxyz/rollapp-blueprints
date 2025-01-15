@@ -47,7 +47,12 @@ func (a *AIOracleClient) SubmitAnswer(ctx context.Context, promptID uint64, answ
 }
 
 func (a *AIOracleClient) waitForTransaction(ctx context.Context, tx *types.Transaction) error {
-	receipt, err := bind.WaitMined(ctx, a.ethClient, tx)
+	// WaitMinted is a blocking call that may stuck. Use a timeout.
+	// TODO: Make configurable
+	timeoutCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
+	receipt, err := bind.WaitMined(timeoutCtx, a.ethClient, tx)
 	if err != nil {
 		return fmt.Errorf("wait minted: %w", err)
 	}
