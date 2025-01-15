@@ -152,7 +152,7 @@ const BinaryOptionsDApp = () => {
                     expiration: FIXED_EXPIRATION,
                     bet_amount: {
                         denom: chainConfig.stakeCurrency.coinMinimalDenom,
-                        amount: FIXED_BET_AMOUNT_AWSM
+                        amount: FIXED_BET_AMOUNT_AWSM,
                     },
                     market: {
                         base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
@@ -161,36 +161,56 @@ const BinaryOptionsDApp = () => {
                 },
             };
 
-            const funds = [coin(FIXED_BET_AMOUNT_AWSM, chainConfig.stakeCurrency.coinMinimalDenom)];
+            const funds = [
+                {
+                    denom: chainConfig.stakeCurrency.coinMinimalDenom,
+                    amount: FIXED_BET_AMOUNT_AWSM,
+                },
+            ];
 
             const offlineSigner = window.getOfflineSigner(chainConfig.chainId);
             const client = await SigningCosmWasmClient.connectWithSigner(
                 chainConfig.rpc,
-                offlineSigner,
+                offlineSigner
             );
 
-            let fee = {
-                gas: "2500000000000",
-                amount: [
-                    {
-                        denom: "awsm",
-                        amount: "10000000000",
-                    },
-                ],
+            const msgExecuteContract = {
+                typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+                value: {
+                    sender: walletAddress,
+                    contract: BINARY_OPTIONS_CONTRACT_ADDRESS,
+                    msg: new TextEncoder().encode(JSON.stringify(msg)),
+                    funds: funds,
+                },
             };
 
-            const result = await client.execute(
-                walletAddress,
-                BINARY_OPTIONS_CONTRACT_ADDRESS,
-                msg,
-                fee,
-                `Bet ${direction === "up" ? "Up" : "Down"} ${FIXED_BET_AMOUNT} AWSM`,
-                funds,
-            );
+            const gasSimulation = await client.simulate(walletAddress, [msgExecuteContract], "");
+            console.log("gas simulation", gasSimulation);
 
-            console.log("Transaction successful:", result);
+            const gas = parseInt(gasSimulation * 1.4 * 1_000_000);
+            console.log("gas", gas);
 
-            await getBalance(walletAddress);
+            const fee = {
+                amount: [
+                    {
+                        denom: chainConfig.stakeCurrency.coinMinimalDenom,
+                        amount: String(parseInt(gasSimulation)),
+                    },
+                ],
+                gas: String(gas),
+            };
+
+            const result = await client.signAndBroadcast(walletAddress, [msgExecuteContract], fee);
+
+            if (result.code === 0) {
+                console.log("Transaction successful:", result);
+                // Vuelves a pedir el balance, etc.
+                await getBalance(walletAddress);
+            } else {
+                console.error("Transaction failed:", result);
+                alert(`Transaction failed with code: ${result.code}`);
+            }
+
         } catch (error) {
             console.error("Error placing bet:", error);
         } finally {
