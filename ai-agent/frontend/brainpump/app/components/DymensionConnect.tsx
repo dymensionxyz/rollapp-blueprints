@@ -14,7 +14,7 @@ export function DymensionConnect() {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const { address, connect, disconnect } = useContract();
 
-    // const qrAccount = useMemo(() => new URLSearchParams(window.location.search).get('qrAccount'), []);
+    const qrAccount = useMemo(() => new URLSearchParams(window.location.search).get('qrAccount'), []);
 
     const sendMessage = useCallback((message: any) => {
         iframeRef.current?.contentWindow?.postMessage(message, DYMENSION_CONNECT_URL);
