@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --neon-green: 126, 255, 0;
+  --graphite: 42, 42, 42;
+  --dark-gray: 32, 32, 32;
+  
+  --background: var(--graphite);
+  --foreground: 255, 255, 255;
+  
+  --card: 48, 48, 48;
+  --card-foreground: 255, 255, 255;
+  
+  --primary: var(--neon-green);
+  --primary-foreground: 0, 0, 0;
+  
+  --muted: 82, 82, 82;
+  --muted-foreground: 199, 199, 199;
+  
+  --accent: var(--neon-green);
+  --accent-foreground: 0, 0, 0;
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+}
+
+.neon-border {
+  position: relative;
+}
+
+.neon-border::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid rgba(var(--neon-green), 0.5);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.glass-effect {
+  background: rgba(48, 48, 48, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+

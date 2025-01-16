@@ -74,9 +74,16 @@ func StartCmd() *cobra.Command {
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
-			openAI := external.NewOpenAIClient(cmdCtx.Logger, cmdCtx.Config.External)
+			openAI := external.NewOpenAIClient(
+				cmdCtx.Logger.With("module", "openAI"),
+				cmdCtx.Config.External,
+			)
 
-			aiOracle, err := contract.NewAIOracleClient(ctx, cmdCtx.Logger, cmdCtx.Config.Contract)
+			aiOracle, err := contract.NewAIOracleClient(
+				ctx,
+				cmdCtx.Logger.With("module", "contract"),
+				cmdCtx.Config.Contract,
+			)
 			if err != nil {
 				return fmt.Errorf("new AI oracle client: %w", err)
 			}
