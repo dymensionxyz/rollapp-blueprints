@@ -62,10 +62,10 @@ export interface Config {
 
 
 // Adjust these values according to your chain:
-const CHAIN_ID = "your-chain-id"
-const RPC_ENDPOINT = "https://rpc.your-network.io"
+const CHAIN_ID = "upordown_30607-1"
+const RPC_ENDPOINT = "https://testnet.dymension.xyz"
 const CONTRACT_ADDRESS = "wasm1abcdefg..." // Your contract address
-const FEE_DENOM = "uatom" // Denomination for the fee (uJUNO, uOSMO, etc.)
+const FEE_DENOM = "uuad" // Denomination for the fee
 const GAS_PRICE = "0.025" // Adjust according to your network
 
 // Interface for our context

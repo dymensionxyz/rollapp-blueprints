@@ -4,15 +4,17 @@ import  { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useContract } from './contexts/ContractContext.js';
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
-const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'uuod'
+//const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
+const DYMENSION_CONNECT_NETWORK_IDS = ['wasmrollercontracts_419174-1'];
+const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'uwroco'
 
 export function DymensionConnect() {
     const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);
     const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
     const buttonRef = useRef(null);
     const iframeRef = useRef(null);
-    const { address, connect, disconnect } = useContract();
+
+    const [address, setAddress] = useState("")
 
     const qrAccount = useMemo(() => new URLSearchParams(window.location.search).get('qrAccount'), []);
 
@@ -64,11 +66,11 @@ export function DymensionConnect() {
                 setDymensionConnectOpen(event.data.value);
             }
             if (event.data.type === 'connect') {
-                connect();
+                setAddress(event.data.value);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'disconnect') {
-                disconnect();
+                setAddress("");
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'wallet-error') {
@@ -77,7 +79,7 @@ export function DymensionConnect() {
         }
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, [connect, disconnect, updateTriggerBoundingRect]);
+    }, [updateTriggerBoundingRect]);
 
     return (
         <div className="relative">

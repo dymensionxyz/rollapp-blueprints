@@ -1,10 +1,11 @@
 import BinaryOptionsDApp from './components/BinaryOptionsDApp';
+import { ContractProvider } from './components/contexts/ContractContext';
 
 function App() {
     return (
-        <div>
+        <ContractProvider>
             <BinaryOptionsDApp />
-        </div>
+        </ContractProvider>
     );
 }
 
