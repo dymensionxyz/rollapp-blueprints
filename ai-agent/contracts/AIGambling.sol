@@ -38,20 +38,11 @@ contract AIGambling is House {
     // Mapping to store the history of bets by user address
     mapping(address => Bet[]) public history;
 
-    event BetPlaced(address indexed user, uint256 betAmount, uint256 guessedNumber);
-    event BetResult(address indexed user, uint256 guessedNumber, uint256 correctNumber, bool won, uint256 reward);
+    event BetPlaced(address indexed user, Bet bet);
+    event BetResolved(address indexed user, Bet bet, uint256 communityFee);
 
     // Instance of the AIOracle contract
     AIOracle private aiOracle;
-
-    // Minimum bet amount
-    uint256 public minBetAmount = 0.01 ether;
-
-    // Maximum bet amount as a percentage of the house balance
-    uint256 public maxBetAmountPercentage = 1;
-
-    // House fee percentage on winnings
-    uint256 public houseFeePercentage = 5;
 
     /**
      * @dev Structure to represent the game information.
@@ -90,7 +81,7 @@ contract AIGambling is House {
     function placeBet(uint256 guessedNumber, string memory persuasion) external payable {
         require(bets[msg.sender].amount == 0 || bets[msg.sender].resolved, "Resolve your current bet first");
         require(msg.value >= minBetAmount, "Bet amount is too low");
-        require(msg.value <= calculateMaxBetAmount(), "Bet amount is too high");
+        require(msg.value <= maxBetAmount(), "Bet amount is too high");
 
         string[] memory prompt;
         if (bytes(persuasion).length > 0) {
@@ -105,7 +96,7 @@ contract AIGambling is House {
 
         uint64 promptId = aiOracle.submitPrompt(prompt);
 
-        bets[msg.sender] = Bet({
+        Bet memory bet = Bet({
             promptId: promptId,
             amount: msg.value,
             guessedNumber: guessedNumber,
@@ -116,7 +107,9 @@ contract AIGambling is House {
             canceled: false
         });
 
-        emit BetPlaced(msg.sender, msg.value, guessedNumber);
+        bets[msg.sender] = bet;
+
+        emit BetPlaced(msg.sender, bet);
     }
 
     /**
@@ -128,15 +121,19 @@ contract AIGambling is House {
 
         string memory correctNumberStr = aiOracle.getAnswer(bet.promptId);
         uint256 reward = 0;
+        uint256 communityFee = 0;
 
         if (validateAIAnswer(correctNumberStr)) {
             // TODO: Use OpenZeppelin's Strings.parseUint256 method after v5.2.0 is released.
             bet.correctNumber = stringToUint(correctNumberStr);
 
             if (bet.guessedNumber == bet.correctNumber) {
-                reward = calculateReward(bet.amount);
+                reward = estimateReward(bet.amount);
+                communityFee = estimateCommunityFee(bet.amount);
+                reward -= communityFee;
                 bet.won = true;
                 addBalance(msg.sender, reward);
+                collectFee(communityFee);
             }
         } else {
             // Refund the bet amount if the AI system returned an invalid answer
@@ -147,26 +144,7 @@ contract AIGambling is House {
         bet.resolved = true;
         history[msg.sender].push(bet);
 
-        emit BetResult(msg.sender, bet.guessedNumber, bet.correctNumber, bet.won, reward);
-    }
-
-    /**
-     * @dev Function to cancel a bet. The user must call this function to cancel their bet.
-     */
-    function cancelBet() external {
-        Bet storage bet = bets[msg.sender];
-        require(!bet.resolved, "Bet already resolved");
-        require(!bet.canceled, "Bet already canceled");
-
-        (, bool exists) = checkAnswerStatus(bet.promptId);
-        require(!exists, "Cannot cancel a bet with a resolved prompt");
-
-        bet.resolved = true;
-        bet.canceled = true;
-
-        history[msg.sender].push(bet);
-
-        addBalance(msg.sender, bet.amount);
+        emit BetResolved(msg.sender, bet, communityFee);
     }
 
     function validateAIAnswer(string memory answer) internal pure returns (bool) {
@@ -202,40 +180,15 @@ contract AIGambling is House {
     }
 
     /**
-     * @dev Function to get the bet history of a user.
-     * @param user The address of the user.
-     * @return The bet history of the user.
-     */
-    function getBetHistory(address user) external view returns (Bet[] memory) {
-        return history[user];
-    }
-
-    /**
      * @dev Function to estimate the reward for a given bet amount.
      * @param betAmount The bet amount.
      * @return The estimated reward.
      */
-    function estimateReward(uint256 betAmount) external view returns (uint256) {
-        return calculateReward(betAmount);
-    }
-
-    /**
-     * @dev Function to estimate the maximum bet amount.
-     * @return The estimated maximum bet amount.
-     */
-    function calculateReward(uint256 betAmount) internal view returns (uint256) {
+    function estimateReward(uint256 betAmount) public view returns (uint256) {
         // We generate a number between 1 and 10, inclusive. So the win chance is 1 of 10.
         // The reward multiplier is 10 minus the house fee percentage F.
         // So the reward is 10B - F, where B is a bet amount.
         return (10 * betAmount * (100 - houseFeePercentage)) / 100;
-    }
-
-    /**
-     * @dev Function to calculate the maximum bet amount based on the house balance and the percentage.
-     * @return The maximum bet amount.
-     */
-    function calculateMaxBetAmount() internal view returns (uint256) {
-        return calculateActiveBalance() * maxBetAmountPercentage / 100;
     }
 
     /**
@@ -257,26 +210,10 @@ contract AIGambling is House {
     function getGameInfo() external view returns (GameInfo memory) {
         return GameInfo({
             houseSupply: address(this).balance,
-            houseActiveBalance: calculateActiveBalance(),
+            houseActiveBalance: activeBalance(),
             minBetAmount: minBetAmount,
-            maxBetAmount: calculateMaxBetAmount(),
+            maxBetAmount: maxBetAmount(),
             maxBetAmountPercentage: maxBetAmountPercentage
         });
-    }
-
-    /**
-     * @dev Function to update the minimum bet amount. Only callable by the owner.
-     * @param newAmount The new minimum bet amount.
-     */
-    function updateMinBetAmount(uint256 newAmount) external onlyOwner {
-        minBetAmount = newAmount;
-    }
-
-    /**
-     * @dev Function to update the house fee percentage. Only callable by the owner.
-     * @param newPercentage The new house fee percentage.
-     */
-    function updateHouseFeePercentage(uint256 newPercentage) external onlyOwner {
-        houseFeePercentage = newPercentage;
     }
 }
