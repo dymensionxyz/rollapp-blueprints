@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Governance} from "./Governance.sol";
+import {FeeCollector} from "./FeeCollector.sol";
 
 /**
  * @title House
@@ -14,9 +16,21 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * internal functions {addBalance} and {reduceBalance} to manage the balances
  * of the players.
  */
-contract House is Ownable {
+contract House is Ownable, Governance, FeeCollector {
+    // Minimum bet amount
+    uint256 public minBetAmount = 0.01 ether;
+
+    // Maximum bet amount as a percentage of the house balance
+    uint256 public maxBetAmountPercentage = 1;
+
+    // House fee percentage on winnings
+    uint256 public houseFeePercentage = 5;
+
+    // Community pool percentage on winnings
+    uint256 public communityPoolPercentage = 10;
+
     // Mapping to store the balance of each player
-    mapping(address => uint256) private balances;
+    mapping(address => uint256) public balances;
 
     // Tracks the withdrawal balance – the balance the users might immediately
     // withdraw. The actual contract balance may be higher. The owner can only
@@ -39,7 +53,7 @@ contract House is Ownable {
      * @param amount The amount to withdraw.
      */
     function withdrawSupply(uint256 amount) external onlyOwner {
-        require(amount <= calculateActiveBalance(), "House: insufficient non-withdrawal balance");
+        require(amount <= activeBalance(), "House: insufficient non-withdrawal balance");
         payable(msg.sender).transfer(amount);
     }
 
@@ -77,6 +91,15 @@ contract House is Ownable {
     }
 
     /**
+     * @dev Fallback function to accept Ether. This function is called when
+     * Ether is sent to the contract.
+     */
+    receive() external payable {
+        balances[msg.sender] += msg.value;
+        withdrawalBalance += msg.value;
+    }
+
+    /**
      * @dev Internal function to reduce a specified amount from a user's balance.
      * The function may be used by derived contracts to manage the balances of
      * the players.
@@ -90,49 +113,59 @@ contract House is Ownable {
     }
 
     /**
-     * @dev Returns the balance of a specified user.
-     * @param user The address of the user.
-     * @return The balance of the user.
+     * @dev Returns the total active balance of the house.
+     * @return The active balance.
      */
-    function getBalance(address user) external view returns (uint256) {
-        return balances[user];
-    }
-
-    /**
-     * @dev Returns the total non-withdrawal balance of the house.
-     */
-    function activeBalance() external view returns (uint256) {
-        return calculateActiveBalance();
-    }
-
-    /**
-     * @dev Internal function to calculate the non-withdrawal balance of the house.
-     * @return The non-withdrawal balance.
-     */
-    function calculateActiveBalance() internal view returns (uint256) {
+    function activeBalance() internal view returns (uint256) {
         return address(this).balance - withdrawalBalance;
     }
 
     /**
-     * @dev Returns the total supply of the house.
+     * @dev Function to estimate the community fee based on the amount.
+     * @param amount The amount to calculate the fee for.
+     * @return The community fee.
      */
-    function houseSupply() external view returns (uint256) {
-        return address(this).balance;
+    function estimateCommunityFee(uint256 amount) public view returns (uint256) {
+        return amount * communityPoolPercentage / 100;
     }
 
     /**
-     * @dev Returns the total active balance of the house.
+     * @dev Function to calculate the maximum bet amount based on the house balance and the percentage.
+     * @return The maximum bet amount.
      */
-    function houseWithdrawalBalance() external view returns (uint256) {
-        return withdrawalBalance;
+    function maxBetAmount() internal view returns (uint256) {
+        return activeBalance() * maxBetAmountPercentage / 100;
     }
 
     /**
-     * @dev Fallback function to accept Ether. This function is called when
-     * Ether is sent to the contract.
+     * @dev Function to update the minimum bet amount. Only callable by the owner.
+     * @param newAmount The new minimum bet amount.
      */
-    receive() external payable {
-        balances[msg.sender] += msg.value;
-        withdrawalBalance += msg.value;
+    function updateMinBetAmount(uint256 newAmount) external onlyGovernance {
+        minBetAmount = newAmount;
+    }
+
+    /**
+     * @dev Function to update the maximum bet amount percentage. Only callable by the owner.
+     * @param newPercentage The new maximum bet amount percentage.
+     */
+    function updateMaxBetAmountPercentage(uint256 newPercentage) external onlyGovernance {
+        maxBetAmountPercentage = newPercentage;
+    }
+
+    /**
+     * @dev Function to update the house fee percentage. Only callable by the owner.
+     * @param newPercentage The new house fee percentage.
+     */
+    function updateHouseFeePercentage(uint256 newPercentage) external onlyGovernance {
+        houseFeePercentage = newPercentage;
+    }
+
+    /**
+     * @dev Function to update the community pool percentage. Only callable by the owner.
+     * @param newPercentage The new community pool percentage.
+     */
+    function updateCommunityPoolPercentage(uint256 newPercentage) external onlyGovernance {
+        communityPoolPercentage = newPercentage;
     }
 }
