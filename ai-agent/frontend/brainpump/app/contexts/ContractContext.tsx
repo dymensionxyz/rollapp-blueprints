@@ -58,8 +58,8 @@ const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
     chainName: 'Desmos Testnet',
     nativeCurrency: {
-        name: 'DESMOS',
-        symbol: 'DESMOS',
+        name: 'NIM',
+        symbol: 'NIM',
         decimals: 18
     },
     rpcUrls: ['https://json-rpc.ra-2.rollapp.network'],

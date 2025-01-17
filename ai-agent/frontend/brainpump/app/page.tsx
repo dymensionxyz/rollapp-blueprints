@@ -7,23 +7,23 @@ import { BetHistory } from './components/BetHistory'
 
 export default function Home() {
     return (
-        <main className="min-h-screen relative bg-[rgb(var(--graphite))]">
+        <main className="min-h-screen relative bg-white">
             <div className="absolute top-4 right-4 z-10">
-                <DymensionConnect/>
+                <DymensionConnect />
             </div>
 
             <div className="container mx-auto px-4 py-12">
                 {/* Hero Section */}
                 <div className="flex flex-col items-center justify-center mb-12">
                     <Image
-                        src="/brainpump_logo.png"
-                        alt="BrainPump Logo"
+                        src="/favicon.svg"
+                        alt="Nim Logo"
                         width={280}
                         height={140}
                         className="mb-8"
                         priority
                     />
-                    <h1 className="sr-only">BrainPump - Jailbreak an AI to Win</h1>
+                    <h1 className="sr-only">Jailbreak an AI to Win</h1>
                 </div>
 
                 {/* Main Content */}
