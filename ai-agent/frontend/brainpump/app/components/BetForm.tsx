@@ -36,7 +36,8 @@ export function BetForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
-  const { placeBet, isConnected, currentBet, estimateReward } = useContract()
+  const [estimatedCommunityFee, setEstimatedCommunityFee] = useState<string | null>(null)
+  const { placeBet, isConnected, currentBet, estimateReward, estimateCommunityFee } = useContract()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,6 +79,9 @@ export function BetForm() {
         try {
           const reward = await estimateReward(betAmount.toString())
           setEstimatedReward(reward)
+
+          const fee = await estimateCommunityFee(betAmount.toString())
+          setEstimatedCommunityFee(fee)
         } catch (err) {
           console.error('Failed to estimate reward:', err)
           setEstimatedReward(null)
@@ -164,9 +168,10 @@ export function BetForm() {
                           </FormItem>
                       )}
                   />
-                  {estimatedReward && (
+                  {estimatedReward && estimatedCommunityFee && (
                       <div className="text-sm text-gray-600">
-                        Estimated reward: <span className="text-[rgb(var(--neon-green))]">{estimatedReward} NIM</span>
+                        <p>Estimated reward: <span className="text-[rgb(var(--neon-green))]">{+estimatedReward - +estimatedCommunityFee} NIM</span></p>
+                        <p>Estimated community fee: <span className="text-[rgb(var(--neon-green))]">{estimatedCommunityFee} NIM</span></p>
                       </div>
                   )}
                   <Button

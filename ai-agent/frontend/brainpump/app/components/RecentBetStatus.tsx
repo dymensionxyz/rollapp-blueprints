@@ -13,7 +13,7 @@ export function RecentBetStatus() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const { currentBet, resolveBet, cancelBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
+    const { currentBet, resolveBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
     const { toast } = useToast()
 
     useEffect(() => {
@@ -92,22 +92,6 @@ export function RecentBetStatus() {
         }
     }
 
-    const handleCancelBet = async () => {
-        setIsLoading(true)
-        setError(null)
-        try {
-            await cancelBet()
-            toast({
-                title: "Bet Canceled",
-                description: "Your bet has been successfully canceled and refunded.",
-            })
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to cancel bet')
-        } finally {
-            setIsLoading(false)
-        }
-    }
-
 
     return (
         <Card className="neon-border glass-effect border-0 h-full">
@@ -175,13 +159,6 @@ export function RecentBetStatus() {
                                     ) : (
                                         'Resolve Bet'
                                     )}
-                                </Button>
-                                <Button
-                                    onClick={handleCancelBet}
-                                    className="w-full bg-red-500 hover:bg-red-600 text-white"
-                                    disabled={isLoading || answerStatus?.exists}
-                                >
-                                    Cancel Bet
                                 </Button>
                                 <div className="text-sm text-gray-600 mt-2">
                                     {answerStatus?.exists ? (

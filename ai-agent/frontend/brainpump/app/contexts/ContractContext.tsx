@@ -46,13 +46,13 @@ interface ContractContextType {
   refreshWalletBalance: () => Promise<void>
   refreshBetHistory: () => Promise<void>
   estimateReward: (betAmount: string) => Promise<string>
+  estimateCommunityFee: (betAmount: string) => Promise<string>
   checkAnswerStatus: (promptId: BigNumberish) => Promise<{ answer: string, exists: boolean }>
-  cancelBet: () => Promise<void>
 }
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0x3741EB714B68d4378dBF80bB22c125776AD0B233" // Replace with actual address
+const CONTRACT_ADDRESS = "0xADD60403BFc7e76C0670E835cAEb606569bc9ddE" // Replace with actual address
 
 const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
@@ -81,7 +81,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
   const connect = async () => {
     if (typeof window.ethereum !== 'undefined') {
       try {
-        await checkAndAddNetwork()
+        // await checkAndAddNetwork()
 
         const provider = new ethers.BrowserProvider(window.ethereum)
         const signer = await provider.getSigner()
@@ -210,7 +210,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
   const refreshBalance = async () => {
     if (!contract || !address) return
     try {
-      const balance = await contract.getBalance(address)
+      const balance = await contract.balances(address)
       setBalance(ethers.formatEther(balance))
     } catch (error) {
       console.error('Error getting balance:', error)
@@ -250,7 +250,7 @@ export function ContractProvider({ children }: { children: ReactNode }) {
   const refreshBetHistory = async () => {
     if (!contract || !address) return
     try {
-      const history = await contract.getBetHistory(address)
+      const history = await contract.getHistory(address)
       setBetHistory(history.map((bet: any) => ({
         promptId: bet[0],
         amount: ethers.formatEther(bet[1]),
@@ -288,6 +288,17 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const estimateCommunityFee = async (betAmount: string) => {
+    if (!contract) throw new Error('Not connected')
+    try {
+      const reward = await contract.estimateCommunityFee(ethers.parseEther(betAmount))
+      return ethers.formatEther(reward)
+    } catch (error) {
+      console.error('Error estimating community fee:', error)
+      throw new Error('Failed to estimate community fee')
+    }
+  }
+
   const checkAnswerStatus = async (promptId: BigNumberish) => {
     if (!contract) throw new Error('Not connected')
     try {
@@ -296,26 +307,6 @@ export function ContractProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Error checking answer status:', error)
       throw new Error('Failed to check answer status')
-    }
-  }
-
-  const cancelBet = async () => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const tx = await contract.cancelBet()
-      await tx.wait()
-      await refreshAllInfo()
-    } catch (error: any) {
-      console.error('Error canceling bet:', error)
-      if (error.code === 4001) {
-        throw new Error('Transaction rejected by user')
-      } else if (error.data && error.data.message) {
-        throw new Error(error.data.message)
-      } else if (error.message) {
-        throw new Error(error.message)
-      } else {
-        throw new Error('Failed to cancel bet')
-      }
     }
   }
 
@@ -367,8 +358,8 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       refreshWalletBalance,
       refreshBetHistory,
       estimateReward,
-      checkAnswerStatus,
-      cancelBet
+      estimateCommunityFee,
+      checkAnswerStatus
     }}>
       {children}
     </ContractContext.Provider>

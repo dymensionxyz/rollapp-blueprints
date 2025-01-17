@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import { WalletConnect } from './components/WalletConnect'
 import { DymensionConnect } from './components/DymensionConnect'
 import { BetForm } from './components/BetForm'
 import { RecentBetStatus } from './components/RecentBetStatus'
@@ -9,7 +10,7 @@ export default function Home() {
     return (
         <main className="min-h-screen relative bg-white">
             <div className="absolute top-4 right-4 z-10">
-                <DymensionConnect />
+                <WalletConnect />
             </div>
 
             <div className="container mx-auto px-4 py-12">

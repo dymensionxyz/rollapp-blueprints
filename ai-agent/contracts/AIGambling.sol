@@ -216,4 +216,13 @@ contract AIGambling is House {
             maxBetAmountPercentage: maxBetAmountPercentage
         });
     }
+
+    /**
+     * @dev Function to get the bet history of a user.
+     * @param user The address of the user.
+     * @return The bet history of the user.
+     */
+    function getHistory(address user) external view returns (Bet[] memory) {
+        return history[user];
+    }
 }
