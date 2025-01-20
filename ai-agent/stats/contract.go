@@ -127,16 +127,21 @@ func WatchContractLogs(
 	}
 }
 
+// HandleEventLog is a callback function that processes the contract events.
+// In the current implementation, the events are just printed in STDOUT, but
+// it can be easily modified to store them in a database or any other storage.
 func HandleEventLog(logger tmlog.Logger, contract *AIGambling) func(types.Log) error {
 	return func(log types.Log) error {
 		betPlaced, err := contract.ParseBetPlaced(log)
 		if err == nil {
+			// Here you can store the event in a database or any other storage
 			logger.Info("Got BetPlaced!", "event", betPlaced)
 			return nil
 		}
 
 		betResolved, err := contract.ParseBetResolved(log)
 		if err == nil {
+			// Here you can store the event in a database or any other storage
 			logger.Info("Got BetResolved!", "event", betResolved)
 			return nil
 		}

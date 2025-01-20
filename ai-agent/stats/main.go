@@ -19,7 +19,7 @@ type IndexerConfig struct {
 
 func DefaultConfig() IndexerConfig {
 	return IndexerConfig{
-		ContractAddress: "0xADD60403BFc7e76C0670E835cAEb606569bc9ddE",
+		ContractAddress: "0xEAcA423bF35A0C41d80d37Dc89C87C47baceE4FF",
 		NodeEvmRpcUrl:   "http://0.0.0.0:8545",
 		NodeRpcUrl:      "http://127.0.0.1:26657",
 		WSEndpoint:      "/websocket",
