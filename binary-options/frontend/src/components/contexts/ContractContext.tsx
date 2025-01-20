@@ -5,13 +5,20 @@ import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate";
 import { OfflineSigner } from "@cosmjs/proto-signing";
 import { GasPrice } from "@cosmjs/stargate";
 
+declare global {
+    interface Window {
+        keplr?: any;
+        getOfflineSigner?: any;
+    }
+}
+
 // types.ts
 export interface MarketPair {
     base: string
     quote: string
 }
 
-export type Direction = "Up" | "Down"
+export type Direction = "up" | "down"
 
 // Message for PlaceOption
 export interface PlaceOptionMsg {
@@ -63,9 +70,9 @@ export interface Config {
 
 // Adjust these values according to your chain:
 const CHAIN_ID = "upordown_30607-1"
-const RPC_ENDPOINT = "https://testnet.dymension.xyz"
-const CONTRACT_ADDRESS = "wasm1abcdefg..." // Your contract address
-const FEE_DENOM = "uuad" // Denomination for the fee
+const RPC_ENDPOINT = "https://rpc.ra-3.rollapp.network/"
+const CONTRACT_ADDRESS = "uod1aakfpghcanxtc45gpqlx8j3rq0zcpyf49qmhm9mdjrfx036h4z5sm3q99x"
+const FEE_DENOM = "uuod" // Denomination for the fee
 const GAS_PRICE = "0.025" // Adjust according to your network
 
 // Interface for our context
@@ -117,16 +124,20 @@ export function ContractProvider({ children }: { children: ReactNode }) {
      * Connects with Keplr, creates a SigningCosmWasmClient, and saves the user's address.
      */
     const connect = async () => {
+        console.log("Connecting...")
         try {
             if (!window.keplr) {
                 throw new Error("Keplr extension not found")
             }
 
-            // Enable the chain in Keplr if it's not already configured
+            const response = await fetch(RPC_ENDPOINT)
+            if (!response.ok) {
+                throw new Error(`RPC endpoint error: ${response.statusText}`)
+            }
+
             await window.keplr.enable(CHAIN_ID)
             const offlineSigner: OfflineSigner = window.getOfflineSigner!(CHAIN_ID)
 
-            // Create the client
             const signingClient = await SigningCosmWasmClient.connectWithSigner(
                 RPC_ENDPOINT,
                 offlineSigner,
@@ -135,9 +146,10 @@ export function ContractProvider({ children }: { children: ReactNode }) {
                 }
             )
 
-            // Extract the address from the first account
             const accounts = await offlineSigner.getAccounts()
+            console.log("Accounts:", accounts)
             const walletAddress = accounts[0]?.address
+            console.log("Wallet address:", walletAddress)
 
             if (!walletAddress) {
                 throw new Error("No account found")
@@ -152,15 +164,9 @@ export function ContractProvider({ children }: { children: ReactNode }) {
                 description: `Connected to wallet: ${walletAddress}`,
             })
 
-            // Upon connecting, refresh the base info (config, etc.)
             await refreshAll()
         } catch (error: any) {
-            console.error("Error connecting:", error)
-            console.log({
-                title: "Connection Error",
-                description: error?.message || String(error),
-                variant: "destructive",
-            })
+            console.error("Detailed connection error:", error)
             throw error
         }
     }
@@ -190,19 +196,22 @@ export function ContractProvider({ children }: { children: ReactNode }) {
             throw new Error("You are not connected to the wallet")
         }
 
-        // The ExecuteMsg in CosmWasm is constructed as { place_option: { ... } }
         const execMsg: ExecuteMsg = {
             place_option: msg,
         }
 
+
+
         try {
+            console.log("address before execute:", address);
+
             const result = await client.execute(
-                address,           // sender
-                CONTRACT_ADDRESS,  // contract
-                execMsg,           // msg
-                "auto",            // fee => "auto" uses estimation
-                "Place Option",    // memo
-                [                  // funds to send
+                address,
+                CONTRACT_ADDRESS,
+                execMsg,
+                "auto",
+                "Place Option",
+                [
                     {
                         denom: msg.bet_amount.denom,
                         amount: msg.bet_amount.amount,

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import {
     ArrowUpCircle,
     ArrowDownCircle,
-    Wallet,
     Clock,
     ChevronRight
 } from 'lucide-react';
@@ -19,7 +18,6 @@ import {
     AlertDialogTitle,
 } from "./ui/alert-dialog";
 
-// Importas tu hook y tipos desde el contexto
 import { useContract } from './contexts/ContractContext';
 import { PlaceOptionMsg } from './contexts/ContractContext';
 
@@ -46,7 +44,7 @@ const BinaryOptionsDApp = () => {
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
     ];
 
-    const {isConnected, placeOption } = useContract();
+    const { isConnected, placeOption } = useContract();
 
     const fetchBTCPrice = async () => {
         try {
@@ -96,6 +94,7 @@ const BinaryOptionsDApp = () => {
     }, [timeLeft]);
 
     const handleDirectionSelect = (direction: 'up' | 'down') => {
+        console.log(`Selected direction: ${direction}`);
         setSelectedDirection(direction);
         setShowConfirmation(true);
     };
@@ -107,7 +106,7 @@ const BinaryOptionsDApp = () => {
             setIsLoading(true);
 
             const msg: PlaceOptionMsg = {
-                direction: selectedDirection === 'up' ? 'Up' : 'Down',
+                direction: selectedDirection === 'up' ? 'up' : 'down',
                 expiration: FIXED_EXPIRATION,
                 bet_amount: {
                     denom: "auod",
@@ -121,9 +120,6 @@ const BinaryOptionsDApp = () => {
 
             await placeOption(msg);
             console.log("Option placed!");
-
-            // Aquí podrías refrescar balance, precio, etc. si tu contexto
-            // no lo hace automáticamente (ej: refreshAll).
         } catch (error) {
             console.error("Error placing bet:", error);
         } finally {

@@ -2,7 +2,7 @@
 
 import  { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {Wallet} from "lucide-react";
-import { useContract } from './contexts/ContractContext';
+import {useContract} from "./contexts/ContractContext";
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
@@ -13,6 +13,8 @@ export function DymensionConnect() {
     const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
     const buttonRef = useRef(null);
     const iframeRef = useRef(null);
+
+    const { connect } = useContract();
 
     const [address, setAddress] = useState("")
 
@@ -66,6 +68,7 @@ export function DymensionConnect() {
                 setDymensionConnectOpen(event.data.value);
             }
             if (event.data.type === 'connect') {
+                connect();
                 setAddress(event.data.address);
                 updateTriggerBoundingRect();
             }
@@ -91,6 +94,7 @@ export function DymensionConnect() {
                     updateTriggerBoundingRect();
                 }}
                 className="px-4 py-2 bg-[rgb(34,34,34)] text-white border border-[rgb(60,179,113)] rounded-md hover:bg-[rgb(60,179,113)] hover:text-black transition-all flex items-center space-x-2 shadow-md"
+
             >
                 <Wallet className="w-5 h-5"/>
                 <span>
