@@ -24,6 +24,8 @@ import { useContract } from './contexts/ContractContext';
 import { PlaceOptionMsg } from './contexts/ContractContext';
 
 import { DymensionConnect } from "./DymensionConnect";
+import BtcPriceDisplay from "./BtcPriceDisplay";
+import config from "../config/config"; // Import the new component
 
 const CONTRACT_ADDRESS = "uod1yyca08xqdgvjz0psg56z67ejh9xms6l436u8y58m82npdqqhmmtqlwc5fc";
 const BINARY_OPTIONS_CONTRACT_ADDRESS = "uod1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqp29xpd";
@@ -55,26 +57,27 @@ const BinaryOptionsDApp = () => {
             setIsLoading(true);
             setError(null);
 
-            const encodedQuery = btoa(JSON.stringify({
+            const query = {
                 get_price: {
                     base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
-                    quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc"
-                }
-            }));
-            const url = `http://34.76.101.17:1317/cosmwasm/wasm/v1/contract/${CONTRACT_ADDRESS}/smart/${encodedQuery}`;
-            console.log("Fetching BTC price from contract..." + url);
+                    quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
+                },
+            };
+            const encodedQuery = btoa(JSON.stringify(query));
+            const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.contractAddress}/smart/${encodedQuery}`;
+
+            console.log(`Fetching BTC price from contract: ${url}`);
 
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Error fetching BTC price from contract');
+            if (!response.ok) throw new Error('Failed to fetch BTC price');
 
-            const result = await response.json();
-            const priceString = result.data?.price;
-            if (!priceString) throw new Error('No "price" property in response');
+            const { data } = await response.json();
+            if (!data?.price) throw new Error('Price data missing');
 
-            setCurrentPrice(parseFloat(priceString));
-        } catch (err: any) {
+            setCurrentPrice(parseFloat(data.price));
+        } catch (err) {
             console.error(err);
-            setError('Could not fetch BTC price. Please try again later.');
+            setError('Unable to retrieve BTC price. Please try again later.');
         } finally {
             setIsLoading(false);
         }
@@ -96,9 +99,6 @@ const BinaryOptionsDApp = () => {
         }
     }, [timeLeft]);
 
-    // ------------------------------------------------------------------
-    // MANEJO DE APUESTAS
-    // ------------------------------------------------------------------
     const handleDirectionSelect = (direction: 'up' | 'down') => {
         // Aquí podrías checar balance, etc.
         // En este ejemplo, lo omito para simplificar.
@@ -126,7 +126,6 @@ const BinaryOptionsDApp = () => {
                 },
             };
 
-            // Llamamos la función del contexto
             await placeOption(msg);
             console.log("Option placed!");
 
@@ -140,9 +139,6 @@ const BinaryOptionsDApp = () => {
         }
     };
 
-    // ------------------------------------------------------------------
-    // UTILIDADES DE UI
-    // ------------------------------------------------------------------
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -160,7 +156,7 @@ const BinaryOptionsDApp = () => {
                 <div className="flex items-center space-x-2">
                     <Wallet className="w-5 h-5" />
                     <span className="font-medium">
-            {/* Si estás conectado, muestra la dirección abreviada, sino “Disconnected” */}
+            {/* Si estás conectado, muestra la dirección abreviada, sino "Disconnected" */}
                         {isConnected && address
                             ? address.slice(0, 6) + '...' + address.slice(-4)
                             : 'Disconnected'}
@@ -180,20 +176,11 @@ const BinaryOptionsDApp = () => {
             {/* Main Content */}
             <div className="space-y-8">
                 {/* Current BTC Price */}
-                <div className="text-center">
-                    <h2 className="text-gray-400 mb-2">Current BTC Price</h2>
-                    {isLoading ? (
-                        <div className="text-2xl">Loading...</div>
-                    ) : error ? (
-                        <div className="text-red-500">{error}</div>
-                    ) : (
-                        currentPrice && (
-                            <div className="text-4xl font-bold">
-                                ${currentPrice.toLocaleString()}
-                            </div>
-                        )
-                    )}
-                </div>
+                <BtcPriceDisplay
+                    currentPrice={currentPrice}
+                    isLoading={isLoading}
+                    error={error}
+                />
 
                 {/* Time Progress Bar */}
                 <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
