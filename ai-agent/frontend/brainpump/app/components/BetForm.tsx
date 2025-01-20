@@ -28,7 +28,7 @@ const formSchema = z.object({
       .max(10, { message: "Guess must be at most 10" }),
   betAmount: z.number()
       .positive({ message: "Bet amount must be positive" })
-      .min(0.000001, { message: "Minimum bet is 0.000001 NIM" }),
+      .min(0.000001, { message: "Minimum bet is 0.000001 DESMOS" }),
   persuasion: z.string().max(500, { message: "Persuasion must be 500 characters or less" }).optional()
 })
 
@@ -36,7 +36,8 @@ export function BetForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
-  const { placeBet, isConnected, currentBet, estimateReward } = useContract()
+  const [estimatedCommunityFee, setEstimatedCommunityFee] = useState<string | null>(null)
+  const { placeBet, isConnected, currentBet, estimateReward, estimateCommunityFee } = useContract()
   const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -78,6 +79,9 @@ export function BetForm() {
         try {
           const reward = await estimateReward(betAmount.toString())
           setEstimatedReward(reward)
+
+          const fee = await estimateCommunityFee(betAmount.toString())
+          setEstimatedCommunityFee(fee)
         } catch (err) {
           console.error('Failed to estimate reward:', err)
           setEstimatedReward(null)
@@ -102,7 +106,7 @@ export function BetForm() {
           {!canPlaceBet ? (
               <div className="text-center py-4">
                 <p className="text-[rgb(var(--neon-green))]">You have an active bet</p>
-                <p className="text-sm text-gray-600 mt-2">Resolve your current bet before placing a new one</p>
+                <p className="text-sm text-gray-300 mt-2">Resolve your current bet before placing a new one</p>
               </div>
           ) : (
               <Form {...form}>
@@ -112,13 +116,13 @@ export function BetForm() {
                       name="guessedNumber"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm text-gray-600">Guess a number (1-10)</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Guess a number (1-10)</FormLabel>
                             <FormControl>
                               <Input
                                   type="number"
                                   {...field}
                                   onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : undefined)}
-                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-gray-600"
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                   disabled={isLoading}
                               />
                             </FormControl>
@@ -131,12 +135,12 @@ export function BetForm() {
                       name="persuasion"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm text-gray-600">Jail Break prompt (optional)</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Jail Break prompt (optional)</FormLabel>
                             <FormControl>
                               <Textarea
                                   {...field}
                                   placeholder="Enter your Jail Break prompt here..."
-                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-gray-600"
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                   disabled={isLoading}
                               />
                             </FormControl>
@@ -149,14 +153,14 @@ export function BetForm() {
                       name="betAmount"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm text-gray-600">Bet amount (NIM)</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Bet amount (DESMOS)</FormLabel>
                             <FormControl>
                               <Input
                                   type="number"
                                   {...field}
                                   onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
                                   step="0.0001"
-                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-gray-600"
+                                  className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                   disabled={isLoading}
                               />
                             </FormControl>
@@ -164,9 +168,10 @@ export function BetForm() {
                           </FormItem>
                       )}
                   />
-                  {estimatedReward && (
-                      <div className="text-sm text-gray-600">
-                        Estimated reward: <span className="text-[rgb(var(--neon-green))]">{estimatedReward} NIM</span>
+                  {estimatedReward && estimatedCommunityFee && (
+                      <div className="text-sm text-gray-300">
+                        <p>Estimated reward: <span className="text-[rgb(var(--neon-green))]">{+estimatedReward - +estimatedCommunityFee} DESMOS</span></p>
+                        <p>Estimated community fee: <span className="text-[rgb(var(--neon-green))]">{estimatedCommunityFee} DESMOS</span></p>
                       </div>
                   )}
                   <Button

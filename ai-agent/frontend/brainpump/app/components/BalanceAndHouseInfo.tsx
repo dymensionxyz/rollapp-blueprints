@@ -40,25 +40,25 @@ export function BalanceAndHouseInfo() {
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Your Withdrawal Balance</p>
-                        <p className="text-2xl font-mono text-[rgb(var(--neon-green))]">{balance} NIM</p>
+                        <p className="text-2xl font-mono text-[rgb(var(--neon-green))]">{balance} DESMOS</p>
                     </div>
                     <div className="space-y-1">
                         <p className="text-sm text-gray-400">Your Wallet Balance</p>
-                        <p className="text-lg">{walletBalance} NIM</p>
+                        <p className="text-lg">{walletBalance} DESMOS</p>
                     </div>
                     {gameInfo && (
                         <>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Min Bet Amount</p>
-                                <p className="text-lg">{gameInfo.minBetAmount} NIM</p>
+                                <p className="text-lg">{gameInfo.minBetAmount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Max Bet Amount</p>
-                                <p className="text-lg">{gameInfo.maxBetAmount} NIM</p>
+                                <p className="text-lg">{gameInfo.maxBetAmount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Total House Supply</p>
-                                <p className="text-lg">{gameInfo.houseActiveBalance} NIM</p>
+                                <p className="text-lg">{gameInfo.houseActiveBalance} DESMOS</p>
                             </div>
                         </>
                     )}

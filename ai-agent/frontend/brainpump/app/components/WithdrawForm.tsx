@@ -45,7 +45,7 @@ export function WithdrawForm() {
       <CardContent>
         {error && <ErrorDisplay title="Withdrawal Error" message={error} />}
         <div className="text-center mb-6">
-          <p className="text-3xl font-mono text-[rgb(var(--neon-green))]">{balance} NIM</p>
+          <p className="text-3xl font-mono text-[rgb(var(--neon-green))]">{balance} DESMOS</p>
         </div>
         <Button 
           onClick={handleWithdraw} 

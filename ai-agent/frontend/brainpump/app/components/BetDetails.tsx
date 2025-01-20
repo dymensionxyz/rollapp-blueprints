@@ -71,7 +71,7 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
     }
 
     return (
-        <Card className="mt-4 border border-gray-200 bg-white shadow-sm">
+        <Card className="mt-4 neon-border glass-effect border-0">
             <CardContent className="p-4">
                 <h4 className="text-lg font-semibold mb-2 text-[rgb(var(--neon-green))]">Bet Details</h4>
                 <div className="space-y-2">
