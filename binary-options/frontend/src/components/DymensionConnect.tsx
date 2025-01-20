@@ -1,6 +1,8 @@
 'use client'
 
 import  { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {Wallet} from "lucide-react";
+import { useContract } from './contexts/ContractContext';
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
@@ -64,7 +66,7 @@ export function DymensionConnect() {
                 setDymensionConnectOpen(event.data.value);
             }
             if (event.data.type === 'connect') {
-                setAddress(event.data.value);
+                setAddress(event.data.address);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'disconnect') {
@@ -80,7 +82,7 @@ export function DymensionConnect() {
     }, [updateTriggerBoundingRect]);
 
     return (
-        <div className="relative">
+        <div className="flex items-center space-x-2 relative">
             <button
                 disabled={!dymensionConnectReady}
                 ref={buttonRef}
@@ -88,14 +90,17 @@ export function DymensionConnect() {
                     setDymensionConnectOpen(!dymensionConnectOpen)
                     updateTriggerBoundingRect();
                 }}
-                className="px-4 py-2 bg-[rgb(var(--neon-green))] text-black rounded-md hover:opacity-90 transition-opacity"
+                className="px-4 py-2 bg-[rgb(34,34,34)] text-white border border-[rgb(60,179,113)] rounded-md hover:bg-[rgb(60,179,113)] hover:text-black transition-all flex items-center space-x-2 shadow-md"
             >
-                {address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Connect'}
+                <Wallet className="w-5 h-5"/>
+                <span>
+                    {address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Connect'}
+                </span>
             </button>
             <iframe
                 ref={iframeRef}
                 onLoad={initModal}
-                style={{ display: dymensionConnectOpen || qrAccount ? 'block' : 'none' }}
+                style={{display: dymensionConnectOpen || qrAccount ? 'block' : 'none'}}
                 allow='clipboard-read; clipboard-write; camera'
                 title='dymension-connect'
                 className='absolute top-full left-0 mt-2 w-80 h-96 z-50'

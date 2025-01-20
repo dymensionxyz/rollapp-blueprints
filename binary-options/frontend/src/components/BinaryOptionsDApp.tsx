@@ -27,11 +27,8 @@ import { DymensionConnect } from "./DymensionConnect";
 import BtcPriceDisplay from "./BtcPriceDisplay";
 import config from "../config/config"; // Import the new component
 
-const CONTRACT_ADDRESS = "uod1yyca08xqdgvjz0psg56z67ejh9xms6l436u8y58m82npdqqhmmtqlwc5fc";
-const BINARY_OPTIONS_CONTRACT_ADDRESS = "uod1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqp29xpd";
-
 const FIXED_EXPIRATION = 1700000000;
-const FIXED_BET_AMOUNT_AWSM = "10000"; // "10000" = 0.01 AWSM (asumiendo 6 decimales, etc.)
+const FIXED_BET_AMOUNT_AUOD = "10000";
 const COUNT_DOWN_INTERVAL = 60;
 
 const BinaryOptionsDApp = () => {
@@ -44,7 +41,6 @@ const BinaryOptionsDApp = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Historial simulado (o lo que uses para mostrar tus apuestas pasadas)
     const betHistory = [
         { direction: 'up', entryPrice: 44950.20, finalPrice: 45100.30, result: 'win' },
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
@@ -110,13 +106,12 @@ const BinaryOptionsDApp = () => {
         try {
             setIsLoading(true);
 
-            // Preparamos el mensaje que espera tu `placeOption` (desde el contexto)
             const msg: PlaceOptionMsg = {
                 direction: selectedDirection === 'up' ? 'Up' : 'Down',
                 expiration: FIXED_EXPIRATION,
                 bet_amount: {
-                    denom: "awsm", // Ajusta si tu token es "awsm" u otro
-                    amount: FIXED_BET_AMOUNT_AWSM,
+                    denom: "auod",
+                    amount: FIXED_BET_AMOUNT_AUOD,
                 },
                 market: {
                     base:  "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
@@ -151,24 +146,11 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-2">
-                    <Wallet className="w-5 h-5" />
-                    <span className="font-medium">
-            {/* Si estás conectado, muestra la dirección abreviada, sino "Disconnected" */}
-                        {isConnected && address
-                            ? address.slice(0, 6) + '...' + address.slice(-4)
-                            : 'Disconnected'}
-          </span>
-                </div>
+                <DymensionConnect />
                 <div className="flex items-center text-gray-400">
                     <Clock className="w-4 h-4 mr-1" />
                     <span>{formatTime(timeLeft)}</span>
                 </div>
-            </div>
-
-            {/* DymensionConnect (el nuevo) */}
-            <div className="mb-6">
-                <DymensionConnect />
             </div>
 
             {/* Main Content */}
