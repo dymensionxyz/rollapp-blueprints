@@ -59,8 +59,8 @@ const BinaryOptionsDApp = () => {
 
             const query = {
                 get_price: {
-                    base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
-                    quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
+                    base: config.base,
+                    quote: config.quote,
                 },
             };
             const encodedQuery = btoa(JSON.stringify(query));
@@ -100,8 +100,6 @@ const BinaryOptionsDApp = () => {
     }, [timeLeft]);
 
     const handleDirectionSelect = (direction: 'up' | 'down') => {
-        // Aquí podrías checar balance, etc.
-        // En este ejemplo, lo omito para simplificar.
         setSelectedDirection(direction);
         setShowConfirmation(true);
     };
