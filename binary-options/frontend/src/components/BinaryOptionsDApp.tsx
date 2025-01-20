@@ -46,7 +46,7 @@ const BinaryOptionsDApp = () => {
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
     ];
 
-    const { address, isConnected, placeOption } = useContract();
+    const {isConnected, placeOption } = useContract();
 
     const fetchBTCPrice = async () => {
         try {
@@ -193,7 +193,7 @@ const BinaryOptionsDApp = () => {
 
                 {/* Bet Information */}
                 <div className="text-center text-gray-400">
-                    Fixed bet amount: 0.01 AWSM
+                    Fixed bet amount: 0.01 AUOD
                 </div>
 
                 {/* Bet Result */}
