@@ -2,99 +2,71 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
-	"time"
+	"os/signal"
+	"syscall"
 
 	"github.com/ethereum/go-ethereum/common"
-	rpcfilters "github.com/evmos/evmos/v12/rpc/namespaces/ethereum/eth/filters"
-	evmtypes "github.com/evmos/evmos/v12/x/evm/types"
-	tmjson "github.com/tendermint/tendermint/libs/json"
 	tmlog "github.com/tendermint/tendermint/libs/log"
-	coretypes "github.com/tendermint/tendermint/rpc/core/types"
-	rpcclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
-	tmtypes "github.com/tendermint/tendermint/types"
 )
 
-func ConnectTmWS(tmRPCAddr, tmEndpoint string, logger tmlog.Logger) *rpcclient.WSClient {
-	tmWsClient, err := rpcclient.NewWS(tmRPCAddr, tmEndpoint,
-		rpcclient.MaxReconnectAttempts(256),
-		rpcclient.ReadWait(120*time.Second),
-		rpcclient.WriteWait(120*time.Second),
-		rpcclient.PingPeriod(50*time.Second),
-		rpcclient.OnReconnect(func() {
-			logger.Debug("EVM RPC reconnects to Tendermint WS", "address", tmRPCAddr+tmEndpoint)
-		}),
-	)
+type IndexerConfig struct {
+	ContractAddress string
+	NodeEvmRpcUrl   string
+	NodeRpcUrl      string
+	WSEndpoint      string
+}
 
-	if err != nil {
-		logger.Error(
-			"Tendermint WS client could not be created",
-			"address", tmRPCAddr+tmEndpoint,
-			"error", err,
-		)
-	} else if err := tmWsClient.OnStart(); err != nil {
-		logger.Error(
-			"Tendermint WS client could not start",
-			"address", tmRPCAddr+tmEndpoint,
-			"error", err,
-		)
+func DefaultConfig() IndexerConfig {
+	return IndexerConfig{
+		ContractAddress: "0xADD60403BFc7e76C0670E835cAEb606569bc9ddE",
+		NodeEvmRpcUrl:   "http://0.0.0.0:8545",
+		NodeRpcUrl:      "http://127.0.0.1:26657",
+		WSEndpoint:      "/websocket",
 	}
-
-	return tmWsClient
 }
 
 func main() {
-	logger := tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
-	ws := ConnectTmWS("http://127.0.0.1:26657", "/websocket", logger)
-	defer ws.Stop()
+	var (
+		logger       = tmlog.NewTMLogger(tmlog.NewSyncWriter(os.Stdout))
+		config       = DefaultConfig()
+		contractAddr = common.HexToAddress(config.ContractAddress)
+		ctx, cancel  = context.WithCancel(context.Background())
+	)
 
-	err := ws.Subscribe(context.Background(), "tm.event='Tx' AND message.module='evm'")
+	contract, err := ConnectContract(config.NodeEvmRpcUrl, contractAddr)
 	if err != nil {
-		logger.Error("Failed to subscribe", "error", err)
+		logger.Error("Failed to connect to contract", "error", err)
 		return
 	}
 
-	for rpcResp := range ws.ResponsesCh {
-		var ev coretypes.ResultEvent
-
-		if rpcResp.Error != nil {
-			time.Sleep(5 * time.Second)
-			continue
-		} else if err := tmjson.Unmarshal(rpcResp.Result, &ev); err != nil {
-			logger.Error("failed to JSON unmarshal ResponsesCh result event", "error", err.Error())
-			continue
-		}
-		if len(ev.Query) == 0 {
-			// skip empty responses
-			continue
-		}
-
-		dataTx, ok := ev.Data.(tmtypes.EventDataTx)
-		if !ok {
-			logger.Debug("event data type mismatch", "type", fmt.Sprintf("%T", ev.Data))
-			continue
-		}
-
-		txResponse, err := evmtypes.DecodeTxResponse(dataTx.TxResult.Result.Data)
+	watchFinished := make(chan struct{})
+	go func() {
+		err = WatchContractLogs(
+			ctx,
+			logger,
+			config.NodeRpcUrl,
+			config.WSEndpoint,
+			contractAddr,
+			HandleEventLog(logger, contract),
+		)
 		if err != nil {
-			logger.Error("failed to decode tx response", "error", err.Error())
-			return
+			logger.Error("Failed to watch contract logs", "error", err)
 		}
+		watchFinished <- struct{}{}
+	}()
 
-		addresses := []common.Address{common.HexToAddress("0xADD60403BFc7e76C0670E835cAEb606569bc9ddE")}
-		logs := rpcfilters.FilterLogs(evmtypes.LogsToEthereum(txResponse.Logs), nil, nil, addresses, nil)
-		if len(logs) == 0 {
-			continue
-		}
+	logger.Info("Indexer started")
 
-		for _, ethLog := range logs {
-			logger.Info("EVM Log", "log", ethLog)
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
 
-			event := new(AIGamblingBetPlaced)
-			if err := _AIGambling.contract.UnpackLog(event, "BetPlaced", log); err != nil {
-				return err
-			}
-		}
-	}
+	// Stop the contract watcher
+	cancel()
+
+	// Wait until the contract watcher processes the last event
+	<-watchFinished
+
+	logger.Info("Indexer stopped")
 }

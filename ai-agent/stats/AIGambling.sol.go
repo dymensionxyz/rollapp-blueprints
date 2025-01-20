@@ -33,6 +33,7 @@ var (
 type AIGamblingBet struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -52,7 +53,7 @@ type AIGamblingGameInfo struct {
 
 // AIGamblingMetaData contains all meta data concerning the AIGambling contract.
 var AIGamblingMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_initialOwner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_aiOracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"OwnableInvalidOwner\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"OwnableUnauthorizedAccount\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"indexed\":false,\"internalType\":\"structAIGambling.Bet\",\"name\":\"bet\",\"type\":\"tuple\"}],\"name\":\"BetPlaced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"indexed\":false,\"internalType\":\"structAIGambling.Bet\",\"name\":\"bet\",\"type\":\"tuple\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"}],\"name\":\"BetResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"PROMPT\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"balances\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"bets\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"}],\"name\":\"checkAnswerStatus\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"exists\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"communityPoolPercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositSupply\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"estimateCommunityFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"betAmount\",\"type\":\"uint256\"}],\"name\":\"estimateReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeCollectorAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGameInfo\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"houseSupply\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"houseActiveBalance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minBetAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxBetAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxBetAmountPercentage\",\"type\":\"uint256\"}],\"internalType\":\"structAIGambling.GameInfo\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"getHistory\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"internalType\":\"structAIGambling.Bet[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"govAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"history\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"houseFeePercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxBetAmountPercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minBetAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"}],\"name\":\"placeBet\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"resolveBet\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateCommunityPoolPercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateHouseFeePercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateMaxBetAmountPercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newAmount\",\"type\":\"uint256\"}],\"name\":\"updateMinBetAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"withdrawSupply\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawalBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_initialOwner\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_aiOracle\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"}],\"name\":\"OwnableInvalidOwner\",\"type\":\"error\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"OwnableUnauthorizedAccount\",\"type\":\"error\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"indexed\":false,\"internalType\":\"structAIGambling.Bet\",\"name\":\"bet\",\"type\":\"tuple\"}],\"name\":\"BetPlaced\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"indexed\":false,\"internalType\":\"structAIGambling.Bet\",\"name\":\"bet\",\"type\":\"tuple\"}],\"name\":\"BetResolved\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"PROMPT\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"\",\"type\":\"string\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"balances\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"bets\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"}],\"name\":\"checkAnswerStatus\",\"outputs\":[{\"internalType\":\"string\",\"name\":\"answer\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"exists\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"communityPoolPercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"deposit\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositSupply\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"estimateCommunityFee\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"betAmount\",\"type\":\"uint256\"}],\"name\":\"estimateReward\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"feeCollectorAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getGameInfo\",\"outputs\":[{\"components\":[{\"internalType\":\"uint256\",\"name\":\"houseSupply\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"houseActiveBalance\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"minBetAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxBetAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"maxBetAmountPercentage\",\"type\":\"uint256\"}],\"internalType\":\"structAIGambling.GameInfo\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"}],\"name\":\"getHistory\",\"outputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"internalType\":\"structAIGambling.Bet[]\",\"name\":\"\",\"type\":\"tuple[]\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"govAddress\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"history\",\"outputs\":[{\"internalType\":\"uint64\",\"name\":\"promptId\",\"type\":\"uint64\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"communityFee\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"correctNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"},{\"internalType\":\"bool\",\"name\":\"resolved\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"won\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"canceled\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"houseFeePercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"maxBetAmountPercentage\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"minBetAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"guessedNumber\",\"type\":\"uint256\"},{\"internalType\":\"string\",\"name\":\"persuasion\",\"type\":\"string\"}],\"name\":\"placeBet\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"resolveBet\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateCommunityPoolPercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateHouseFeePercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newPercentage\",\"type\":\"uint256\"}],\"name\":\"updateMaxBetAmountPercentage\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"newAmount\",\"type\":\"uint256\"}],\"name\":\"updateMinBetAmount\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdraw\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"withdrawSupply\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"withdrawalBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"stateMutability\":\"payable\",\"type\":\"receive\"}]",
 }
 
 // AIGamblingABI is the input ABI used to generate the binding from.
@@ -265,10 +266,11 @@ func (_AIGambling *AIGamblingCallerSession) Balances(arg0 common.Address) (*big.
 
 // Bets is a free data retrieval call binding the contract method 0x89a78f1a.
 //
-// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingCaller) Bets(opts *bind.CallOpts, arg0 common.Address) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -282,6 +284,7 @@ func (_AIGambling *AIGamblingCaller) Bets(opts *bind.CallOpts, arg0 common.Addre
 	outstruct := new(struct {
 		PromptId      uint64
 		Amount        *big.Int
+		CommunityFee  *big.Int
 		GuessedNumber *big.Int
 		CorrectNumber *big.Int
 		Persuasion    string
@@ -295,12 +298,13 @@ func (_AIGambling *AIGamblingCaller) Bets(opts *bind.CallOpts, arg0 common.Addre
 
 	outstruct.PromptId = *abi.ConvertType(out[0], new(uint64)).(*uint64)
 	outstruct.Amount = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
-	outstruct.GuessedNumber = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
-	outstruct.CorrectNumber = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
-	outstruct.Persuasion = *abi.ConvertType(out[4], new(string)).(*string)
-	outstruct.Resolved = *abi.ConvertType(out[5], new(bool)).(*bool)
-	outstruct.Won = *abi.ConvertType(out[6], new(bool)).(*bool)
-	outstruct.Canceled = *abi.ConvertType(out[7], new(bool)).(*bool)
+	outstruct.CommunityFee = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.GuessedNumber = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	outstruct.CorrectNumber = *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	outstruct.Persuasion = *abi.ConvertType(out[5], new(string)).(*string)
+	outstruct.Resolved = *abi.ConvertType(out[6], new(bool)).(*bool)
+	outstruct.Won = *abi.ConvertType(out[7], new(bool)).(*bool)
+	outstruct.Canceled = *abi.ConvertType(out[8], new(bool)).(*bool)
 
 	return *outstruct, err
 
@@ -308,10 +312,11 @@ func (_AIGambling *AIGamblingCaller) Bets(opts *bind.CallOpts, arg0 common.Addre
 
 // Bets is a free data retrieval call binding the contract method 0x89a78f1a.
 //
-// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingSession) Bets(arg0 common.Address) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -324,10 +329,11 @@ func (_AIGambling *AIGamblingSession) Bets(arg0 common.Address) (struct {
 
 // Bets is a free data retrieval call binding the contract method 0x89a78f1a.
 //
-// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function bets(address ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingCallerSession) Bets(arg0 common.Address) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -540,7 +546,7 @@ func (_AIGambling *AIGamblingCallerSession) GetGameInfo() (AIGamblingGameInfo, e
 
 // GetHistory is a free data retrieval call binding the contract method 0x80396811.
 //
-// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,string,bool,bool,bool)[])
+// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool)[])
 func (_AIGambling *AIGamblingCaller) GetHistory(opts *bind.CallOpts, user common.Address) ([]AIGamblingBet, error) {
 	var out []interface{}
 	err := _AIGambling.contract.Call(opts, &out, "getHistory", user)
@@ -557,14 +563,14 @@ func (_AIGambling *AIGamblingCaller) GetHistory(opts *bind.CallOpts, user common
 
 // GetHistory is a free data retrieval call binding the contract method 0x80396811.
 //
-// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,string,bool,bool,bool)[])
+// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool)[])
 func (_AIGambling *AIGamblingSession) GetHistory(user common.Address) ([]AIGamblingBet, error) {
 	return _AIGambling.Contract.GetHistory(&_AIGambling.CallOpts, user)
 }
 
 // GetHistory is a free data retrieval call binding the contract method 0x80396811.
 //
-// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,string,bool,bool,bool)[])
+// Solidity: function getHistory(address user) view returns((uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool)[])
 func (_AIGambling *AIGamblingCallerSession) GetHistory(user common.Address) ([]AIGamblingBet, error) {
 	return _AIGambling.Contract.GetHistory(&_AIGambling.CallOpts, user)
 }
@@ -602,10 +608,11 @@ func (_AIGambling *AIGamblingCallerSession) GovAddress() (common.Address, error)
 
 // History is a free data retrieval call binding the contract method 0x7718f4ec.
 //
-// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingCaller) History(opts *bind.CallOpts, arg0 common.Address, arg1 *big.Int) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -619,6 +626,7 @@ func (_AIGambling *AIGamblingCaller) History(opts *bind.CallOpts, arg0 common.Ad
 	outstruct := new(struct {
 		PromptId      uint64
 		Amount        *big.Int
+		CommunityFee  *big.Int
 		GuessedNumber *big.Int
 		CorrectNumber *big.Int
 		Persuasion    string
@@ -632,12 +640,13 @@ func (_AIGambling *AIGamblingCaller) History(opts *bind.CallOpts, arg0 common.Ad
 
 	outstruct.PromptId = *abi.ConvertType(out[0], new(uint64)).(*uint64)
 	outstruct.Amount = *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
-	outstruct.GuessedNumber = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
-	outstruct.CorrectNumber = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
-	outstruct.Persuasion = *abi.ConvertType(out[4], new(string)).(*string)
-	outstruct.Resolved = *abi.ConvertType(out[5], new(bool)).(*bool)
-	outstruct.Won = *abi.ConvertType(out[6], new(bool)).(*bool)
-	outstruct.Canceled = *abi.ConvertType(out[7], new(bool)).(*bool)
+	outstruct.CommunityFee = *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
+	outstruct.GuessedNumber = *abi.ConvertType(out[3], new(*big.Int)).(**big.Int)
+	outstruct.CorrectNumber = *abi.ConvertType(out[4], new(*big.Int)).(**big.Int)
+	outstruct.Persuasion = *abi.ConvertType(out[5], new(string)).(*string)
+	outstruct.Resolved = *abi.ConvertType(out[6], new(bool)).(*bool)
+	outstruct.Won = *abi.ConvertType(out[7], new(bool)).(*bool)
+	outstruct.Canceled = *abi.ConvertType(out[8], new(bool)).(*bool)
 
 	return *outstruct, err
 
@@ -645,10 +654,11 @@ func (_AIGambling *AIGamblingCaller) History(opts *bind.CallOpts, arg0 common.Ad
 
 // History is a free data retrieval call binding the contract method 0x7718f4ec.
 //
-// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingSession) History(arg0 common.Address, arg1 *big.Int) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -661,10 +671,11 @@ func (_AIGambling *AIGamblingSession) History(arg0 common.Address, arg1 *big.Int
 
 // History is a free data retrieval call binding the contract method 0x7718f4ec.
 //
-// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
+// Solidity: function history(address , uint256 ) view returns(uint64 promptId, uint256 amount, uint256 communityFee, uint256 guessedNumber, uint256 correctNumber, string persuasion, bool resolved, bool won, bool canceled)
 func (_AIGambling *AIGamblingCallerSession) History(arg0 common.Address, arg1 *big.Int) (struct {
 	PromptId      uint64
 	Amount        *big.Int
+	CommunityFee  *big.Int
 	GuessedNumber *big.Int
 	CorrectNumber *big.Int
 	Persuasion    string
@@ -1177,9 +1188,9 @@ type AIGamblingBetPlaced struct {
 	Raw  types.Log // Blockchain specific contextual infos
 }
 
-// FilterBetPlaced is a free log retrieval operation binding the contract event 0xd98f42a857b67ba58c51432f29490540610248c4fa6e1bb7a6bbb2d799138f48.
+// FilterBetPlaced is a free log retrieval operation binding the contract event 0x21c61209c85f5bbbd3f8cf662d52090b77a75fe1b2e3f2b96f997de11fa0c6f1.
 //
-// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet)
+// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) FilterBetPlaced(opts *bind.FilterOpts, user []common.Address) (*AIGamblingBetPlacedIterator, error) {
 
 	var userRule []interface{}
@@ -1194,9 +1205,9 @@ func (_AIGambling *AIGamblingFilterer) FilterBetPlaced(opts *bind.FilterOpts, us
 	return &AIGamblingBetPlacedIterator{contract: _AIGambling.contract, event: "BetPlaced", logs: logs, sub: sub}, nil
 }
 
-// WatchBetPlaced is a free log subscription operation binding the contract event 0xd98f42a857b67ba58c51432f29490540610248c4fa6e1bb7a6bbb2d799138f48.
+// WatchBetPlaced is a free log subscription operation binding the contract event 0x21c61209c85f5bbbd3f8cf662d52090b77a75fe1b2e3f2b96f997de11fa0c6f1.
 //
-// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet)
+// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) WatchBetPlaced(opts *bind.WatchOpts, sink chan<- *AIGamblingBetPlaced, user []common.Address) (event.Subscription, error) {
 
 	var userRule []interface{}
@@ -1236,9 +1247,9 @@ func (_AIGambling *AIGamblingFilterer) WatchBetPlaced(opts *bind.WatchOpts, sink
 	}), nil
 }
 
-// ParseBetPlaced is a log parse operation binding the contract event 0xd98f42a857b67ba58c51432f29490540610248c4fa6e1bb7a6bbb2d799138f48.
+// ParseBetPlaced is a log parse operation binding the contract event 0x21c61209c85f5bbbd3f8cf662d52090b77a75fe1b2e3f2b96f997de11fa0c6f1.
 //
-// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet)
+// Solidity: event BetPlaced(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) ParseBetPlaced(log types.Log) (*AIGamblingBetPlaced, error) {
 	event := new(AIGamblingBetPlaced)
 	if err := _AIGambling.contract.UnpackLog(event, "BetPlaced", log); err != nil {
@@ -1317,15 +1328,14 @@ func (it *AIGamblingBetResolvedIterator) Close() error {
 
 // AIGamblingBetResolved represents a BetResolved event raised by the AIGambling contract.
 type AIGamblingBetResolved struct {
-	User         common.Address
-	Bet          AIGamblingBet
-	CommunityFee *big.Int
-	Raw          types.Log // Blockchain specific contextual infos
+	User common.Address
+	Bet  AIGamblingBet
+	Raw  types.Log // Blockchain specific contextual infos
 }
 
-// FilterBetResolved is a free log retrieval operation binding the contract event 0x91389d0520d4c3aa6e8ba46f3ea8030caf17c3b8797908f589ac57d777727f9b.
+// FilterBetResolved is a free log retrieval operation binding the contract event 0x28e722064188e40dbb8c67573a66f341a28182060050d361aaf94a5b38b83210.
 //
-// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet, uint256 communityFee)
+// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) FilterBetResolved(opts *bind.FilterOpts, user []common.Address) (*AIGamblingBetResolvedIterator, error) {
 
 	var userRule []interface{}
@@ -1340,9 +1350,9 @@ func (_AIGambling *AIGamblingFilterer) FilterBetResolved(opts *bind.FilterOpts, 
 	return &AIGamblingBetResolvedIterator{contract: _AIGambling.contract, event: "BetResolved", logs: logs, sub: sub}, nil
 }
 
-// WatchBetResolved is a free log subscription operation binding the contract event 0x91389d0520d4c3aa6e8ba46f3ea8030caf17c3b8797908f589ac57d777727f9b.
+// WatchBetResolved is a free log subscription operation binding the contract event 0x28e722064188e40dbb8c67573a66f341a28182060050d361aaf94a5b38b83210.
 //
-// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet, uint256 communityFee)
+// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) WatchBetResolved(opts *bind.WatchOpts, sink chan<- *AIGamblingBetResolved, user []common.Address) (event.Subscription, error) {
 
 	var userRule []interface{}
@@ -1382,9 +1392,9 @@ func (_AIGambling *AIGamblingFilterer) WatchBetResolved(opts *bind.WatchOpts, si
 	}), nil
 }
 
-// ParseBetResolved is a log parse operation binding the contract event 0x91389d0520d4c3aa6e8ba46f3ea8030caf17c3b8797908f589ac57d777727f9b.
+// ParseBetResolved is a log parse operation binding the contract event 0x28e722064188e40dbb8c67573a66f341a28182060050d361aaf94a5b38b83210.
 //
-// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,string,bool,bool,bool) bet, uint256 communityFee)
+// Solidity: event BetResolved(address indexed user, (uint64,uint256,uint256,uint256,uint256,string,bool,bool,bool) bet)
 func (_AIGambling *AIGamblingFilterer) ParseBetResolved(log types.Log) (*AIGamblingBetResolved, error) {
 	event := new(AIGamblingBetResolved)
 	if err := _AIGambling.contract.UnpackLog(event, "BetResolved", log); err != nil {

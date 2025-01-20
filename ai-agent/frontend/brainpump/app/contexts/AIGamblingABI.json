@@ -60,6 +60,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "communityFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "guessedNumber",
             "type": "uint256"
           },
@@ -121,6 +126,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "communityFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "guessedNumber",
             "type": "uint256"
           },
@@ -154,12 +164,6 @@
         "internalType": "struct AIGambling.Bet",
         "name": "bet",
         "type": "tuple"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "communityFee",
-        "type": "uint256"
       }
     ],
     "name": "BetResolved",
@@ -234,6 +238,11 @@
       {
         "internalType": "uint256",
         "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "communityFee",
         "type": "uint256"
       },
       {
@@ -436,6 +445,11 @@
           },
           {
             "internalType": "uint256",
+            "name": "communityFee",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
             "name": "guessedNumber",
             "type": "uint256"
           },
@@ -509,6 +523,11 @@
       {
         "internalType": "uint256",
         "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "communityFee",
         "type": "uint256"
       },
       {

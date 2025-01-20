@@ -88,7 +88,7 @@ export function BetInfo() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <p className="text-sm text-gray-400">Amount</p>
-                    <p className="text-lg">{currentBet.amount} NIM</p>
+                    <p className="text-lg">{currentBet.amount} DESMOS</p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm text-gray-400">Your Guess</p>
@@ -133,7 +133,7 @@ export function BetInfo() {
                             'Resolve Bet'
                         )}
                       </Button>
-                      <div className="text-sm text-gray-600 mt-2">
+                      <div className="text-sm text-gray-300 mt-2">
                         {answerStatus?.exists ? (
                             <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve the bet now.</p>
                         ) : (

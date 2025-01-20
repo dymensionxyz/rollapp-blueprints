@@ -28,7 +28,7 @@ export function BetHistory() {
                         {sortedBetHistory.map((bet, index) => (
                             <div key={index}>
                                 <div
-                                    className="bg-[rgb(var(--light-gray))] p-4 rounded-md cursor-pointer hover:bg-[rgb(var(--graphite))] transition-colors duration-200"
+                                    className="bg-[rgb(var(--dark-gray))] p-4 rounded-md cursor-pointer hover:bg-[rgb(var(--graphite))] transition-colors duration-200"
                                     onClick={() => toggleBetDetails(index)}
                                 >
                                     <div className="grid grid-cols-2 sm:grid-cols-6 gap-2">
@@ -38,7 +38,7 @@ export function BetHistory() {
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-gray-400">Amount</p>
-                                            <p className="text-lg">{bet.amount} NIM</p>
+                                            <p className="text-lg">{bet.amount} DESMOS</p>
                                         </div>
                                         <div className="space-y-1">
                                             <p className="text-sm text-gray-400">Guessed Number</p>

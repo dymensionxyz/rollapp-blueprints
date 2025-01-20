@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast'
 interface BetInfo {
   promptId: BigNumberish
   amount: string
+  communityFee: number
   guessedNumber: number
   correctNumber: number
   persuasion: string
@@ -52,14 +53,14 @@ interface ContractContextType {
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0xADD60403BFc7e76C0670E835cAEb606569bc9ddE" // Replace with actual address
+const CONTRACT_ADDRESS = "0xEAcA423bF35A0C41d80d37Dc89C87C47baceE4FF" // Replace with actual address
 
 const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
     chainName: 'Desmos Testnet',
     nativeCurrency: {
-        name: 'NIM',
-        symbol: 'NIM',
+        name: 'DESMOS',
+        symbol: 'DESMOS',
         decimals: 18
     },
     rpcUrls: ['https://json-rpc.ra-2.rollapp.network'],
@@ -194,12 +195,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       setCurrentBet({
         promptId: bet[0],
         amount: ethers.formatEther(bet[1]),
-        guessedNumber: Number(bet[2]),
-        correctNumber: Number(bet[3]),
-        persuasion: bet[4],
-        resolved: bet[5],
-        won: bet[6],
-        canceled: bet[7]
+        communityFee: Number(bet[2]),
+        guessedNumber: Number(bet[3]),
+        correctNumber: Number(bet[4]),
+        persuasion: bet[5],
+        resolved: bet[6],
+        won: bet[7],
+        canceled: bet[8]
       })
     } catch (error) {
       console.error('Error getting bet info:', error)

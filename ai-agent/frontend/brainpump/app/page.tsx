@@ -1,24 +1,23 @@
 import Image from 'next/image'
-import { WalletConnect } from './components/WalletConnect'
-import { DymensionConnect } from './components/DymensionConnect'
-import { BetForm } from './components/BetForm'
-import { RecentBetStatus } from './components/RecentBetStatus'
-import { BalanceAndHouseInfo } from './components/BalanceAndHouseInfo'
-import { BetHistory } from './components/BetHistory'
+import {BetForm} from './components/BetForm'
+import {RecentBetStatus} from './components/RecentBetStatus'
+import {BalanceAndHouseInfo} from './components/BalanceAndHouseInfo'
+import {BetHistory} from './components/BetHistory'
+import {WalletConnect} from "@/app/components/WalletConnect";
 
 export default function Home() {
     return (
-        <main className="min-h-screen relative bg-white">
+        <main className="min-h-screen relative bg-[rgb(var(--graphite))]">
             <div className="absolute top-4 right-4 z-10">
-                <WalletConnect />
+                <WalletConnect/>
             </div>
 
             <div className="container mx-auto px-4 py-12">
                 {/* Hero Section */}
                 <div className="flex flex-col items-center justify-center mb-12">
                     <Image
-                        src="/favicon.svg"
-                        alt="Nim Logo"
+                        src="/brainpump_logo.png"
+                        alt="BrainPump Logo"
                         width={280}
                         height={140}
                         className="mb-8"
@@ -30,20 +29,19 @@ export default function Home() {
                 {/* Main Content */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-6xl mx-auto">
                     <div className="space-y-8">
-                        <BetForm />
-                        <BalanceAndHouseInfo />
+                        <BetForm/>
+                        <BalanceAndHouseInfo/>
                     </div>
                     <div className="space-y-8">
-                        <RecentBetStatus />
+                        <RecentBetStatus/>
                     </div>
                 </div>
 
                 {/* Bet History */}
                 <div className="mt-12 max-w-6xl mx-auto">
-                    <BetHistory />
+                    <BetHistory/>
                 </div>
             </div>
         </main>
     )
 }
-
