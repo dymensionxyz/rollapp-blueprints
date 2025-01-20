@@ -1,12 +1,10 @@
 'use client'
 
 import  { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useContract } from './contexts/ContractContext.js';
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-//const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
-const DYMENSION_CONNECT_NETWORK_IDS = ['wasmrollercontracts_419174-1'];
-const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'uwroco'
+const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
+const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'auod'
 
 export function DymensionConnect() {
     const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);

@@ -23,22 +23,16 @@ import {
 import { useContract } from './contexts/ContractContext';
 import { PlaceOptionMsg } from './contexts/ContractContext';
 
-// Importas tu componente DymensionConnect (el nuevo)
 import { DymensionConnect } from "./DymensionConnect";
 
-// Direcciones de contrato que puedas necesitar
-const CONTRACT_ADDRESS = "rol1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqg3zqxw";
-const BINARY_OPTIONS_CONTRACT_ADDRESS = "rol17p9rzwnnfxcjp32un9ug7yhhzgtkhvl9jfksztgw5uh69wac2pgss2u902";
+const CONTRACT_ADDRESS = "uod1yyca08xqdgvjz0psg56z67ejh9xms6l436u8y58m82npdqqhmmtqlwc5fc";
+const BINARY_OPTIONS_CONTRACT_ADDRESS = "uod1nc5tatafv6eyq7llkr2gv50ff9e22mnf70qgjlv737ktmt4eswrqp29xpd";
 
-// Valores fijos
 const FIXED_EXPIRATION = 1700000000;
 const FIXED_BET_AMOUNT_AWSM = "10000"; // "10000" = 0.01 AWSM (asumiendo 6 decimales, etc.)
 const COUNT_DOWN_INTERVAL = 60;
 
 const BinaryOptionsDApp = () => {
-    // ------------------------------------------------------------------
-    // ESTADOS de la UI
-    // ------------------------------------------------------------------
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
     const [timeLeft, setTimeLeft] = useState(COUNT_DOWN_INTERVAL);
     const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
@@ -54,29 +48,21 @@ const BinaryOptionsDApp = () => {
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
     ];
 
-    // ------------------------------------------------------------------
-    // OBTENER DATOS DEL CONTEXTO
-    // ------------------------------------------------------------------
     const { address, isConnected, placeOption } = useContract();
 
-    // ------------------------------------------------------------------
-    // FUNCIÓN PARA TRAER EL PRECIO (por ejemplo, desde tu contrato)
-    // ------------------------------------------------------------------
     const fetchBTCPrice = async () => {
         try {
             setIsLoading(true);
             setError(null);
 
-            // Aquí puedes hacer la query a tu contrato o a una API.
-            // Como ejemplo rápido simulo un fetch a tu contrato:
             const encodedQuery = btoa(JSON.stringify({
                 get_price: {
                     base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
                     quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc"
                 }
             }));
-            const url = `http://localhost:1317/cosmwasm/wasm/v1/contract/${CONTRACT_ADDRESS}/smart/${encodedQuery}`;
-            // Nota: Ajusta la URL real de tu REST endpoint.
+            const url = `http://34.76.101.17:1317/cosmwasm/wasm/v1/contract/${CONTRACT_ADDRESS}/smart/${encodedQuery}`;
+            console.log("Fetching BTC price from contract..." + url);
 
             const response = await fetch(url);
             if (!response.ok) throw new Error('Error fetching BTC price from contract');
@@ -94,10 +80,6 @@ const BinaryOptionsDApp = () => {
         }
     };
 
-    // ------------------------------------------------------------------
-    // USE EFFECTS
-    // ------------------------------------------------------------------
-    // 1) Cargar precio inicial y refrescar cada minuto
     useEffect(() => {
         fetchBTCPrice();
 
@@ -105,7 +87,6 @@ const BinaryOptionsDApp = () => {
         return () => clearInterval(interval);
     }, []);
 
-    // 2) Temporizador para el contador
     useEffect(() => {
         if (timeLeft > 0) {
             const timer = setInterval(() => {
