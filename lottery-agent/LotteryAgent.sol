@@ -14,16 +14,25 @@ contract LotteryAgent is Ownable {
         address player;
         bool[] chosenNumbers;
         bool claimed;
+        bool winner;
     }
 
     // Struct to represent a lottery draw
     struct Draw {
         uint[] randomnessIDs;
-        bool[] winningNumbers;
+        bool[] winningNumbers; // the representation of bitset. example: uint [2, 3, 5] == bool [0, 0, 1, 1, 0, 1]
         uint totalWinnings;
         uint winnersCount;
         uint ticketRevenue;
         uint stackersPoolDistributionRatio;
+        mapping(uint => Ticket[]) tickets;
+        bool prepareFinalizeCalled;
+    }
+
+    // Struct to represent a user's ticket ID (drawId + ticketId)
+    struct TicketId {
+        uint drawId;
+        uint ticketId;
     }
 
     uint constant public NUMBER_TO_CHOOSE = 10;
@@ -34,17 +43,17 @@ contract LotteryAgent is Ownable {
     // Lottery parameters
     uint public ticketPrice = 1 * 10 ** 18; // 1 DYM by default (adjustable)
     uint public drawFrequency = 1 days; // Default to one draw per day
-    uint public lastDrawTime;
+    uint public drawBeginTime;
     uint public stackersPoolDistributionRatio = 50; // 50% to prize pool, 50% to staking pool
 
     uint public ticketCounter = 0;
     uint public drawCounter = 0;
 
-    // Mapping from ticketId to Ticket struct
-    mapping(uint => Ticket[]) public ticketsByDrawId;
-
     // Mapping from drawId to Draw struct
     mapping(uint => Draw) public draws;
+
+    // Mapping from user address to their ticket IDs
+    mapping(address => TicketId[]) public userTickets;
 
     event TicketPurchased(address indexed player, uint ticketId, uint[] chosenNumbers);
     event DrawFinalized(uint indexed drawId, bool[] winningNumbers);
@@ -53,85 +62,135 @@ contract LotteryAgent is Ownable {
     constructor(address _owner, address _dymToken, address _randomnessGenerator) Ownable(_owner) {
         randomnessGenerator = RandomnessGenerator(_randomnessGenerator);
         dymToken = IERC20(_dymToken);
-        lastDrawTime = block.timestamp;
+        drawBeginTime = block.timestamp;
+    }
+
+    function validateTicket(uint[] memory _chosenNumbers) internal view {
+        require(_chosenNumbers.length == NUMBER_TO_CHOOSE, "You must pick 10 numbers");
+
+        bool[] memory numberPresence = new bool[](NUMBERS_COUNT);
+        for (uint i = 0; i < _chosenNumbers.length; i++) {
+            uint number = _chosenNumbers[i];
+            require(number < NUMBERS_COUNT, "Number out of range");
+            require(numberPresence[number] == false, "Duplicate number found");
+            numberPresence[number] = true;
+        }
     }
 
     function toSet(uint[] memory _chosenNumbers) internal pure returns (bool[] memory) {
         bool[] memory set = new bool[](NUMBERS_COUNT);
         for (uint i = 0; i < _chosenNumbers.length; i++) {
             uint number = _chosenNumbers[i];
-            require(number < NUMBERS_COUNT, "Number out of range");
-            require(set[number] == false, "Duplicate number found");
             set[number] = true;
         }
         return set;
     }
 
     function purchaseTicket(uint[] calldata _chosenNumbers) external {
-        require(_chosenNumbers.length == NUMBER_TO_CHOOSE, "You must pick 10 numbers");
+        require(draws[drawCounter].prepareFinalizeCalled == false, "Can't purchase tickets to draw, which was prepared to finish");
+        validateTicket(_chosenNumbers);
 
         dymToken.transferFrom(msg.sender, address(this), ticketPrice);
 
-        ticketsByDrawId[drawCounter].push(
+        uint ticketId = draws[drawCounter].tickets.length;
+
+        draws[drawCounter].tickets.push(
             Ticket({
                 player: msg.sender,
                 chosenNumbers: toSet(_chosenNumbers),
-                claimed: false
+                claimed: false,
+                winner : false
             })
         );
 
+        // Store the ticket in userTickets mapping with the (drawId, ticketId) pair
+        userTickets[msg.sender].push(TicketId(drawCounter, ticketId));
+
         draws[drawCounter].ticketRevenue += ticketPrice;
-        emit TicketPurchased(msg.sender, ticketsByDrawId[drawCounter].length - 1, _chosenNumbers);
+        emit TicketPurchased(msg.sender, ticketId, _chosenNumbers);
     }
 
-    function prepareFinalizeDraw() external onlyOwner {
+    // Function to check if all randomness has been posted
+    function allRandomnessPosted(uint drawId) public view returns (bool) {
+        Draw storage curDraw = draws[drawId];
+        for (uint i = 0; i < curDraw.randomnessIDs.length; i++) {
+            if (randomnessGenerator.getRandomness(curDraw.randomnessIDs[i]) == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    function prepareFinalizeDraw() external {
+        require(block.timestamp >= drawBeginTime + drawFrequency, "It's not time for the draw yet");
+        require(draws[drawCounter].prepareFinalizeCalled == false, "prepareFinalizeCalled was already called");
+
+        draws[drawCounter].prepareFinalizeCalled = true;
+
         for (uint i = 0; i < NUMBERS_COUNT; i++) {
             draws[drawCounter].randomnessIDs.push(randomnessGenerator.requestRandomness());
         }
     }
 
-    function finalizeDraw() external onlyOwner {
-        lastDrawTime = block.timestamp;
-        require(block.timestamp >= lastDrawTime + drawFrequency, "It's not time for the draw yet");
-
-        Draw storage curDraw = draws[drawCounter];
-
-        uint[] memory randomnessIDs = curDraw.randomnessIDs;
-        uint[] memory randomNumbers = new uint[](randomnessIDs.length);
-        for (uint i = 0; i < randomnessIDs.length; i++) {
-            require(randomnessIDs[i] > 0 , "Randomness wasn't requested, call prepareFinalizeDraw first");
-            randomNumbers[i] = randomnessGenerator.getRandomness(randomnessIDs[i]);
-        }
-
+    // New function to generate winning numbers
+    function generateWinningNumbers(uint[] memory randomNumbers) internal pure returns (bool[] memory) {
         uint[] memory winningNumbersSample = new uint[](NUMBERS_COUNT);
+
+        // Initialize the array with numbers from 0 to NUMBERS_COUNT-1
         for (uint i = 0; i < winningNumbersSample.length; i++) {
             winningNumbersSample[i] = i;
         }
 
         uint winningNumbersLength = winningNumbersSample.length;
+
+        // Remove elements from winningNumbersSample based on random numbers
         for (uint i = 0; i < randomNumbers.length; i++) {
             uint deleteIdx = randomNumbers[i] % winningNumbersLength;
             winningNumbersSample[deleteIdx] = winningNumbersSample[winningNumbersLength - 1];
-            winningNumbersLength--; // simulation of pop
+            winningNumbersLength--; // Simulate pop operation
         }
 
+        // Create the winning numbers array where true indicates a winning number
         bool[] memory winningNumbers = new bool[](NUMBERS_COUNT);
         for (uint i = 0; i < winningNumbersLength; i++) {
             winningNumbers[winningNumbersSample[i]] = true;
         }
+
+        return winningNumbers;
+    }
+
+    function finalizeDraw() external {
+        require(draws[drawCounter].prepareFinalizeCalled == true, "prepareFinalizeCalled wasn't called, call it first");
+        require(block.timestamp >= drawBeginTime + drawFrequency, "It's not time for the draw yet");
+        Draw storage curDraw = draws[drawCounter];
+
+        // Check if all randomness has been posted
+        require(allRandomnessPosted(drawCounter), "Not all randomness has been fulfilled");
+
+        uint[] memory randomnessIDs = curDraw.randomnessIDs;
+        uint[] memory randomNumbers = new uint[](randomnessIDs.length);
+        for (uint i = 0; i < randomnessIDs.length; i++) {
+            randomNumbers[i] = randomnessGenerator.getRandomness(randomnessIDs[i]);
+        }
+
+        // Generate the winning numbers using the new function
+        bool[] memory winningNumbers = generateWinningNumbers(randomNumbers);
+
         curDraw.winningNumbers = winningNumbers;
 
-        Ticket[] memory drawTickets = ticketsByDrawId[drawCounter];
-        for (uint i = 0; i < drawTickets.length; i++) {
-            if (checkIfWinner(drawTickets[i].chosenNumbers, curDraw.winningNumbers)) {
+        // Check for winners
+        for (uint i = 0; i < curDraw.tickets.length; i++) {
+            if (checkIfWinner(curDraw.tickets[i].chosenNumbers, curDraw.winningNumbers)) {
                 curDraw.winnersCount++;
+                curDraw.tickets[i].winner = true;
             }
         }
 
         uint stackersFee = curDraw.ticketRevenue * curDraw.stackersPoolDistributionRatio / 100;
         // TODO: SEND TO STACKERS
 
-        Draw storage nextDraw = draws[drawCounter];
+        // Handle the next draw's winnings
+        Draw storage nextDraw = draws[drawCounter + 1];
         uint nextWinningsBonus = curDraw.ticketRevenue - stackersFee;
         nextDraw.totalWinnings += nextWinningsBonus;
         if (curDraw.winnersCount == 0) {
@@ -142,24 +201,25 @@ contract LotteryAgent is Ownable {
         drawCounter++;
         draws[drawCounter].stackersPoolDistributionRatio = stackersPoolDistributionRatio;
         draws[drawCounter].ticketPrice = ticketPrice;
+        drawBeginTime = block.timestamp;
     }
 
     function claimPrize(uint drawId, uint ticketId) external {
-        Ticket storage ticket = ticketsByDrawId[drawId][ticketId];
+        Ticket storage ticket = draws[drawId].tickets[ticketId];
         require(ticket.player == msg.sender, "You are not the owner of this ticket");
         require(!ticket.claimed, "Prize already claimed");
-        require(draws[drawId].winnersCount > 0, "There were no winners at this draw");
+        require(ticket.winner, "The ticket is not winning one!");
 
-        if (checkIfWinner(ticket.chosenNumbers, draws[drawId].winningNumbers)) {
-            uint prizeAmount = draws[drawId].totalWinnings / draws[drawId].winnersCount;
-            dymToken.transfer(msg.sender, prizeAmount);
-            ticket.claimed = true;
-            emit PrizeClaimed(msg.sender, prizeAmount);
-        }
+        uint prizeAmount = draws[drawId].totalWinnings / draws[drawId].winnersCount;
+        dymToken.transfer(msg.sender, prizeAmount);
+        ticket.claimed = true;
+        emit PrizeClaimed(msg.sender, prizeAmount);
     }
 
     function checkIfWinner(bool[] memory chosenNumbers, bool[] memory winningNumbers) internal pure returns (bool) {
-        require(chosenNumbers.length != winningNumbers.length, "winningNumbers and chosenNumbers count mismatch!");
+        if (chosenNumbers.length != winningNumbers.length) {
+            return false;
+        }
 
         for (uint i = 0; i < chosenNumbers.length; i++) {
             if (chosenNumbers[i] != winningNumbers[i]) {
@@ -185,6 +245,11 @@ contract LotteryAgent is Ownable {
 
     function setDYMTokenAddress(address newTokenAddress) external onlyOwner {
         dymToken = IERC20(newTokenAddress);
+    }
+
+    // Public function for users to see their ticket IDs
+    function getUserTickets(address user) external view returns (TicketId[] memory) {
+        return userTickets[user];
     }
 }
 
