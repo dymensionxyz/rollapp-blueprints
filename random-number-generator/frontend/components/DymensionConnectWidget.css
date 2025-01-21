@@ -1,0 +1,79 @@
+/* Основной контейнер */
+.dymension-connect-widget {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    padding: 20px;
+}
+
+/* Кнопки */
+button {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    font-size: 16px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Кнопка подключения */
+.connect-button {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.connect-button:hover {
+    background-color: #45a049;
+}
+
+.connect-button:active {
+    transform: scale(0.98);
+}
+
+/* Кнопки для кошельков */
+.wallet-button {
+    background-color: #3b5998;
+    color: white;
+    margin: 10px;
+}
+
+.wallet-button:hover {
+    background-color: #2d4373;
+}
+
+.wallet-button:active {
+    transform: scale(0.98);
+}
+
+/* Кнопка отправки */
+.send-button {
+    background-color: #f44336;
+    color: white;
+}
+
+.send-button:hover {
+    background-color: #e53935;
+}
+
+.send-button:active {
+    transform: scale(0.98);
+}
+
+/* Уведомления */
+.snack-bar-messages {
+    margin-top: 20px;
+}
+
+.message {
+    background-color: #333;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    margin: 4px 0;
+    text-align: left;
+    font-size: 14px;
+}
