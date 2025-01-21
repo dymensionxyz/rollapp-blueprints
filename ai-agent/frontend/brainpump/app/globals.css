@@ -3,24 +3,25 @@
 @tailwind utilities;
 
 :root {
-  --neon-green: 126, 255, 0;
+  --neon-green: 74, 222, 128;
+  --teal: 42, 157, 143;
   --graphite: 42, 42, 42;
   --dark-gray: 32, 32, 32;
 
   --background: var(--graphite);
   --foreground: 255, 255, 255;
 
-  --card: 48, 48, 48;
+  --card: 22, 101, 52;
   --card-foreground: 255, 255, 255;
 
-  --primary: var(--neon-green);
+  --primary: var(--teal);
   --primary-foreground: 0, 0, 0;
 
-  --muted: 82, 82, 82;
-  --muted-foreground: 199, 199, 199;
+  --muted: 20, 83, 45;
+  --muted-foreground: 187, 247, 208;
 
-  --accent: var(--neon-green);
-  --accent-foreground: 0, 0, 0;
+  --accent: var(--teal);
+  --accent-foreground: 255, 255, 255;
 }
 
 body {

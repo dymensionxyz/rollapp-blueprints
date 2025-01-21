@@ -53,7 +53,7 @@ interface ContractContextType {
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
 
-const CONTRACT_ADDRESS = "0xEAcA423bF35A0C41d80d37Dc89C87C47baceE4FF" // Replace with actual address
+const CONTRACT_ADDRESS = "0x323EE43220aa77144375ed1128bf8ECf0c526328" // Replace with actual address
 
 const NETWORK_PARAMS = {
     chainId: '0x69D6F', // 433519 in hexadecimal
@@ -256,12 +256,13 @@ export function ContractProvider({ children }: { children: ReactNode }) {
       setBetHistory(history.map((bet: any) => ({
         promptId: bet[0],
         amount: ethers.formatEther(bet[1]),
-        guessedNumber: Number(bet[2]),
-        correctNumber: Number(bet[3]),
-        persuasion: bet[4],
-        resolved: bet[5],
-        won: bet[6],
-        canceled: bet[7]
+        communityFee: ethers.formatEther(bet[2]),
+        guessedNumber: Number(bet[3]),
+        correctNumber: Number(bet[4]),
+        persuasion: bet[5],
+        resolved: bet[6],
+        won: bet[7],
+        canceled: bet[8]
       })))
     } catch (error) {
       console.error('Error getting bet history:', error)

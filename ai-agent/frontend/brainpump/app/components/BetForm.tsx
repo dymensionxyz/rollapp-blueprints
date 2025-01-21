@@ -135,11 +135,11 @@ export function BetForm() {
                       name="persuasion"
                       render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-sm text-gray-300">Jail Break prompt (optional)</FormLabel>
+                            <FormLabel className="text-sm text-gray-300">Jailbreak prompt (optional)</FormLabel>
                             <FormControl>
                               <Textarea
                                   {...field}
-                                  placeholder="Enter your Jail Break prompt here..."
+                                  placeholder="Enter your Jailbreak prompt here..."
                                   className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                   disabled={isLoading}
                               />

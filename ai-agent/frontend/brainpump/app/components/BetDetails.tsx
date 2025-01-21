@@ -80,8 +80,8 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
                         <p className="text-lg">{details.answer}</p>
                     </div>
                     <div>
-                        <p className="text-sm text-gray-400">Jail Break</p>
-                        <p className="text-lg">{details.persuasion || 'No Jail Break provided'}</p>
+                        <p className="text-sm text-gray-400">Jailbreak</p>
+                        <p className="text-lg">{details.persuasion || 'No Jailbreak provided'}</p>
                     </div>
                 </div>
                 <div>

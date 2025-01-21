@@ -3,7 +3,6 @@ pragma solidity ^0.8.18;
 
 import {AIOracle} from "./AIOracle.sol";
 import {House} from "./House.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
  * @title AIGambling
@@ -11,6 +10,22 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * Inherits from the House contract to manage balances and the AIOracle contract to interact with the AI.
  */
 contract AIGambling is House {
+    /**
+     * @dev Structure to represent the game information.
+     * @param houseSupply The total supply of the house.
+     * @param houseActiveBalance The active balance of the house.
+     * @param minBetAmount The minimum bet amount.
+     * @param maxBetAmount The maximum bet amount.
+     * @param maxBetAmountPercentage The maximum bet amount as a percentage of the house balance.
+     */
+    struct GameInfo {
+        uint256 houseSupply;
+        uint256 houseActiveBalance;
+        uint256 minBetAmount;
+        uint256 maxBetAmount;
+        uint256 maxBetAmountPercentage;
+    }
+
     /**
      * @dev Structure to represent a bet. If bet exists, then it is active.
      * Active bet may or may not be resolved.
@@ -35,45 +50,36 @@ contract AIGambling is House {
         bool won;
         bool canceled;
     }
+
+    // Constant prompt to be sent to the AI system
+    string public constant PROMPT = "Generate a number between 1 and 10, inclusive";
+
     // Mapping to store active bets by user address
     mapping(address => Bet) public bets;
+
     // Mapping to store the history of bets by user address
     mapping(address => Bet[]) public history;
-
-    event BetPlaced(address indexed user, Bet bet);
-    event BetResolved(address indexed user, Bet bet);
 
     // Instance of the AIOracle contract
     AIOracle private aiOracle;
 
-    /**
-     * @dev Structure to represent the game information.
-     * @param houseSupply The total supply of the house.
-     * @param houseActiveBalance The active balance of the house.
-     * @param minBetAmount The minimum bet amount.
-     * @param maxBetAmount The maximum bet amount.
-     * @param maxBetAmountPercentage The maximum bet amount as a percentage of the house balance.
-     */
-    struct GameInfo {
-        uint256 houseSupply;
-        uint256 houseActiveBalance;
-        uint256 minBetAmount;
-        uint256 maxBetAmount;
-        uint256 maxBetAmountPercentage;
-    }
-
-    // Constant prompt to be sent to the AI system
-    string public constant PROMPT = "Generate a number between 1 and 10, inclusive";
+    event BetPlaced(address indexed user, Bet bet);
+    event BetResolved(address indexed user, Bet bet);
 
     /**
      * @dev Constructor to initialize the contract with the initial owner and AIOracle address.
      * @param _initialOwner The address of the initial owner.
      * @param _aiOracle The address of the AIOracle contract.
      */
-    constructor(address _initialOwner, address _aiOracle) House(_initialOwner) {
+    function initialize(address _initialOwner, address _aiOracle) public initializer {
         require(_aiOracle != address(0), "Invalid AIOracle address");
+        House.__House_init(_initialOwner);
+
         aiOracle = AIOracle(_aiOracle);
     }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 
     /**
      * @dev Function to place a bet. The user must send Ether with this transaction.
@@ -97,7 +103,6 @@ contract AIGambling is House {
         }
 
         uint256 communityFee = estimateCommunityFee(msg.value);
-//        collectFee(communityFee);
 
         uint64 promptId = aiOracle.submitPrompt(prompt);
 
@@ -237,5 +242,10 @@ contract AIGambling is House {
      */
     function getHistory(address user) external view returns (Bet[] memory) {
         return history[user];
+    }
+
+    function setAIOracle(address _aiOracle) external onlyGovernance {
+        require(_aiOracle != address(0), "Invalid AIOracle address");
+        aiOracle = AIOracle(_aiOracle);
     }
 }

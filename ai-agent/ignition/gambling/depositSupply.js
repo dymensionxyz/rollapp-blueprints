@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-    const aiGamblingAddr = "0xEAcA423bF35A0C41d80d37Dc89C87C47baceE4FF";
+    const aiGamblingAddr = "0x323EE43220aa77144375ed1128bf8ECf0c526328";
     // owner address: 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     [ owner ] = await ethers.getSigners();
 

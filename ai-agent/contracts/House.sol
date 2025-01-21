@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Governance} from "./Governance.sol";
 import {FeeCollector} from "./FeeCollector.sol";
+import {Governance} from "./Governance.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 /**
  * @title House
@@ -16,18 +16,18 @@ import {FeeCollector} from "./FeeCollector.sol";
  * internal functions {addBalance} and {reduceBalance} to manage the balances
  * of the players.
  */
-contract House is Ownable, Governance, FeeCollector {
+contract House is OwnableUpgradeable, Governance, FeeCollector {
     // Minimum bet amount
-    uint256 public minBetAmount = 0.01 ether;
+    uint256 public minBetAmount;
 
     // Maximum bet amount as a percentage of the house balance
-    uint256 public maxBetAmountPercentage = 1;
+    uint256 public maxBetAmountPercentage;
 
     // House fee percentage on winnings
-    uint256 public houseFeePercentage = 5;
+    uint256 public houseFeePercentage;
 
     // Community pool percentage on winnings
-    uint256 public communityPoolPercentage = 10;
+    uint256 public communityPoolPercentage;
 
     // Mapping to store the balance of each player
     mapping(address => uint256) public balances;
@@ -38,10 +38,20 @@ contract House is Ownable, Governance, FeeCollector {
     uint256 public withdrawalBalance;
 
     /**
-     * @dev Constructor that sets the initial owner of the contract.
-     * @param initialOwner The address of the initial owner.
+     * @dev Initializes the contract setting the initial owner.
+     * @param _initialOwner The address of the initial owner.
      */
-    constructor(address initialOwner) Ownable(initialOwner) {}
+    function __House_init(address _initialOwner) public initializer {
+        OwnableUpgradeable.__Ownable_init(_initialOwner);
+
+        minBetAmount = 0.01 ether;
+        maxBetAmountPercentage = 1;
+        houseFeePercentage = 5;
+        communityPoolPercentage = 10;
+    }
+
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() initializer {}
 
     /**
      * @dev Allows the owner to deposit funds into the house.
@@ -121,12 +131,12 @@ contract House is Ownable, Governance, FeeCollector {
     }
 
     /**
-     * @dev Function to estimate the community fee based on the amount.
-     * @param amount The amount to calculate the fee for.
+     * @dev Function to estimate the community fee based on the amount. The function temporarily
+     * returns 0, as the community fee is not implemented yet.
      * @return The community fee.
      */
-    function estimateCommunityFee(uint256 amount) public view returns (uint256) {
-        return amount * communityPoolPercentage / 100;
+    function estimateCommunityFee(uint256 /*amount*/) public pure returns (uint256) {
+        return 0; // currently no community fee
     }
 
     /**
