@@ -81,8 +81,16 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                const success = event.data.response?.code === 0;
-                console[success ? 'log' : 'error']('Tx response:', event.data.response);
+                console.log(event.data.nativeResponse);
+                const success = event.data.nativeResponse?.code === 0 &&
+                    event.data.deliveryTxCode === 0;
+
+                console.log('Transaction details:', {
+                    hash: event.data.hash,
+                    code: event.data.nativeResponse?.code,
+                    rawLog: event.data.nativeResponse?.rawLog
+                });
+
                 props.onTxStatus?.(success ? 'success' : 'error');
             }
             if (event.data.type === 'wallet-error') {

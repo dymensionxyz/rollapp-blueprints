@@ -4,6 +4,7 @@ const config = {
     binaryOptionsContractAddress: "uod1qwlgtx52gsdu7dtp0cekka5zehdl0uj3fhp9acg325fvgs8jdzks70mel0",
     base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
     quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
+    betAmount: "1000000000000000000",
 };
 
 export default config;

@@ -31,6 +31,7 @@ const BinaryOptionsDApp = () => {
     const [isBalanceLoading, setIsBalanceLoading] = useState(false);
     const [balanceError, setBalanceError] = useState<string | null>(null);
     const [isTxPending, setIsTxPending] = useState(false);
+    const [lastTxHash, setLastTxHash] = useState<string | null>(null);
     const [txNotification, setTxNotification] = useState<{
         message: string;
         type: 'pending' | 'success' | 'error';
@@ -232,7 +233,7 @@ const BinaryOptionsDApp = () => {
                                         "direction": selectedDirection,
                                         "bet_amount": {
                                             "denom": "auod",
-                                            "amount": "10000"
+                                            "amount": config.betAmount
                                         },
                                         "market": {
                                             "base": "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
@@ -243,7 +244,7 @@ const BinaryOptionsDApp = () => {
                                 "funds": [
                                     {
                                         "denom": "auod",
-                                        "amount": "10000"
+                                        "amount": config.betAmount
                                     }
                                 ]
                             }
@@ -270,11 +271,13 @@ const BinaryOptionsDApp = () => {
         }
     };
 
-    const handleTxStatus = (status: 'success' | 'error') => {
+
+    const handleTxStatus = (status: 'success' | 'error', txData?: any) => {
+        setLastTxHash(txData?.hash || null);
         setTxNotification({
             message: status === 'success'
-                ? 'Transaction successfully sent!'
-                : 'Transaction failed',
+                ? 'Transacción confirmada en el bloque!'
+                : 'Error en la transacción',
             type: status
         });
         setIsTxPending(false);
@@ -288,14 +291,22 @@ const BinaryOptionsDApp = () => {
                         txNotification.type === 'pending' ? 'bg-blue-600' :
                             txNotification.type === 'success' ? 'bg-green-600' :
                                 'bg-red-600'
-                    } text-white flex items-center space-x-3`}>
+                    } text-white flex items-center space-x-3 min-w-[300px]`}>
                         {txNotification.type === 'pending' && (
                             <div className="animate-spin">🌀</div>
                         )}
-                        <span>{txNotification.message}</span>
+                        <div className="flex-1">
+                            <div className="font-medium">{txNotification.message}</div>
+                            {txNotification.type === 'success' && (
+                                <div className="text-xs mt-1 opacity-80">
+                                    TX Hash: {lastTxHash?.slice(0, 6)}...{lastTxHash?.slice(-4)}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )}
             </div>
+
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">

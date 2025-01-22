@@ -22,7 +22,7 @@ const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel }: Confirma
             <AlertDialogContent className="bg-gray-800 text-white">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="mb-4">Confirm Your Bet</AlertDialogTitle> {/* Añadido mb-4 */}
-                    <AlertDialogDescription className="mb-6">
+                    <AlertDialogDescription>
                         You are betting 0.01 AUOD that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
                         in 5 minutes.

@@ -4,7 +4,6 @@ import { MdClose } from 'react-icons/md'
 export const buttonBase = "px-5 py-3 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2";
 
 export const AlertDialog = Dialog.Root
-export const AlertDialogTrigger = Dialog.Trigger
 
 export const AlertDialogContent = ({ children, className }) => (
     <Dialog.Portal>
