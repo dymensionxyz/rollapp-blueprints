@@ -21,7 +21,6 @@ const BinaryOptionsDApp = () => {
     const [timeLeft, setTimeLeft] = useState(COUNT_DOWN_INTERVAL);
     const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const [betResult] = useState<null | string>(null);
     const [showHistory, setShowHistory] = useState(false);
     const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -29,7 +28,6 @@ const BinaryOptionsDApp = () => {
     const [userBalance, setUserBalance] = useState<string>("0");
     const [isBalanceLoading, setIsBalanceLoading] = useState(false);
     const [balanceError, setBalanceError] = useState<string | null>(null);
-    const [isTxPending, setIsTxPending] = useState(false);
     const [lastTxHash, setLastTxHash] = useState<string | null>(null);
     const [txNotification, setTxNotification] = useState<{
         message: string;
@@ -249,7 +247,6 @@ const BinaryOptionsDApp = () => {
                     ],
                 };
 
-                setIsTxPending(true);
                 setTxNotification({ message: 'Sending transaction...', type: 'pending' });
 
                 dymensionConnectRef.current.sendMessage(msg);
@@ -277,7 +274,6 @@ const BinaryOptionsDApp = () => {
                 : 'Error en la transacción',
             type: status
         });
-        setIsTxPending(false);
     };
 
     return (
@@ -354,19 +350,6 @@ const BinaryOptionsDApp = () => {
                 <div className="text-center text-gray-400">
                     Fixed bet amount: 1 AUOD
                 </div>
-
-                {/* Bet Result */}
-                {betResult && (
-                    <div
-                        className={`text-center p-4 rounded-lg ${
-                            betResult === 'win' ? 'bg-green-600' : 'bg-red-600'
-                        }`}
-                    >
-                        <h3 className="text-2xl font-bold">
-                            {betResult === 'win' ? 'You Won!' : 'You Lost'}
-                        </h3>
-                    </div>
-                )}
 
                 {/* Bet History Button */}
                 <button
