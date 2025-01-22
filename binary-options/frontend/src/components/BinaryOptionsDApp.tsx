@@ -5,7 +5,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     ArrowUpCircle,
     ArrowDownCircle,
-    Clock,
     ChevronRight
 } from 'lucide-react';
 import {
@@ -21,7 +20,12 @@ import {
 
 import { DymensionConnect } from "./DymensionConnect";
 import BtcPriceDisplay from "./BtcPriceDisplay";
-import config from "../config/config"; // Import the new component
+import config from "../config/config";
+import TimeDisplay from "./TimeDisplay";
+import ProgressBar from "./ProgressBar";
+import BetButton from "./BetButton";
+import ConfirmationDialog from "./ConfirmationDialog";
+import BetHistoryDialog from "./BetHistoryDialog";
 
 const FIXED_EXPIRATION = 1700000000;
 const FIXED_BET_AMOUNT_AUOD = "10000";
@@ -115,8 +119,8 @@ const BinaryOptionsDApp = () => {
                                 "contract": "uod1aakfpghcanxtc45gpqlx8j3rq0zcpyf49qmhm9mdjrfx036h4z5sm3q99x",
                                 "msg": new TextEncoder().encode(JSON.stringify({
                                     "place_option": {
-                                        "direction": "up",
-                                        "expiration": 1700000000,
+                                        "direction": selectedDirection,
+                                        "expiration": FIXED_EXPIRATION,
                                         "bet_amount": {
                                             "denom": "auod",
                                             "amount": "10000"
@@ -148,22 +152,13 @@ const BinaryOptionsDApp = () => {
         }
     };
 
-    const formatTime = (seconds: number) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4">
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <DymensionConnect ref={dymensionConnectRef} />
-                <div className="flex items-center text-gray-400">
-                    <Clock className="w-4 h-4 mr-1" />
-                    <span>{formatTime(timeLeft)}</span>
-                </div>
+                <TimeDisplay timeLeft={timeLeft} />
             </div>
 
             {/* Main Content */}
@@ -175,33 +170,20 @@ const BinaryOptionsDApp = () => {
                     error={error}
                 />
 
-                {/* Time Progress Bar */}
-                <div className="w-full bg-gray-700 h-2 rounded-full overflow-hidden">
-                    <div
-                        className="bg-blue-500 h-full transition-all duration-1000"
-                        style={{ width: `${(timeLeft / COUNT_DOWN_INTERVAL) * 100}%` }}
-                    />
-                </div>
+                <ProgressBar progress={(timeLeft / COUNT_DOWN_INTERVAL) * 100} />
 
                 {/* Bet Buttons */}
                 <div className="grid grid-cols-2 gap-4">
-                    <button
-                        onClick={() => handleDirectionSelect('up')}
-                        className="bg-green-600 hover:bg-green-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
+                    <BetButton
+                        direction="up"
+                        onSelect={handleDirectionSelect}
                         disabled={isLoading || !dymensionConnectRef.current?.isConnected}
-                    >
-                        <ArrowUpCircle className="w-12 h-12 mb-2" />
-                        <span className="text-xl font-semibold">Up</span>
-                    </button>
-
-                    <button
-                        onClick={() => handleDirectionSelect('down')}
-                        className="bg-red-600 hover:bg-red-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
+                    />
+                    <BetButton
+                        direction="down"
+                        onSelect={handleDirectionSelect}
                         disabled={isLoading || !dymensionConnectRef.current?.isConnected}
-                    >
-                        <ArrowDownCircle className="w-12 h-12 mb-2" />
-                        <span className="text-xl font-semibold">Down</span>
-                    </button>
+                    />
                 </div>
 
                 {/* Bet Information */}
@@ -232,78 +214,18 @@ const BinaryOptionsDApp = () => {
                 </button>
             </div>
 
-            {/* Bet Confirmation Dialog */}
-            <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
-                <AlertDialogContent className="bg-gray-800 text-white">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Confirm Your Bet</AlertDialogTitle>
-                        <AlertDialogDescription className="text-gray-300">
-                            You are betting 0.01 AUOD that the price
-                            {selectedDirection === 'up' ? ' will go up ' : ' will go down '}
-                            in the next block.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                            onClick={handleConfirmBet}
-                        >
-                            Confirm Bet
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmationDialog
+                isOpen={showConfirmation}
+                direction={selectedDirection}
+                onConfirm={handleConfirmBet}
+                onCancel={() => setShowConfirmation(false)}
+            />
 
-            {/* Bet History Dialog */}
-            <AlertDialog open={showHistory} onOpenChange={setShowHistory}>
-                <AlertDialogContent className="bg-gray-800 text-white">
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Bet History</AlertDialogTitle>
-                    </AlertDialogHeader>
-                    <div className="space-y-4 p-4">
-                        {betHistory.map((bet, index) => (
-                            <div
-                                key={index}
-                                className="bg-gray-700 p-4 rounded-lg flex justify-between items-center"
-                            >
-                                <div className="flex items-center space-x-3">
-                                    {bet.direction === 'up' ? (
-                                        <ArrowUpCircle className="w-6 h-6 text-green-500" />
-                                    ) : (
-                                        <ArrowDownCircle className="w-6 h-6 text-red-500" />
-                                    )}
-                                    <div>
-                                        <div className="text-sm text-gray-400">
-                                            Entry: ${bet.entryPrice.toLocaleString()}
-                                        </div>
-                                        <div className="text-sm text-gray-400">
-                                            Final: ${bet.finalPrice.toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                                <span
-                                    className={
-                                        bet.result === 'win' ? 'text-green-500' : 'text-red-500'
-                                    }
-                                >
-                                  {bet.result.toUpperCase()}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                    <AlertDialogFooter>
-                        <AlertDialogAction
-                            className="bg-blue-600 text-white hover:bg-blue-700"
-                            onClick={() => setShowHistory(false)}
-                        >
-                            Close
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <BetHistoryDialog
+                isOpen={showHistory}
+                history={betHistory}
+                onClose={() => setShowHistory(false)}
+            />
         </div>
     );
 };
