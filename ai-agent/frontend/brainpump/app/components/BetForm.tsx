@@ -12,13 +12,14 @@ import {Loader2} from 'lucide-react'
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form"
 import {ethers} from "ethers";
 import {useForm} from "react-hook-form";
-import { zodResolver } from '@hookform/resolvers/zod'
+import {zodResolver} from '@hookform/resolvers/zod'
 import * as z from 'zod'
+import { Controller } from 'react-hook-form';
 
 const formSchema = z.object({
     guessedNumber: z.string(),
     betAmount: z.string(),
-    persuasion: z.string().max(500, { message: "Persuasion must be 500 characters or less" }).optional()
+    persuasion: z.string().max(500, {message: "Persuasion must be 500 characters or less"}).optional()
 })
 
 export function BetForm() {
@@ -137,6 +138,16 @@ export function BetForm() {
             return;
         }
 
+        const guess = Number(inputElement.value)
+        if (guess < 1) {
+            setGuessedNumber(1);
+            return;
+        }
+        if (guess > 10) {
+            setGuessedNumber(10);
+            return;
+        }
+
         setGuessedNumber(Number(inputElement.value));
     }, [bet, setGuessedNumber, guessedNumber, gameInfo]);
 
@@ -183,7 +194,8 @@ export function BetForm() {
                                             <Input
                                                 type="number"
                                                 {...field}
-                                                placeholder=''
+                                                placeholder='0'
+                                                value={guessedNumber ?? ''}
                                                 onInput={onGuessChange}
                                                 className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                                 disabled={isLoading}
@@ -201,11 +213,19 @@ export function BetForm() {
                                         <FormLabel className="text-sm text-gray-300">Jailbreak prompt
                                             (optional)</FormLabel>
                                         <FormControl>
-                                            <Textarea
-                                                {...field}
-                                                placeholder="Enter your Jailbreak prompt here..."
-                                                className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                                                disabled={isLoading}
+                                            <Controller
+                                                name="persuasion"
+                                                control={form.control}
+                                                render={({ field }) => (
+                                                    <Textarea
+                                                        {...field}
+                                                        placeholder="Enter your Jailbreak prompt here..."
+                                                        value={persuasion ?? ''}
+                                                        className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
+                                                        disabled={isLoading}
+                                                        onInput={onPersuasionChange}
+                                                    />
+                                                )}
                                             />
                                         </FormControl>
                                         <FormMessage/>

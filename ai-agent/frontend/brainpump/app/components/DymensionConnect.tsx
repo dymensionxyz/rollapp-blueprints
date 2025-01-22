@@ -172,9 +172,9 @@ export function DymensionConnect() {
     ]);
 
     return (
-        <>
+        <div className="absolute">
             <button
-                className='button connect-wallet-button'
+                className="px-4 py-2 bg-[rgb(var(--neon-green))] text-black rounded-md hover:opacity-90 transition-opacity"
                 disabled={!dymensionConnectReady}
                 ref={buttonRef}
                 onClick={() => {
@@ -190,10 +190,10 @@ export function DymensionConnect() {
                 style={{display: dymensionConnectOpen || qrAccount ? 'block' : 'none'}}
                 allow='clipboard-read; clipboard-write; camera'
                 title='dymension-connect'
-                className='dymension-connect-iframe'
+                className='relative w-70 h-96 z-10'
                 src={dymensionConnectUrl}
             />
-        </>
+        </div>
     );
 }
 

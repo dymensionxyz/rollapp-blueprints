@@ -9,7 +9,7 @@ import {DymensionConnect} from "@/app/components/DymensionConnect";
 export default function Home() {
     return (
         <main className="min-h-screen relative bg-[rgb(var(--graphite))]">
-            <div>
+            <div className="absolute top-4 left-4 z-10">
                 <DymensionConnect/>
             </div>
 
