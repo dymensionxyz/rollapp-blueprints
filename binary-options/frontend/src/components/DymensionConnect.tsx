@@ -3,7 +3,6 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Wallet } from "lucide-react";
-import { useContract } from "./contexts/ContractContext";
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
@@ -15,9 +14,8 @@ export const DymensionConnect = forwardRef((props, ref) => {
     const buttonRef = useRef(null);
     const iframeRef = useRef(null);
 
-    const { connect } = useContract();
-
     const [address, setAddress] = useState("");
+    const [isConnected, setIsConnected] = useState(false);
 
     const qrAccount = useMemo(() => new URLSearchParams(window.location.search).get('qrAccount'), []);
 
@@ -69,16 +67,16 @@ export const DymensionConnect = forwardRef((props, ref) => {
                 setDymensionConnectOpen(event.data.value);
             }
             if (event.data.type === 'connect') {
-                connect();
                 setAddress(event.data.address);
+                setIsConnected(true);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'disconnect') {
                 setAddress("");
+                setIsConnected(false);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                console.log("response", event.data.response);
                 console.error(JSON.stringify(event.data.response) || event.data.error?.message);
             }
             if (event.data.type === 'wallet-error') {
@@ -87,11 +85,12 @@ export const DymensionConnect = forwardRef((props, ref) => {
         };
         window.addEventListener('message', handleMessage);
         return () => window.removeEventListener('message', handleMessage);
-    }, [connect, updateTriggerBoundingRect]);
+    }, [updateTriggerBoundingRect]);
 
-    // Exponer sendMessage a través del ref
     useImperativeHandle(ref, () => ({
-        sendMessage
+        sendMessage,
+        isConnected,
+        address,
     }));
 
     return (

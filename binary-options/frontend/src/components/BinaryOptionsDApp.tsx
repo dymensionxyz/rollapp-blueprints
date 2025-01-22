@@ -19,9 +19,6 @@ import {
     AlertDialogTitle,
 } from "./ui/alert-dialog";
 
-import { useContract } from './contexts/ContractContext';
-import { PlaceOptionMsg } from './contexts/ContractContext';
-
 import { DymensionConnect } from "./DymensionConnect";
 import BtcPriceDisplay from "./BtcPriceDisplay";
 import config from "../config/config"; // Import the new component
@@ -44,8 +41,6 @@ const BinaryOptionsDApp = () => {
         { direction: 'up', entryPrice: 44950.20, finalPrice: 45100.30, result: 'win' },
         { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
     ];
-
-    const { isConnected, placeOption } = useContract();
 
     const dymensionConnectRef = useRef(null);
 
@@ -96,16 +91,8 @@ const BinaryOptionsDApp = () => {
     }, [timeLeft]);
 
     const handleDirectionSelect = (direction: 'up' | 'down') => {
-        console.log(`Selected direction: ${direction}`);
         setSelectedDirection(direction);
         setShowConfirmation(true);
-
-        if (dymensionConnectRef.current) {
-            dymensionConnectRef.current.sendMessage({
-                type: 'directionSelected',
-                direction
-            });
-        }
     };
 
     const handleConfirmBet = async () => {
@@ -113,21 +100,6 @@ const BinaryOptionsDApp = () => {
 
         try {
             setIsLoading(true);
-
-            // const msg: PlaceOptionMsg = {
-            //     direction: selectedDirection === 'up' ? 'up' : 'down',
-            //     expiration: FIXED_EXPIRATION,
-            //     bet_amount: {
-            //         denom: "auod",
-            //         amount: FIXED_BET_AMOUNT_AUOD,
-            //     },
-            //     market: {
-            //         base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
-            //         quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
-            //     },
-            // };
-            //
-            // await placeOption(msg);
 
             console.log("Option placed!");
 
@@ -139,7 +111,7 @@ const BinaryOptionsDApp = () => {
                         {
                             typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
                             value: {
-                                "sender": "uod1fk2xfk4pjf5pagecwp43n20jwfqgh2usvdfxc7",
+                                "sender": dymensionConnectRef.current.address,
                                 "contract": "uod1aakfpghcanxtc45gpqlx8j3rq0zcpyf49qmhm9mdjrfx036h4z5sm3q99x",
                                 "msg": new TextEncoder().encode(JSON.stringify({
                                     "place_option": {
@@ -182,9 +154,6 @@ const BinaryOptionsDApp = () => {
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // ------------------------------------------------------------------
-    // RENDER
-    // ------------------------------------------------------------------
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4">
 
@@ -219,7 +188,7 @@ const BinaryOptionsDApp = () => {
                     <button
                         onClick={() => handleDirectionSelect('up')}
                         className="bg-green-600 hover:bg-green-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
-                        disabled={isLoading || !isConnected}
+                        disabled={isLoading || !dymensionConnectRef.current?.isConnected}
                     >
                         <ArrowUpCircle className="w-12 h-12 mb-2" />
                         <span className="text-xl font-semibold">Up</span>
@@ -228,7 +197,7 @@ const BinaryOptionsDApp = () => {
                     <button
                         onClick={() => handleDirectionSelect('down')}
                         className="bg-red-600 hover:bg-red-700 p-6 rounded-xl flex flex-col items-center transition-all duration-200 active:scale-95"
-                        disabled={isLoading || !isConnected}
+                        disabled={isLoading || !dymensionConnectRef.current?.isConnected}
                     >
                         <ArrowDownCircle className="w-12 h-12 mb-2" />
                         <span className="text-xl font-semibold">Down</span>
@@ -269,7 +238,7 @@ const BinaryOptionsDApp = () => {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Confirm Your Bet</AlertDialogTitle>
                         <AlertDialogDescription className="text-gray-300">
-                            You are betting 0.01 AWSM that the price
+                            You are betting 0.01 AUOD that the price
                             {selectedDirection === 'up' ? ' will go up ' : ' will go down '}
                             in the next block.
                         </AlertDialogDescription>
