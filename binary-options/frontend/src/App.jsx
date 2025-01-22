@@ -1,4 +1,4 @@
-import BinaryOptionsDApp from './components/BinaryOptionsDApp';
+import BinaryOptionsDApp from './components/pages/BinaryOptionsDApp';
 
 function App() {
     return (

@@ -8,7 +8,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     buttonBase,
-} from "./ui/alert-dialog";
+} from "./AlertDialog";
 
 interface BetHistoryItem {
     direction: 'up' | 'down';

@@ -7,14 +7,14 @@ import {
     ChevronRight
 } from 'lucide-react';
 
-import { DymensionConnect } from "./DymensionConnect";
-import BtcPriceDisplay from "./BtcPriceDisplay";
-import config from "../config/config";
-import TimeDisplay from "./TimeDisplay";
-import ProgressBar from "./ProgressBar";
-import BetButton from "./BetButton";
-import ConfirmationDialog from "./ConfirmationDialog";
-import BetHistoryDialog from "./BetHistoryDialog";
+import {DymensionConnect} from "../ui/DymensionConnect";
+import config from "../../config/config";
+import BtcPriceDisplay from "../ui/BtcPriceDisplay";
+import TimeDisplay from "../ui/TimeDisplay";
+import BetHistoryDialog from "../ui/BetHistoryDialog";
+import ConfirmationDialog from "../ui/ConfirmationDialog";
+import ProgressBar from "../ui/ProgressBar";
+import BetButton from "../ui/BetButton";
 
 const FIXED_EXPIRATION = 1700000000;
 const FIXED_BET_AMOUNT_AUOD = "10000";
