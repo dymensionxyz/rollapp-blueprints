@@ -9,7 +9,7 @@ const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
 
 interface DymensionConnectProps {
-    onTxStatus?: (status: 'success' | 'error') => void;
+    onTxStatus?: (status: 'success' | 'error', txData?: any) => void;
 }
 
 export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) => {
@@ -81,16 +81,37 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                const success = event.data.nativeResponse?.code === 0 &&
-                    event.data.deliveryTxCode === 0;
+                try {
+                    // Parsear la respuesta anidada
+                    const responseData = JSON.parse(event.data.response);
+                    console.log('[DEBUG] Parsed transaction response:', responseData);
 
-                console.log('Transaction details:', {
-                    hash: event.data.hash,
-                    code: event.data.nativeResponse?.code,
-                    rawLog: event.data.nativeResponse?.rawLog
-                });
+                    // Determinar éxito basado en código y rawLog
+                    const nativeResponse = responseData.nativeResponse;
+                    const success = nativeResponse?.code === 0;
+                    const hasNonCriticalErrors = nativeResponse?.rawLog?.includes('fee_consumption');
 
-                props.onTxStatus?.(success ? 'success' : 'error');
+                    // Enviar estado y datos parseados
+                    props.onTxStatus?.(success ? 'success' : 'error', {
+                        hash: responseData.hash,
+                        rawData: responseData,
+                        isNonCriticalError: hasNonCriticalErrors // Nueva bandera para errores no críticos
+                    });
+
+                    // Log detallado
+                    if (!success || hasNonCriticalErrors) {
+                        console.log('[DEBUG] Transaction details:', {
+                            code: nativeResponse?.code,
+                            rawLog: nativeResponse?.rawLog,
+                            gasUsed: nativeResponse?.gasUsed,
+                            gasWanted: nativeResponse?.gasWanted
+                        });
+                    }
+
+                } catch (error) {
+                    console.error('[ERROR] Failed to parse transaction response:', error);
+                    props.onTxStatus?.('error', { rawData: event.data });
+                }
             }
             if (event.data.type === 'wallet-error') {
                 console.error('Wallet error:', event.data.error);

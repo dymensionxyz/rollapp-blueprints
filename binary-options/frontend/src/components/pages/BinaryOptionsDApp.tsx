@@ -267,13 +267,32 @@ const BinaryOptionsDApp = () => {
 
 
     const handleTxStatus = (status: 'success' | 'error', txData?: any) => {
+        console.log('[DEBUG] Transaction status:', status, txData);
+
         setLastTxHash(txData?.hash || null);
-        setTxNotification({
-            message: status === 'success'
-                ? 'Transacción confirmada en el bloque!'
-                : 'Error en la transacción',
-            type: status
-        });
+
+        // Manejar errores no críticos
+        if (status === 'success' && txData?.isNonCriticalError) {
+            setTxNotification({
+                message: 'Transacción exitosa con advertencias (ver logs)',
+                type: 'pending'
+            });
+        } else {
+            setTxNotification({
+                message: status === 'success'
+                    ? 'Transacción confirmada en el bloque!'
+                    : `Error (Código: ${txData?.rawData?.nativeResponse?.code || 'desconocido'})`,
+                type: status
+            });
+        }
+
+        // Actualizar datos incluso si hay errores no críticos
+        if (status === 'success') {
+            setTimeout(() => {
+                fetchBetHistory();
+                fetchUserBalance();
+            }, 5000);
+        }
     };
 
     return (
