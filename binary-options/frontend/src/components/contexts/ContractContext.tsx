@@ -200,8 +200,6 @@ export function ContractProvider({ children }: { children: ReactNode }) {
             place_option: msg,
         }
 
-
-
         try {
             console.log("address before execute:", address);
 

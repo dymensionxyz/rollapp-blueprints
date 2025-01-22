@@ -1,6 +1,7 @@
+// BinaryOptionsDApp.jsx
 'use client'
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
     ArrowUpCircle,
     ArrowDownCircle,
@@ -46,6 +47,8 @@ const BinaryOptionsDApp = () => {
 
     const { isConnected, placeOption } = useContract();
 
+    const dymensionConnectRef = useRef(null);
+
     const fetchBTCPrice = async () => {
         try {
             setIsLoading(true);
@@ -61,7 +64,6 @@ const BinaryOptionsDApp = () => {
             const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.contractAddress}/smart/${encodedQuery}`;
 
             console.log(`Fetching BTC price from contract: ${url}`);
-
             const response = await fetch(url);
             if (!response.ok) throw new Error('Failed to fetch BTC price');
 
@@ -97,6 +99,13 @@ const BinaryOptionsDApp = () => {
         console.log(`Selected direction: ${direction}`);
         setSelectedDirection(direction);
         setShowConfirmation(true);
+
+        if (dymensionConnectRef.current) {
+            dymensionConnectRef.current.sendMessage({
+                type: 'directionSelected',
+                direction
+            });
+        }
     };
 
     const handleConfirmBet = async () => {
@@ -105,21 +114,60 @@ const BinaryOptionsDApp = () => {
         try {
             setIsLoading(true);
 
-            const msg: PlaceOptionMsg = {
-                direction: selectedDirection === 'up' ? 'up' : 'down',
-                expiration: FIXED_EXPIRATION,
-                bet_amount: {
-                    denom: "auod",
-                    amount: FIXED_BET_AMOUNT_AUOD,
-                },
-                market: {
-                    base:  "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
-                    quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
-                },
-            };
+            // const msg: PlaceOptionMsg = {
+            //     direction: selectedDirection === 'up' ? 'up' : 'down',
+            //     expiration: FIXED_EXPIRATION,
+            //     bet_amount: {
+            //         denom: "auod",
+            //         amount: FIXED_BET_AMOUNT_AUOD,
+            //     },
+            //     market: {
+            //         base: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
+            //         quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
+            //     },
+            // };
+            //
+            // await placeOption(msg);
 
-            await placeOption(msg);
             console.log("Option placed!");
+
+            if (dymensionConnectRef.current) {
+                console.log("Sending message to Dymension Connect");
+                let msg = {
+                    type: "executeTx",
+                    messages: [
+                        {
+                            typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+                            value: {
+                                "sender": "uod1fk2xfk4pjf5pagecwp43n20jwfqgh2usvdfxc7",
+                                "contract": "uod1aakfpghcanxtc45gpqlx8j3rq0zcpyf49qmhm9mdjrfx036h4z5sm3q99x",
+                                "msg": new TextEncoder().encode(JSON.stringify({
+                                    "place_option": {
+                                        "direction": "up",
+                                        "expiration": 1700000000,
+                                        "bet_amount": {
+                                            "denom": "auod",
+                                            "amount": "10000"
+                                        },
+                                        "market": {
+                                            "base": "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
+                                            "quote": "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc"
+                                        }
+                                    }
+                                })),
+                                "funds": [
+                                    {
+                                        "denom": "auod",
+                                        "amount": "10000"
+                                    }
+                                ]
+                            }
+                        },
+                    ],
+                };
+                dymensionConnectRef.current.sendMessage(msg);
+            }
+
         } catch (error) {
             console.error("Error placing bet:", error);
         } finally {
@@ -142,7 +190,7 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <DymensionConnect />
+                <DymensionConnect ref={dymensionConnectRef} />
                 <div className="flex items-center text-gray-400">
                     <Clock className="w-4 h-4 mr-1" />
                     <span>{formatTime(timeLeft)}</span>
@@ -272,8 +320,8 @@ const BinaryOptionsDApp = () => {
                                         bet.result === 'win' ? 'text-green-500' : 'text-red-500'
                                     }
                                 >
-                  {bet.result.toUpperCase()}
-                </span>
+                                  {bet.result.toUpperCase()}
+                                </span>
                             </div>
                         ))}
                     </div>
