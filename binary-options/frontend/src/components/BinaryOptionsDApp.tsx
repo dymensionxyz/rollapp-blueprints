@@ -29,6 +29,9 @@ const BinaryOptionsDApp = () => {
     const [showHistory, setShowHistory] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [userBalance, setUserBalance] = useState<string>("0");
+    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
+    const [balanceError, setBalanceError] = useState<string | null>(null);
 
     const betHistory = [
         { direction: 'up', entryPrice: 44950.20, finalPrice: 45100.30, result: 'win' },
@@ -36,6 +39,51 @@ const BinaryOptionsDApp = () => {
     ];
 
     const dymensionConnectRef = useRef(null);
+
+    const fetchUserBalance = async () => {
+        try {
+            setIsBalanceLoading(true);
+            setBalanceError(null);
+
+            const address = dymensionConnectRef.current?.address;
+            if (!address) {
+                setBalanceError("Wallet not connected");
+                return;
+            }
+
+            const response = await fetch(
+                `${config.apiBaseUrl}/cosmos/bank/v1beta1/balances/${address}`
+            );
+
+            if (!response.ok) throw new Error("Error fetching balance");
+
+            const { balances } = await response.json();
+            const auodBalance = balances.find((c: any) => c.denom === "auod")?.amount || "0";
+
+            setUserBalance(auodBalance);
+        } catch (err) {
+            console.error("Balance fetch failed:", err);
+            setBalanceError("Error fetching balance");
+        } finally {
+            setIsBalanceLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        let intervalId: NodeJS.Timeout;
+
+        const checkAndFetchBalance = async () => {
+            if (dymensionConnectRef.current?.address) {
+                await fetchUserBalance();
+                clearInterval(intervalId);
+            }
+        };
+
+        intervalId = setInterval(checkAndFetchBalance, 500);
+
+        return () => clearInterval(intervalId);
+    }, [dymensionConnectRef.current?.address]);
+
 
     const fetchBTCPrice = async () => {
         try {
@@ -69,6 +117,7 @@ const BinaryOptionsDApp = () => {
 
     useEffect(() => {
         fetchBTCPrice();
+        fetchUserBalance();
 
         const interval = setInterval(fetchBTCPrice, 60000);
         return () => clearInterval(interval);
@@ -146,8 +195,20 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <DymensionConnect ref={dymensionConnectRef} />
-                <TimeDisplay timeLeft={timeLeft} />
+                <DymensionConnect ref={dymensionConnectRef}/>
+                <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
+                    {isBalanceLoading ? (
+                        <div className="flex items-center gap-2">
+                            <span className="animate-spin">🌀</span>
+                            Loading...
+                        </div>
+                    ) : balanceError ? (
+                        <div className="text-red-400 text-sm">{balanceError}</div>
+                    ) : (
+                        `Balance: ${(Number(userBalance) / 1000000).toFixed(2)} AUOD`
+                    )}
+                </div>
+                <TimeDisplay timeLeft={timeLeft}/>
             </div>
 
             {/* Main Content */}
@@ -159,7 +220,7 @@ const BinaryOptionsDApp = () => {
                     error={error}
                 />
 
-                <ProgressBar progress={(timeLeft / COUNT_DOWN_INTERVAL) * 100} />
+                <ProgressBar progress={(timeLeft / COUNT_DOWN_INTERVAL) * 100}/>
 
                 {/* Bet Buttons */}
                 <div className="grid grid-cols-2 gap-4">
