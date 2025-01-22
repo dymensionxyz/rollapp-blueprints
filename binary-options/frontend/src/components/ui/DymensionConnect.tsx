@@ -8,7 +8,11 @@ import { Wallet } from "lucide-react";
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
 
-export const DymensionConnect = forwardRef((props, ref) => {
+interface DymensionConnectProps {
+    onTxStatus?: (status: 'success' | 'error') => void;
+}
+
+export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) => {
     const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);
     const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
     const buttonRef = useRef(null);
@@ -77,7 +81,9 @@ export const DymensionConnect = forwardRef((props, ref) => {
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                console.error(JSON.stringify(event.data.response) || event.data.error?.message);
+                const success = event.data.response?.code === 0;
+                console[success ? 'log' : 'error']('Tx response:', event.data.response);
+                props.onTxStatus?.(success ? 'success' : 'error');
             }
             if (event.data.type === 'wallet-error') {
                 console.error('Wallet error:', event.data.error);

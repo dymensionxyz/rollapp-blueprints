@@ -30,6 +30,11 @@ const BinaryOptionsDApp = () => {
     const [userBalance, setUserBalance] = useState<string>("0");
     const [isBalanceLoading, setIsBalanceLoading] = useState(false);
     const [balanceError, setBalanceError] = useState<string | null>(null);
+    const [isTxPending, setIsTxPending] = useState(false);
+    const [txNotification, setTxNotification] = useState<{
+        message: string;
+        type: 'pending' | 'success' | 'error';
+    } | null>(null);
 
     const dymensionConnectRef = useRef(null);
 
@@ -245,6 +250,10 @@ const BinaryOptionsDApp = () => {
                         },
                     ],
                 };
+
+                setIsTxPending(true);
+                setTxNotification({ message: 'Sending transaction...', type: 'pending' });
+
                 dymensionConnectRef.current.sendMessage(msg);
 
                 setTimeout(() => {
@@ -261,12 +270,36 @@ const BinaryOptionsDApp = () => {
         }
     };
 
+    const handleTxStatus = (status: 'success' | 'error') => {
+        setTxNotification({
+            message: status === 'success'
+                ? 'Transaction successfully sent!'
+                : 'Transaction failed',
+            type: status
+        });
+        setIsTxPending(false);
+    };
+
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4">
+            <div className="fixed bottom-4 right-4 space-y-2">
+                {txNotification && (
+                    <div className={`p-4 rounded-lg ${
+                        txNotification.type === 'pending' ? 'bg-blue-600' :
+                            txNotification.type === 'success' ? 'bg-green-600' :
+                                'bg-red-600'
+                    } text-white flex items-center space-x-3`}>
+                        {txNotification.type === 'pending' && (
+                            <div className="animate-spin">🌀</div>
+                        )}
+                        <span>{txNotification.message}</span>
+                    </div>
+                )}
+            </div>
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <DymensionConnect ref={dymensionConnectRef}/>
+                <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus}/>
                 <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
                     {isBalanceLoading ? (
                         <div className="flex items-center gap-2">
@@ -333,7 +366,7 @@ const BinaryOptionsDApp = () => {
                     className="w-full bg-gray-800 p-4 rounded-lg flex justify-between items-center"
                 >
                     <span>Bet History</span>
-                    <ChevronRight className="w-5 h-5" />
+                    <ChevronRight className="w-5 h-5"/>
                 </button>
             </div>
 
