@@ -81,7 +81,6 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                console.log(event.data.nativeResponse);
                 const success = event.data.nativeResponse?.code === 0 &&
                     event.data.deliveryTxCode === 0;
 

@@ -1,4 +1,3 @@
-// BinaryOptionsDApp.jsx
 'use client'
 
 // @ts-ignore
@@ -216,8 +215,6 @@ const BinaryOptionsDApp = () => {
         try {
             setIsLoading(true);
 
-            console.log("Option placed!");
-
             if (dymensionConnectRef.current) {
                 console.log("Sending message to Dymension Connect");
                 let msg = {
@@ -232,18 +229,18 @@ const BinaryOptionsDApp = () => {
                                     "place_option": {
                                         "direction": selectedDirection,
                                         "bet_amount": {
-                                            "denom": "auod",
+                                            "denom": config.denom,
                                             "amount": config.betAmount
                                         },
                                         "market": {
-                                            "base": "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/ubtc",
-                                            "quote": "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc"
+                                            "base": config.base,
+                                            "quote": config.quote,
                                         }
                                     }
                                 })),
                                 "funds": [
                                     {
-                                        "denom": "auod",
+                                        "denom": config.denom,
                                         "amount": config.betAmount
                                     }
                                 ]

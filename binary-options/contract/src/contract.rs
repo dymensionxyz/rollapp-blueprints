@@ -181,7 +181,7 @@ fn query_list_options(
     let start = start_after.map(Bound::exclusive);
 
     let options: Vec<OptionInfo> = OPTIONS
-        .range(deps.storage, start, None, Order::Ascending)
+        .range(deps.storage, start, None, Order::Descending)
         .take(limit)
         .map(|res| {
             let (_key, option_info) = res?;
