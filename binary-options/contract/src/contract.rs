@@ -37,7 +37,7 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
 fn execute_place_option(
     deps: DepsMut,
-    _env: Env,
+    env: Env,
     info: MessageInfo,
     msg: PlaceOptionMsg,
 ) -> StdResult<Response> {
@@ -54,6 +54,8 @@ fn execute_place_option(
     }
 
     let config = CONFIG.load(deps.storage)?;
+
+    let expiration = env.block.time.seconds() + config.expiration_period;
 
     let current_price = OracleQueryMsg::get_price(
         &deps.querier,
@@ -74,7 +76,7 @@ fn execute_place_option(
         market: msg.market,
         direction: msg.direction,
         strike_price: current_price,
-        expiration: msg.expiration,
+        expiration,
         bet_amount: msg.bet_amount.clone(),
         settled: false,
         outcome: None,
@@ -86,7 +88,7 @@ fn execute_place_option(
         .add_attribute("action", "place_option")
         .add_attribute("option_id", option_counter.to_string())
         .add_attribute("strike_price", current_price.to_string())
-        .add_attribute("expiration", msg.expiration.to_string()))
+        .add_attribute("expiration", expiration.to_string()))
 }
 
 fn execute_settle_option(
@@ -222,6 +224,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(150), // e.g. 1.5x payout
+            expiration_period: 300, // 5 minutes
         };
 
         // Call instantiate
@@ -269,6 +272,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(150), // e.g., 1.50
+            expiration_period: 300, // 5 minutes
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -348,6 +352,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -384,6 +389,7 @@ mod tests {
         let init_config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(200), // e.g. 2.00 (200% or x2 payout)
+            expiration_period: 300,
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info, init_config.clone())
             .expect("instantiation should work");
@@ -424,6 +430,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -575,6 +582,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::from_str("1.5").unwrap(), // 1.50
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg.clone())
             .expect("instantiate should work");
@@ -634,7 +642,6 @@ mod tests {
         // -------------------------------------------------------
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Up,             // e.g. call option
-            expiration: 1_700_000_000,            // some future time
             bet_amount: coin(1_000_000, "uatom"), // must match info.funds
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -698,13 +705,13 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
         // Build ExecuteMsg
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Down,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uatom"),
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -733,6 +740,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -752,7 +760,6 @@ mod tests {
         // Build ExecuteMsg
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Down,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uatom"), // we expected 1000
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -781,6 +788,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -800,7 +808,6 @@ mod tests {
         // Build ExecuteMsg with mismatch denom
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Up,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uluna"),
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -831,6 +838,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -883,6 +891,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -935,6 +944,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::from_str("1.5").unwrap(), // e.g. 1.50
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -1036,6 +1046,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::from_str("2").unwrap(), // x2, irrelevant if lost
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 

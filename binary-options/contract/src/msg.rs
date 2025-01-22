@@ -16,7 +16,6 @@ pub enum Direction {
 #[cw_serde]
 pub struct PlaceOptionMsg {
     pub direction: Direction,
-    pub expiration: u64,
     pub bet_amount: Coin,
     pub market: MarketPair,
 }
@@ -63,5 +62,6 @@ pub struct ListOptionsResponse {
 pub struct Config {
     pub oracle_addr: Addr,
     pub payout_multiplier: Decimal,
+    pub expiration_period: u64,
 }
 
