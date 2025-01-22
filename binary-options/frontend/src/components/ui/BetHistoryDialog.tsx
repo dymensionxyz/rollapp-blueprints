@@ -1,4 +1,3 @@
-// components/BetHistoryDialog.tsx
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import {
     AlertDialog,
@@ -7,14 +6,16 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
-    buttonBase,
 } from "./AlertDialog";
 
-interface BetHistoryItem {
+export interface BetHistoryItem {
+    id: number;
     direction: 'up' | 'down';
-    entryPrice: number;
-    finalPrice: number;
-    result: 'win' | 'loss';
+    strikePrice: number;
+    expiration: number;
+    betAmount: string;
+    outcome: boolean | null;
+    settled: boolean;
 }
 
 interface BetHistoryDialogProps {
@@ -24,42 +25,58 @@ interface BetHistoryDialogProps {
 }
 
 const BetHistoryDialog = ({ isOpen, history, onClose }: BetHistoryDialogProps) => {
+    const getResultStatus = (outcome: boolean | null, settled: boolean) => {
+        if (!settled) return "Pending";
+        return outcome ? "Win" : "Loss";
+    };
+
     return (
         <AlertDialog open={isOpen} onOpenChange={onClose}>
-            <AlertDialogContent className="bg-gray-800 text-white">
+            <AlertDialogContent className="bg-gray-800 text-white max-h-[80vh] overflow-y-auto">
                 <AlertDialogHeader>
                     <AlertDialogTitle>Bet History</AlertDialogTitle>
                 </AlertDialogHeader>
                 <div className="space-y-4 p-4">
-                    {history.map((bet, index) => (
+                    {history.map((bet) => (
                         <div
-                            key={index}
-                            className="bg-gray-700 p-4 rounded-lg flex justify-between items-center"
+                            key={bet.id}
+                            className="bg-gray-700 p-4 rounded-lg flex flex-col space-y-2"
                         >
-                            <div className="flex items-center space-x-3">
-                                {bet.direction === 'up' ? (
-                                    <ArrowUpCircle className="w-6 h-6 text-green-500" />
-                                ) : (
-                                    <ArrowDownCircle className="w-6 h-6 text-red-500" />
-                                )}
-                                <div>
-                                    <div className="text-sm text-gray-400">
-                                        Entry: ${bet.entryPrice.toLocaleString()}
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                        Final: ${bet.finalPrice.toLocaleString()}
+                            <div className="flex justify-between items-center">
+                                <div className="flex items-center space-x-3">
+                                    {bet.direction === 'up' ? (
+                                        <ArrowUpCircle className="w-6 h-6 text-green-500" />
+                                    ) : (
+                                        <ArrowDownCircle className="w-6 h-6 text-red-500" />
+                                    )}
+                                    <div>
+                                        <div className="font-medium">
+                                            {bet.direction.toUpperCase()} • {bet.betAmount}
+                                        </div>
+                                        <div className="text-sm text-gray-400">
+                                            Strike: ${bet.strikePrice.toFixed(2)}
+                                        </div>
                                     </div>
                                 </div>
+                                <span className={`text-sm ${
+                                    getResultStatus(bet.outcome, bet.settled) === 'Win'
+                                        ? 'text-green-500'
+                                        : getResultStatus(bet.outcome, bet.settled) === 'Loss'
+                                            ? 'text-red-500'
+                                            : 'text-yellow-500'
+                                }`}>
+                  {getResultStatus(bet.outcome, bet.settled)}
+                </span>
                             </div>
-                            <span className={bet.result === 'win' ? 'text-green-500' : 'text-red-500'}>
-                {bet.result.toUpperCase()}
-              </span>
+                            <div className="text-xs text-gray-400">
+                                Expiration: {new Date(bet.expiration * 1000).toLocaleString()}
+                            </div>
                         </div>
                     ))}
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogAction
-                        className={`${buttonBase} bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500`}
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
                         onClick={onClose}
                     >
                         Close

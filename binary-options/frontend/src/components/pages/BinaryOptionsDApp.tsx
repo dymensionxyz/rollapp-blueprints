@@ -11,13 +11,11 @@ import {DymensionConnect} from "../ui/DymensionConnect";
 import config from "../../config/config";
 import BtcPriceDisplay from "../ui/BtcPriceDisplay";
 import TimeDisplay from "../ui/TimeDisplay";
-import BetHistoryDialog from "../ui/BetHistoryDialog";
+import BetHistoryDialog, {BetHistoryItem} from "../ui/BetHistoryDialog";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
 import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
 
-const FIXED_EXPIRATION = 1700000000;
-const FIXED_BET_AMOUNT_AUOD = "10000";
 const COUNT_DOWN_INTERVAL = 60;
 
 const BinaryOptionsDApp = () => {
@@ -27,16 +25,12 @@ const BinaryOptionsDApp = () => {
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [betResult] = useState<null | string>(null);
     const [showHistory, setShowHistory] = useState(false);
+    const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [userBalance, setUserBalance] = useState<string>("0");
     const [isBalanceLoading, setIsBalanceLoading] = useState(false);
     const [balanceError, setBalanceError] = useState<string | null>(null);
-
-    const betHistory = [
-        { direction: 'up', entryPrice: 44950.20, finalPrice: 45100.30, result: 'win' },
-        { direction: 'down', entryPrice: 45200.10, finalPrice: 45150.40, result: 'loss' },
-    ];
 
     const dymensionConnectRef = useRef(null);
 
@@ -69,6 +63,38 @@ const BinaryOptionsDApp = () => {
         }
     };
 
+    const fetchBetHistory = async () => {
+        try {
+            const query = {
+                list_options: {
+                    start_after: null,
+                    limit: 10
+                }
+            };
+
+            const encodedQuery = btoa(JSON.stringify(query));
+            const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.binaryOptionsContractAddress}/smart/${encodedQuery}`;
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('Error fetching history');
+
+            const { data } = await response.json();
+            const formattedHistory = data.options.map((option: any) => ({
+                id: option.id,
+                direction: option.direction === "Up" ? "up" : "down",
+                strikePrice: parseFloat(option.strike_price),
+                expiration: option.expiration,
+                betAmount: `${parseInt(option.bet_amount.amount) / 1000000} AUOD`,
+                outcome: option.outcome,
+                settled: option.settled
+            }));
+
+            setBetHistory(formattedHistory);
+        } catch (err) {
+            console.error("Failed to load bet history:", err);
+        }
+    };
+
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
@@ -97,7 +123,7 @@ const BinaryOptionsDApp = () => {
                 },
             };
             const encodedQuery = btoa(JSON.stringify(query));
-            const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.contractAddress}/smart/${encodedQuery}`;
+            const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.oracleContractAddress}/smart/${encodedQuery}`;
 
             console.log(`Fetching BTC price from contract: ${url}`);
             const response = await fetch(url);
@@ -118,6 +144,7 @@ const BinaryOptionsDApp = () => {
     useEffect(() => {
         fetchBTCPrice();
         fetchUserBalance();
+        fetchBetHistory();
 
         const interval = setInterval(fetchBTCPrice, 60000);
         return () => clearInterval(interval);
@@ -154,11 +181,10 @@ const BinaryOptionsDApp = () => {
                             typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
                             value: {
                                 "sender": dymensionConnectRef.current.address,
-                                "contract": "uod1aakfpghcanxtc45gpqlx8j3rq0zcpyf49qmhm9mdjrfx036h4z5sm3q99x",
+                                "contract": `${config.binaryOptionsContractAddress}`,
                                 "msg": new TextEncoder().encode(JSON.stringify({
                                     "place_option": {
                                         "direction": selectedDirection,
-                                        "expiration": FIXED_EXPIRATION,
                                         "bet_amount": {
                                             "denom": "auod",
                                             "amount": "10000"
@@ -180,6 +206,11 @@ const BinaryOptionsDApp = () => {
                     ],
                 };
                 dymensionConnectRef.current.sendMessage(msg);
+
+                setTimeout(() => {
+                    fetchBetHistory();
+                    fetchUserBalance();
+                }, 5000);
             }
 
         } catch (error) {
