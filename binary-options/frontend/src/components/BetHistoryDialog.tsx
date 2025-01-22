@@ -7,6 +7,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    buttonBase,
 } from "./ui/alert-dialog";
 
 interface BetHistoryItem {
@@ -58,7 +59,7 @@ const BetHistoryDialog = ({ isOpen, history, onClose }: BetHistoryDialogProps) =
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogAction
-                        className="bg-blue-600 text-white hover:bg-blue-700"
+                        className={`${buttonBase} bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500`}
                         onClick={onClose}
                     >
                         Close

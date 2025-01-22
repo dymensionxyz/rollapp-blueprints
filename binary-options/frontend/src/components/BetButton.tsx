@@ -1,4 +1,5 @@
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+// @ts-ignore
 import React from 'react';
 
 interface BetButtonProps {

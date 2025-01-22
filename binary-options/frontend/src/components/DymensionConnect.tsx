@@ -1,12 +1,12 @@
 // DymensionConnect.jsx
 'use client'
 
+// @ts-ignore
 import React, { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Wallet } from "lucide-react";
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
 const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
-const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'auod';
 
 export const DymensionConnect = forwardRef((props, ref) => {
     const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);

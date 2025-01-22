@@ -1,22 +1,11 @@
 // BinaryOptionsDApp.jsx
 'use client'
 
+// @ts-ignore
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    ArrowUpCircle,
-    ArrowDownCircle,
     ChevronRight
 } from 'lucide-react';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "./ui/alert-dialog";
 
 import { DymensionConnect } from "./DymensionConnect";
 import BtcPriceDisplay from "./BtcPriceDisplay";

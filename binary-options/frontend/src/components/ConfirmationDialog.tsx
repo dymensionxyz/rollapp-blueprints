@@ -21,20 +21,23 @@ const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel }: Confirma
         <AlertDialog open={isOpen} onOpenChange={onCancel}>
             <AlertDialogContent className="bg-gray-800 text-white">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Your Bet</AlertDialogTitle>
-                    <AlertDialogDescription className="text-gray-300">
+                    <AlertDialogTitle className="mb-4">Confirm Your Bet</AlertDialogTitle> {/* Añadido mb-4 */}
+                    <AlertDialogDescription className="mb-6">
                         You are betting 0.01 AUOD that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
                         in the next block.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
+
                 <AlertDialogFooter>
-                    <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
+                    <AlertDialogCancel onClick={onCancel}>
                         Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
-                        className="bg-blue-600 text-white hover:bg-blue-700"
-                        onClick={onConfirm}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            onConfirm();
+                        }}
                     >
                         Confirm Bet
                     </AlertDialogAction>
