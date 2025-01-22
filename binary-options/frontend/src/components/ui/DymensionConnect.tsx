@@ -82,23 +82,23 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
             }
             if (event.data.type === 'tx-response') {
                 try {
-                    // Parsear la respuesta anidada
+                    // Parse nested response
                     const responseData = JSON.parse(event.data.response);
                     console.log('[DEBUG] Parsed transaction response:', responseData);
 
-                    // Determinar éxito basado en código y rawLog
+                    // Determine success based on code and rawLog
                     const nativeResponse = responseData.nativeResponse;
                     const success = nativeResponse?.code === 0;
                     const hasNonCriticalErrors = nativeResponse?.rawLog?.includes('fee_consumption');
 
-                    // Enviar estado y datos parseados
+                    // Send status and parsed data
                     props.onTxStatus?.(success ? 'success' : 'error', {
                         hash: responseData.hash,
                         rawData: responseData,
-                        isNonCriticalError: hasNonCriticalErrors // Nueva bandera para errores no críticos
+                        isNonCriticalError: hasNonCriticalErrors // New flag for non-critical errors
                     });
 
-                    // Log detallado
+                    // Detailed log
                     if (!success || hasNonCriticalErrors) {
                         console.log('[DEBUG] Transaction details:', {
                             code: nativeResponse?.code,

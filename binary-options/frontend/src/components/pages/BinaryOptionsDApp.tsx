@@ -2,14 +2,12 @@
 
 // @ts-ignore
 import React, { useState, useEffect, useRef } from 'react';
-import {
-    ChevronRight
-} from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
-import {DymensionConnect} from "../ui/DymensionConnect";
+import { DymensionConnect } from "../ui/DymensionConnect";
 import config from "../../config/config";
 import BtcPriceDisplay from "../ui/BtcPriceDisplay";
-import BetHistoryDialog, {BetHistoryItem} from "../ui/BetHistoryDialog";
+import BetHistoryDialog, { BetHistoryItem } from "../ui/BetHistoryDialog";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
 import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
@@ -142,7 +140,6 @@ const BinaryOptionsDApp = () => {
         return () => clearInterval(intervalId);
     }, [dymensionConnectRef.current?.address]);
 
-
     const fetchBTCPrice = async () => {
         try {
             setIsLoading(true);
@@ -265,28 +262,27 @@ const BinaryOptionsDApp = () => {
         }
     };
 
-
     const handleTxStatus = (status: 'success' | 'error', txData?: any) => {
         console.log('[DEBUG] Transaction status:', status, txData);
 
         setLastTxHash(txData?.hash || null);
 
-        // Manejar errores no críticos
+        // Handle non-critical errors
         if (status === 'success' && txData?.isNonCriticalError) {
             setTxNotification({
-                message: 'Transacción exitosa con advertencias (ver logs)',
+                message: 'Transaction successful with warnings (check logs)',
                 type: 'pending'
             });
         } else {
             setTxNotification({
                 message: status === 'success'
-                    ? 'Transacción confirmada en el bloque!'
-                    : `Error (Código: ${txData?.rawData?.nativeResponse?.code || 'desconocido'})`,
+                    ? 'Transaction confirmed in block!'
+                    : `Error (Code: ${txData?.rawData?.nativeResponse?.code || 'unknown'})`,
                 type: status
             });
         }
 
-        // Actualizar datos incluso si hay errores no críticos
+        // Update data even with non-critical errors
         if (status === 'success') {
             setTimeout(() => {
                 fetchBetHistory();
@@ -318,7 +314,6 @@ const BinaryOptionsDApp = () => {
                     </div>
                 )}
             </div>
-
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
