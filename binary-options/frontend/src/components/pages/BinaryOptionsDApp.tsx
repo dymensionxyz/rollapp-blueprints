@@ -352,7 +352,7 @@ const BinaryOptionsDApp = () => {
 
                 {/* Bet Information */}
                 <div className="text-center text-gray-400">
-                    Fixed bet amount: 0.01 AUOD
+                    Fixed bet amount: 1 AUOD
                 </div>
 
                 {/* Bet Result */}
