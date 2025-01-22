@@ -25,7 +25,7 @@ const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel }: Confirma
                     <AlertDialogDescription className="mb-6">
                         You are betting 0.01 AUOD that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
-                        in the next block.
+                        in 5 minutes.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 

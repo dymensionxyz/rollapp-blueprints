@@ -12,10 +12,14 @@ import config from "../../config/config";
 import BtcPriceDisplay from "../ui/BtcPriceDisplay";
 import BetHistoryDialog, {BetHistoryItem} from "../ui/BetHistoryDialog";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
+import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
+
+const COUNT_DOWN_INTERVAL = 60;
 
 const BinaryOptionsDApp = () => {
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+    const [timeLeft, setTimeLeft] = useState(COUNT_DOWN_INTERVAL);
     const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [betResult] = useState<null | string>(null);
@@ -167,13 +171,33 @@ const BinaryOptionsDApp = () => {
     };
 
     useEffect(() => {
+        const interval = setInterval(() => {
+            setTimeLeft(prev => {
+                if (prev <= 1) {
+                    fetchBTCPrice();
+                    return COUNT_DOWN_INTERVAL;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, []);
+
+    useEffect(() => {
         fetchBTCPrice();
         fetchUserBalance();
         fetchBetHistory();
-
-        const interval = setInterval(fetchBTCPrice, 60000);
-        return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (timeLeft > 0) {
+            const timer = setInterval(() => {
+                setTimeLeft(prev => Math.max(0, prev - 1));
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [timeLeft]);
 
     const handleDirectionSelect = (direction: 'up' | 'down') => {
         setSelectedDirection(direction);
@@ -252,7 +276,7 @@ const BinaryOptionsDApp = () => {
                     ) : balanceError ? (
                         <div className="text-red-400 text-sm">{balanceError}</div>
                     ) : (
-                        `Balance: ${(Number(userBalance) / 1000000).toFixed(2)} AUOD`
+                        `Balance: ${(Number(userBalance) / 1000000000000000000).toFixed(2)} AUOD`
                     )}
                 </div>
             </div>
@@ -264,6 +288,11 @@ const BinaryOptionsDApp = () => {
                     currentPrice={currentPrice}
                     isLoading={isLoading}
                     error={error}
+                />
+
+                <ProgressBar
+                    progress={(timeLeft / COUNT_DOWN_INTERVAL) * 100}
+                    label={`Next price update in ${timeLeft}s`}
                 />
 
                 {/* Bet Buttons */}
