@@ -1,371 +1,323 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
-import { ethers } from 'ethers'
-import type { Contract, BigNumberish } from 'ethers'
-import AIGamblingABI from './AIGamblingABI.json';
-import { useToast } from '@/components/ui/use-toast'
+import {createContext, ReactNode, useCallback, useContext, useEffect, useState} from 'react'
+import type {BigNumberish} from 'ethers'
+import {ethers} from 'ethers'
+import {AIGamblingABI} from '@/app/contexts/AIGamblingABI';
+import {showErrorToast, showSuccessToast} from '@/app/utils/toast-utils';
+import Web3 from 'web3';
+import {
+    CONTRACT_ADDRESS,
+    ContractFunction,
+    DEFAULT_BROADCAST_ATTEMPTS,
+    JSON_RPC,
+    LOSING_MESSAGES,
+    SUCCESS_MESSAGES,
+} from "@/app/contexts/types";
+
+interface ContractMessage {
+    address: string;
+    data: string;
+    value?: string;
+}
 
 interface BetInfo {
-  promptId: BigNumberish
-  amount: string
-  communityFee: number
-  guessedNumber: number
-  correctNumber: number
-  persuasion: string
-  resolved: boolean
-  won: boolean
-  canceled: boolean
+    promptId: BigNumberish
+    amount: string
+    communityFee: number
+    guessedNumber: number
+    correctNumber: number
+    persuasion: string
+    resolved: boolean
+    won: boolean
+    canceled: boolean
 }
 
 interface GameInfo {
-  houseSupply: string
-  houseActiveBalance: string
-  minBetAmount: string
-  maxBetAmount: string
-  maxBetAmountPercentage: number
+    houseSupply: string
+    houseActiveBalance: string
+    minBetAmount: string
+    maxBetAmount: string
+    maxBetAmountPercentage: number
 }
 
 interface ContractContextType {
-  contract: Contract | null
-  isConnected: boolean
-  address: string
-  currentBet: BetInfo | null
-  balance: string
-  gameInfo: GameInfo | null
-  walletBalance: string
-  betHistory: BetInfo[]
-  hexAddress: string
-  connect: () => Promise<void>
-  disconnect: () => void
-  placeBet: (guessedNumber: number, amount: string, persuasion: string) => Promise<void>
-  resolveBet: () => Promise<void>
-  withdraw: () => Promise<void>
-  refreshBetInfo: () => Promise<void>
-  refreshBalance: () => Promise<void>
-  refreshGameInfo: () => Promise<void>
-  refreshWalletBalance: () => Promise<void>
-  refreshBetHistory: () => Promise<void>
-  estimateReward: (betAmount: string) => Promise<string>
-  estimateCommunityFee: (betAmount: string) => Promise<string>
-  checkAnswerStatus: (promptId: BigNumberish) => Promise<{ answer: string, exists: boolean }>
+    address: string
+    hexAddress: string
+    bet: BetInfo | null
+    betAmount?: string
+    balance: string
+    gameInfo: GameInfo | null
+    walletBalance: string
+    betHistory: BetInfo[]
+    placeBet: (retry?: boolean) => void
+    resolveBet: (retry?: boolean) => void
+    withdraw: (retry?: boolean) => void
+    estimateReward: (betAmount: string) => Promise<string>
+    estimateCommunityFee: (betAmount: string) => Promise<string>
+    checkAnswerStatus: (promptId: BigNumberish) => Promise<{ answer: string, exists: boolean }>
+    broadcastingMessage?: string;
+    contractMessageToExecute?: ContractMessage;
+    setContractMessageExecuted: () => void;
+    handleTxResponse: (response: any) => void;
+    setBetAmount: (amount?: string) => void;
+    setGuessedNumber: (number?: number) => void;
+    setPersuasion: (persuasion?: string) => void;
+    setAddresses: (address: string, hexAddress: string) => void;
+    setBalance: (balance: string) => void;
+    setWalletBalance: (balance: string) => void;
+    guessedNumber?: number;
+    persuasion?: string;
 }
 
 const ContractContext = createContext<ContractContextType>({} as ContractContextType)
+const web3 = new Web3(new Web3.providers.HttpProvider(JSON_RPC));
+const aiGamblingContract = new web3.eth.Contract(AIGamblingABI, CONTRACT_ADDRESS);
 
-const CONTRACT_ADDRESS = "0xEAcA423bF35A0C41d80d37Dc89C87C47baceE4FF" // Replace with actual address
+export function ContractProvider({children}: { children: ReactNode }) {
+    const [address, setAddress] = useState('')
+    const [hexAddress, setHexAddress] = useState('');
+    const [bet, setBet] = useState<BetInfo | null>(null)
+    const [betAmount, setBetAmount] = useState<string>();
+    const [guessedNumber, setGuessedNumber] = useState<number>()
+    const [persuasion, setPersuasion] = useState<string>()
+    const [balance, setBalance] = useState('0')
+    const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
+    const [walletBalance, setWalletBalance] = useState('0')
+    const [betHistory, setBetHistory] = useState<BetInfo[]>([])
+    const [broadcastingMessage, setBroadcastingMessage] = useState<string>();
+    const [broadcastingAttempts, setBroadcastingAttempts] = useState(0);
+    const [contractMessageToExecute, setContractMessageToExecute] = useState<ContractMessage>();
+    const [gameStatusLoading, setGameStatusLoading] = useState(true);
 
-const NETWORK_PARAMS = {
-    chainId: '0x69D6F', // 433519 in hexadecimal
-    chainName: 'Desmos Testnet',
-    nativeCurrency: {
-        name: 'DESMOS',
-        symbol: 'DESMOS',
-        decimals: 18
-    },
-    rpcUrls: ['https://json-rpc.ra-2.rollapp.network'],
-    blockExplorerUrls: []
-}
+    const setAddresses = useCallback((address: string, hexAddress: string): void => {
+        setAddress(address);
+        setHexAddress(hexAddress);
+    }, []);
 
-export function ContractProvider({ children }: { children: ReactNode }) {
-  const [contract, setContract] = useState<Contract | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [address, setAddress] = useState('')
-  const [hexAddress, setHexAddress] = useState('')
-  const [currentBet, setCurrentBet] = useState<BetInfo | null>(null)
-  const [balance, setBalance] = useState('0')
-  const [gameInfo, setGameInfo] = useState<GameInfo | null>(null)
-  const [walletBalance, setWalletBalance] = useState('0')
-  const [betHistory, setBetHistory] = useState<BetInfo[]>([])
-  const { toast } = useToast()
+    const placeBet = useCallback((retry?: boolean) => {
+        if (!hexAddress || contractMessageToExecute || !betAmount || !guessedNumber || (!retry && broadcastingMessage)) throw new Error('Not connected')
 
-  const connect = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        // await checkAndAddNetwork()
-
-        const provider = new ethers.BrowserProvider(window.ethereum)
-        const signer = await provider.getSigner()
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, AIGamblingABI, signer)
-
-        setContract(contract)
-        setAddress(await signer.getAddress())
-        setIsConnected(true)
-
-        // Refresh bet info and balance after connecting
-        await refreshAllInfo()
-      } catch (error) {
-        console.error('Failed to connect:', error)
-        throw new Error('Failed to connect to wallet')
-      }
-    } else {
-      throw new Error('MetaMask not detected')
-    }
-  }
-
-  const checkAndAddNetwork = async () => {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        // Check if the network is already added
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: NETWORK_PARAMS.chainId }],
-        })
-      } catch (switchError: any) {
-        // This error code indicates that the chain has not been added to MetaMask
-        if (switchError.code === 4902) {
-          try {
-            await window.ethereum.request({
-              method: 'wallet_addEthereumChain',
-              params: [NETWORK_PARAMS],
-            })
-            toast({
-              title: "Network Added",
-              description: "The Dymension RollApp network has been added to your wallet.",
-            })
-          } catch (addError) {
-            console.error('Error adding network:', addError)
-            setError('Failed to add network to wallet')
-          }
-        } else {
-          console.error('Error switching network:', switchError)
-          setError('Failed to switch network')
+        const persuasionString = persuasion || '';
+        const data = aiGamblingContract.methods.placeBet(guessedNumber, persuasionString).encodeABI();
+        const value = ethers.parseEther(betAmount).toString();
+        setContractMessageToExecute({address: CONTRACT_ADDRESS, data, value});
+        setBroadcastingMessage(ContractFunction.placeBet);
+        if (!retry) {
+            setBroadcastingAttempts(DEFAULT_BROADCAST_ATTEMPTS);
         }
-      }
-    }
-  }
+    }, [betAmount, persuasion, guessedNumber, broadcastingMessage, contractMessageToExecute, hexAddress])
 
-  const disconnect = () => {
-    setContract(null)
-    setIsConnected(false)
-    setAddress('')
-    setHexAddress('')
-    setCurrentBet(null)
-    setBalance('0')
-    setGameInfo(null)
-    setWalletBalance('0')
-    setBetHistory([])
-  }
+    const resolveBet = useCallback((retry?: boolean,) => {
+        if (!hexAddress || contractMessageToExecute || (!retry && broadcastingMessage)) throw new Error('Not connected')
 
-  const placeBet = async (guessedNumber: number, amount: string, persuasion: string) => {
-    if (!contract) throw new Error('Not connected')
-    if (guessedNumber < 1 || guessedNumber > 10) throw new Error('Invalid guess number')
-    if (parseFloat(amount) <= 0) throw new Error('Invalid bet amount')
+        const data = aiGamblingContract.methods.resolveBet().encodeABI();
+        setContractMessageToExecute({address: CONTRACT_ADDRESS, data});
+        setBroadcastingMessage(ContractFunction.resolveBet);
+        if (!retry) {
+            setBroadcastingAttempts(DEFAULT_BROADCAST_ATTEMPTS);
+        }
+    }, [broadcastingMessage, contractMessageToExecute, hexAddress])
 
-    try {
-      const tx = await contract.placeBet(guessedNumber, persuasion, {
-        value: ethers.parseEther(amount)
-      })
-      await tx.wait()
-      await refreshAllInfo()
-    } catch (error) {
-      console.error('Error placing bet:', error)
-      throw new Error('Failed to place bet')
-    }
-  }
+    const withdraw = useCallback((retry?: boolean,) => {
+        if (!hexAddress || contractMessageToExecute || (!retry && broadcastingMessage)) throw new Error('Not connected')
 
-  const resolveBet = async () => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const tx = await contract.resolveBet()
-      await tx.wait()
-      await refreshAllInfo()
-    } catch (error) {
-      console.error('Error resolving bet:', error)
-      throw new Error('Failed to resolve bet')
-    }
-  }
+        const data = aiGamblingContract.methods.withdraw().encodeABI();
+        setContractMessageToExecute({address: CONTRACT_ADDRESS, data});
+        setBroadcastingMessage(ContractFunction.withdraw);
+        if (!retry) {
+            setBroadcastingAttempts(DEFAULT_BROADCAST_ATTEMPTS);
+        }
+    }, [broadcastingMessage, contractMessageToExecute, hexAddress])
 
-  const withdraw = async () => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const tx = await contract.withdraw()
-      await tx.wait()
-      await refreshAllInfo()
-    } catch (error) {
-      console.error('Error withdrawing:', error)
-      throw new Error('Failed to withdraw funds')
-    }
-  }
+    const refreshAllInfo = useCallback(() => {
+        if (hexAddress === undefined || balance === undefined) {
+            return;
+        }
 
-  const refreshBetInfo = async () => {
-    if (!contract || !address) return
-    try {
-      const bet = await contract.bets(address)
-      setCurrentBet({
-        promptId: bet[0],
-        amount: ethers.formatEther(bet[1]),
-        communityFee: Number(bet[2]),
-        guessedNumber: Number(bet[3]),
-        correctNumber: Number(bet[4]),
-        persuasion: bet[5],
-        resolved: bet[6],
-        won: bet[7],
-        canceled: bet[8]
-      })
-    } catch (error) {
-      console.error('Error getting bet info:', error)
-      setCurrentBet(null)
-    }
-  }
+        if (!hexAddress) {
+            setGameStatusLoading(false);
+            setBroadcastingMessage(undefined);
+            setBroadcastingAttempts(0);
+            setBet(null)
+            setBalance('0')
+            setGameInfo(null)
+            setWalletBalance('0')
+            setBetHistory([])
+            return;
+        }
 
-  const refreshBalance = async () => {
-    if (!contract || !address) return
-    try {
-      const balance = await contract.balances(address)
-      setBalance(ethers.formatEther(balance))
-    } catch (error) {
-      console.error('Error getting balance:', error)
-      setBalance('0')
-    }
-  }
+        const promises = [
+            // Bet Info
+            aiGamblingContract.methods.bets(hexAddress).call().then((bet: any) => {
+                setBet({
+                    promptId: bet[0],
+                    amount: ethers.formatEther(bet[1]),
+                    communityFee: Number(bet[2]),
+                    guessedNumber: Number(bet[3]),
+                    correctNumber: Number(bet[4]),
+                    persuasion: bet[5],
+                    resolved: bet[6],
+                    won: bet[7],
+                    canceled: bet[8]
+                })
+            }),
 
-  const refreshGameInfo = async () => {
-    if (!contract) return
-    try {
-      const info = await contract.getGameInfo()
-      setGameInfo({
-        houseSupply: ethers.formatEther(info.houseSupply),
-        houseActiveBalance: ethers.formatEther(info.houseActiveBalance),
-        minBetAmount: ethers.formatEther(info.minBetAmount),
-        maxBetAmount: ethers.formatEther(info.maxBetAmount),
-        maxBetAmountPercentage: Number(info.maxBetAmountPercentage)
-      })
-    } catch (error) {
-      console.error('Error getting game info:', error)
-      setGameInfo(null)
-    }
-  }
+            // House Balance
+            aiGamblingContract.methods.balances(hexAddress).call().then((balance: any) => setBalance(ethers.formatEther(balance))),
 
-  const refreshWalletBalance = async () => {
-    if (!address) return
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const balance = await provider.getBalance(address)
-      setWalletBalance(ethers.formatEther(balance))
-    } catch (error) {
-      console.error('Error getting wallet balance:', error)
-      setWalletBalance('0')
-    }
-  }
+            // Game Info
+            aiGamblingContract.methods.getGameInfo().call().then((info: any) => setGameInfo({
+                houseSupply: ethers.formatEther(info.houseSupply),
+                houseActiveBalance: ethers.formatEther(info.houseActiveBalance),
+                minBetAmount: ethers.formatEther(info.minBetAmount),
+                maxBetAmount: ethers.formatEther(info.maxBetAmount),
+                maxBetAmountPercentage: Number(info.maxBetAmountPercentage)
+            })),
 
-  const refreshBetHistory = async () => {
-    if (!contract || !address) return
-    try {
-      const history = await contract.getHistory(address)
-      setBetHistory(history.map((bet: any) => ({
-        promptId: bet[0],
-        amount: ethers.formatEther(bet[1]),
-        guessedNumber: Number(bet[2]),
-        correctNumber: Number(bet[3]),
-        persuasion: bet[4],
-        resolved: bet[5],
-        won: bet[6],
-        canceled: bet[7]
-      })))
-    } catch (error) {
-      console.error('Error getting bet history:', error)
-      setBetHistory([])
-    }
-  }
+            // Bet History
+            aiGamblingContract.methods.getHistory(hexAddress).call().then((history: any) => setBetHistory(history.map((bet: any) => ({
+                promptId: bet[0],
+                amount: ethers.formatEther(bet[1]),
+                communityFee: ethers.formatEther(bet[2]),
+                guessedNumber: Number(bet[3]),
+                correctNumber: Number(bet[4]),
+                persuasion: bet[5],
+                resolved: bet[6],
+                won: bet[7],
+                canceled: bet[8]
+            }))))
 
-  const refreshAllInfo = async () => {
-    await Promise.all([
-      refreshBetInfo(),
-      refreshBalance(),
-      refreshGameInfo(),
-      refreshWalletBalance(),
-      refreshBetHistory()
-    ])
-  }
+            // TODO: add wallet balance
+        ]
 
-  const estimateReward = async (betAmount: string) => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const reward = await contract.estimateReward(ethers.parseEther(betAmount))
-      return ethers.formatEther(reward)
-    } catch (error) {
-      console.error('Error estimating reward:', error)
-      throw new Error('Failed to estimate reward')
-    }
-  }
+        Promise.all(promises).catch((error) => {
+            console.error(error);
+            showErrorToast(`Can't load data, please try again later`);
+        }).finally(() => setGameStatusLoading(false));
+    }, [balance, hexAddress])
 
-  const estimateCommunityFee = async (betAmount: string) => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const reward = await contract.estimateCommunityFee(ethers.parseEther(betAmount))
-      return ethers.formatEther(reward)
-    } catch (error) {
-      console.error('Error estimating community fee:', error)
-      throw new Error('Failed to estimate community fee')
-    }
-  }
+    const setContractMessageExecuted = useCallback(() => setContractMessageToExecute(undefined), []);
 
-  const checkAnswerStatus = async (promptId: BigNumberish) => {
-    if (!contract) throw new Error('Not connected')
-    try {
-      const [answer, exists] = await contract.checkAnswerStatus(promptId)
-      return { answer, exists }
-    } catch (error) {
-      console.error('Error checking answer status:', error)
-      throw new Error('Failed to check answer status')
-    }
-  }
+    const handleLastGameResult = useCallback(async () => {
+        try {
+            const gameResult = (await aiGamblingContract.methods.bets(hexAddress).call()) as BetInfo;
 
-  useEffect(() => {
-    if (isConnected) {
-      refreshAllInfo()
-      const interval = setInterval(refreshAllInfo, 10000) // Poll every 10 seconds
-      return () => clearInterval(interval)
+            if (gameResult.won) {
+                const successMessage = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
+                showSuccessToast(successMessage);
+            } else {
+                const losingMessage = LOSING_MESSAGES[Math.floor(Math.random() * LOSING_MESSAGES.length)];
+                showErrorToast(losingMessage);
+            }
+        } catch (error) {
+            console.error(error);
+            showErrorToast(`Can't fetch game status, please try again later`);
+        }
+    }, [balance, hexAddress, betAmount]);
 
-    }
-  }, [isConnected])
+    const handleTxResponse = useCallback(({response, error}: { response: any, error: any }) => {
+        const isUserReject = error?.originalError?.reason?.toLowerCase().includes('reject') ||
+            error?.originalError?.message?.toLowerCase().includes('reject') ||
+            error?.originalError?.shortMessage?.toLowerCase().includes('reject');
 
-  useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', () => {
-        disconnect()
-      })
-      window.ethereum.on('chainChanged', () => {
-        disconnect()
-      })
-    }
-    return () => {
-      if (window.ethereum) {
-        window.ethereum.removeAllListeners('accountsChanged')
-        window.ethereum.removeAllListeners('chainChanged')
-      }
-    }
-  }, [])
+        if (response?.deliveryTxCode === 0 && !error) {
+            setBroadcastingMessage(undefined);
+            setBroadcastingAttempts(0);
+            if (broadcastingMessage === ContractFunction.placeBet) {
+                refreshAllInfo();
+            } else if (broadcastingMessage === ContractFunction.resolveBet) {
+                refreshAllInfo();
+                setPersuasion('');
+                setGuessedNumber(undefined);
+                setBetAmount(undefined);
+                handleLastGameResult().then();
+            } else if (broadcastingMessage === ContractFunction.withdraw) {
+                refreshAllInfo();
+                showSuccessToast('🏆 Congratulations! Your rewards have been successfully claimed!');
+            }
+        } else if (broadcastingAttempts > 0 && !isUserReject) {
+            setBroadcastingAttempts(broadcastingAttempts - 1);
+            if (broadcastingMessage === ContractFunction.placeBet) {
+                placeBet(true);
+            } else if (broadcastingMessage === ContractFunction.resolveBet) {
+                resolveBet(true);
+            } else if (broadcastingMessage === ContractFunction.withdraw) {
+                withdraw(true);
+            }
+        } else {
+            setBroadcastingAttempts(0);
+            setBroadcastingMessage(undefined);
+            showErrorToast('Transaction delivery failed, please try again later');
+        }
+    }, [
+        broadcastingAttempts,
+        broadcastingMessage,
+        withdraw,
+        refreshAllInfo,
+        handleLastGameResult,
+        placeBet,
+        resolveBet,
+    ]);
 
-  return (
-    <ContractContext.Provider value={{
-      contract,
-      isConnected,
-      address,
-      hexAddress,
-      currentBet,
-      balance,
-      gameInfo,
-      walletBalance,
-      betHistory,
-      connect,
-      disconnect,
-      placeBet,
-      resolveBet,
-      withdraw,
-      refreshBetInfo,
-      refreshBalance,
-      refreshGameInfo,
-      refreshWalletBalance,
-      refreshBetHistory,
-      estimateReward,
-      estimateCommunityFee,
-      checkAnswerStatus
-    }}>
-      {children}
-    </ContractContext.Provider>
-  )
+    const estimateReward = useCallback(async (betAmount: string) => {
+        if (!hexAddress) throw new Error('Not connected')
+
+        const reward = (await aiGamblingContract.methods.estimateReward(ethers.parseEther(betAmount)).call()) as string;
+        return ethers.formatEther(reward)
+    }, [hexAddress, betAmount])
+
+    const estimateCommunityFee = useCallback(async (betAmount: string) => {
+        if (!hexAddress) throw new Error('Not connected')
+
+        const reward = (await aiGamblingContract.methods.estimateCommunityFee(ethers.parseEther(betAmount)).call()) as string
+        return ethers.formatEther(reward)
+    }, [hexAddress, betAmount])
+
+    const checkAnswerStatus = useCallback(async (promptId: BigNumberish) => {
+        if (!hexAddress) throw new Error('Not connected')
+
+        const {answer, exists} = (await aiGamblingContract.methods.checkAnswerStatus(promptId).call()) as {
+            answer: string,
+            exists: boolean
+        }
+        return {answer, exists}
+    }, [hexAddress])
+
+    useEffect(() => refreshAllInfo(), [refreshAllInfo]);
+
+    return (
+        <ContractContext.Provider value={{
+            address,
+            hexAddress,
+            bet,
+            betAmount,
+            balance,
+            gameInfo,
+            walletBalance,
+            betHistory,
+            placeBet,
+            resolveBet,
+            withdraw,
+            estimateReward,
+            estimateCommunityFee,
+            checkAnswerStatus,
+            broadcastingMessage,
+            contractMessageToExecute,
+            setContractMessageExecuted,
+            handleTxResponse,
+            setBetAmount,
+            setGuessedNumber,
+            setPersuasion,
+            setAddresses,
+            setBalance,
+            setWalletBalance,
+            guessedNumber,
+            persuasion,
+        }}>
+            {children}
+        </ContractContext.Provider>
+    )
 }
 
 export const useContract = () => useContext(ContractContext)
