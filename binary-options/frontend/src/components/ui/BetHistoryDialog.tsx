@@ -22,11 +22,14 @@ interface BetHistoryDialogProps {
     isOpen: boolean;
     history: BetHistoryItem[];
     onClose: () => void;
+    onSettle: (optionId: number) => void;
 }
 
-const BetHistoryDialog = ({ isOpen, history, onClose }: BetHistoryDialogProps) => {
-    const getResultStatus = (outcome: boolean | null, settled: boolean) => {
-        if (!settled) return "Pending";
+const BetHistoryDialog = ({ isOpen, history, onClose, onSettle }: BetHistoryDialogProps) => {
+    const getResultStatus = (outcome: boolean | null, settled: boolean, expiration: number) => {
+        if (!settled) {
+            return Date.now() > expiration * 1000 ? "Expired" : "Pending";
+        }
         return outcome ? "Win" : "Loss";
     };
 
@@ -59,18 +62,28 @@ const BetHistoryDialog = ({ isOpen, history, onClose }: BetHistoryDialogProps) =
                                     </div>
                                 </div>
                                 <span className={`text-sm ${
-                                    getResultStatus(bet.outcome, bet.settled) === 'Win'
+                                    getResultStatus(bet.outcome, bet.settled, bet.expiration) === 'Win'
                                         ? 'text-green-500'
-                                        : getResultStatus(bet.outcome, bet.settled) === 'Loss'
+                                        : getResultStatus(bet.outcome, bet.settled, bet.expiration) === 'Loss'
                                             ? 'text-red-500'
                                             : 'text-yellow-500'
                                 }`}>
-                  {getResultStatus(bet.outcome, bet.settled)}
-                </span>
+                                    {getResultStatus(bet.outcome, bet.settled, bet.expiration)}
+                                </span>
                             </div>
                             <div className="text-xs text-gray-400">
                                 Expiration: {new Date(bet.expiration * 1000).toLocaleString()}
                             </div>
+
+                            {/* Settlement button */}
+                            {!bet.settled && Date.now() > bet.expiration * 1000 && (
+                                <button
+                                    onClick={() => onSettle(bet.id)}
+                                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 rounded self-end"
+                                >
+                                    Settle Now
+                                </button>
+                            )}
                         </div>
                     ))}
                 </div>

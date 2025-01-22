@@ -63,6 +63,36 @@ const BinaryOptionsDApp = () => {
         }
     };
 
+    const handleSettleOption = async (optionId: number) => {
+        try {
+            if (!dymensionConnectRef.current?.address) return;
+
+            const msg = {
+                type: "executeTx",
+                messages: [
+                    {
+                        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+                        value: {
+                            sender: dymensionConnectRef.current.address,
+                            contract: config.binaryOptionsContractAddress,
+                            msg: new TextEncoder().encode(
+                                JSON.stringify({
+                                    settle_option: { option_id: optionId },
+                                })
+                            ),
+                            funds: [],
+                        },
+                    },
+                ],
+            };
+
+            await dymensionConnectRef.current.sendMessage(msg);
+            setTimeout(fetchBetHistory, 5000);
+        } catch (error) {
+            console.error("Error settling option:", error);
+        }
+    };
+
     const fetchBetHistory = async () => {
         try {
             const query = {
@@ -306,6 +336,7 @@ const BinaryOptionsDApp = () => {
                 isOpen={showHistory}
                 history={betHistory}
                 onClose={() => setShowHistory(false)}
+                onSettle={handleSettleOption}
             />
         </div>
     );
