@@ -25,6 +25,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.1.0",
     "@openzeppelin/contracts-upgradeable": "^5.2.0",
-    "@openzeppelin/hardhat-upgrades": "^3.9.0"
+    "@openzeppelin/hardhat-upgrades": "^3.9.0",
+    "react-toastify": "^11.0.3",
+    "web3": "^4.16.0"
   }
 }

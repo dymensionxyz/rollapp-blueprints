@@ -13,14 +13,14 @@ export function RecentBetStatus() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const { currentBet, resolveBet, isConnected, refreshBetInfo, checkAnswerStatus } = useContract()
+    const { bet, resolveBet, checkAnswerStatus } = useContract()
     const { toast } = useToast()
 
     useEffect(() => {
         const fetchAiAnswer = async () => {
-            if (currentBet?.promptId && currentBet.resolved) {
+            if (bet?.promptId && bet.resolved) {
                 try {
-                    const response = await fetch(`/api/get-answer/${currentBet.promptId}`)
+                    const response = await fetch(`/api/get-answer/${bet.promptId}`)
                     if (!response.ok) {
                         throw new Error('Failed to fetch AI answer')
                     }
@@ -34,13 +34,13 @@ export function RecentBetStatus() {
         }
 
         fetchAiAnswer()
-    }, [currentBet])
+    }, [bet])
 
     useEffect(() => {
         const checkStatus = async () => {
-            if (currentBet?.promptId && !currentBet.resolved) {
+            if (bet?.promptId && !bet.resolved) {
                 try {
-                    const status = await checkAnswerStatus(currentBet.promptId)
+                    const status = await checkAnswerStatus(bet.promptId)
                     setAnswerStatus(status)
                 } catch (err) {
                     console.error('Error checking answer status:', err)
@@ -51,13 +51,13 @@ export function RecentBetStatus() {
 
         const interval = setInterval(checkStatus, 2000) // Poll every 2 seconds
         return () => clearInterval(interval)
-    }, [currentBet, checkAnswerStatus])
+    }, [bet, checkAnswerStatus])
 
     useEffect(() => {
         const checkStatusImmediately = async () => {
-            if (currentBet?.promptId && !currentBet.resolved) {
+            if (bet?.promptId && !bet.resolved) {
                 try {
-                    const status = await checkAnswerStatus(currentBet.promptId)
+                    const status = await checkAnswerStatus(bet.promptId)
                     setAnswerStatus(status)
                 } catch (err) {
                     console.error('Error checking answer status:', err)
@@ -67,14 +67,7 @@ export function RecentBetStatus() {
         }
 
         checkStatusImmediately()
-    }, [currentBet, checkAnswerStatus])
-
-    useEffect(() => {
-        if (isConnected) {
-            const interval = setInterval(refreshBetInfo, 2000) // Poll every 2 seconds
-            return () => clearInterval(interval)
-        }
-    }, [isConnected, refreshBetInfo])
+    }, [bet, checkAnswerStatus])
 
     const handleResolveBet = async () => {
         setIsLoading(true)
@@ -100,51 +93,51 @@ export function RecentBetStatus() {
             </CardHeader>
             <CardContent className="space-y-6">
                 {error && <ErrorDisplay title="Bet Error" message={error} />}
-                {currentBet && Number(currentBet.promptId) !== 0 ? (
+                {bet && Number(bet.promptId) !== 0 ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Amount</p>
-                                <p className="text-lg">{currentBet.amount} DESMOS</p>
+                                <p className="text-lg">{bet.amount} DESMOS</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Your Guess</p>
-                                <p className="text-lg">{currentBet.guessedNumber}</p>
+                                <p className="text-lg">{bet.guessedNumber}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Game ID</p>
-                                <p className="text-lg">{currentBet.promptId.toString()}</p>
+                                <p className="text-lg">{bet.promptId.toString()}</p>
                             </div>
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Status</p>
-                                <p className="text-lg">{currentBet.resolved ? 'Resolved' : 'Pending'}</p>
+                                <p className="text-lg">{bet.resolved ? 'Resolved' : 'Pending'}</p>
                             </div>
                         </div>
-                        {currentBet.persuasion && (
+                        {bet.persuasion && (
                             <div className="space-y-1">
                                 <p className="text-sm text-gray-400">Persuasion</p>
-                                <p className="text-lg">{currentBet.persuasion}</p>
+                                <p className="text-lg">{bet.persuasion}</p>
                             </div>
                         )}
-                        {(currentBet.resolved) && (
+                        {(bet.resolved) && (
                             <>
                                 <div className="space-y-1">
                                     <p className="text-sm text-gray-400">Result</p>
                                     <p className={`text-lg ${
-                                        currentBet.canceled ? 'text-yellow-500' :
-                                            currentBet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'
+                                        bet.canceled ? 'text-yellow-500' :
+                                            bet.won ? 'text-[rgb(var(--neon-green))]' : 'text-red-500'
                                     }`}>
-                                        {currentBet.canceled ? 'Canceled' :
-                                            currentBet.resolved ? (currentBet.won ? 'Won' : 'Lost') : 'N/A'}
+                                        {bet.canceled ? 'Canceled' :
+                                            bet.resolved ? (bet.won ? 'Won' : 'Lost') : 'N/A'}
                                     </p>
                                 </div>
                                 <div className="space-y-1">
                                     <p className="text-sm text-gray-400">Correct Number</p>
-                                    <p className="text-lg">{currentBet.correctNumber}</p>
+                                    <p className="text-lg">{bet.correctNumber}</p>
                                 </div>
                             </>
                         )}
-                        {!currentBet.resolved && (
+                        {!bet.resolved && (
                             <div className="space-y-4">
                                 <Button
                                     onClick={handleResolveBet}
@@ -169,8 +162,8 @@ export function RecentBetStatus() {
                                 </div>
                             </div>
                         )}
-                        {currentBet.resolved && (
-                            <BetDetails promptId={currentBet.promptId.toString()} persuasion={currentBet.persuasion} />
+                        {bet.resolved && (
+                            <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} />
                         )}
                     </div>
                 ) : (

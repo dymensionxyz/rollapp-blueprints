@@ -7,18 +7,19 @@ import { useContract } from '../contexts/ContractContext'
 import { useToast } from '@/components/ui/use-toast'
 import { ErrorDisplay } from './ErrorDisplay'
 import { Loader2 } from 'lucide-react'
+import {ethers} from "ethers";
 
 export function BalanceAndHouseInfo() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
-    const { withdraw, isConnected, balance, gameInfo, walletBalance, refreshBalance } = useContract()
+    const { withdraw, hexAddress, balance, gameInfo, walletBalance } = useContract()
     const { toast } = useToast()
 
     const handleWithdraw = async () => {
         setIsLoading(true)
         setError(null)
         try {
-            await withdraw()
+            withdraw()
             toast({
                 title: "Withdrawal Successful",
                 description: "Your funds have been withdrawn!",
@@ -66,7 +67,7 @@ export function BalanceAndHouseInfo() {
                 <Button
                     onClick={handleWithdraw}
                     className="w-full bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]"
-                    disabled={balance === '0' || balance === '0.0' || isLoading || !isConnected}
+                    disabled={balance === '0' || balance === '0.0' || isLoading || !hexAddress}
                 >
                     {isLoading ? (
                         <>
