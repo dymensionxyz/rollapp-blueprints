@@ -108,20 +108,12 @@ export function BetForm() {
             return;
         }
         const numberValue = ethers.parseEther(inputElement.value);
-
-        const minBet = gameInfo?.minBetAmount
-        if (minBet && numberValue < ethers.parseEther(minBet)) {
-            event.preventDefault();
-            setBetAmount(minBet.toString());
-            return;
-        }
         const maxBet = gameInfo?.maxBetAmount
         if (maxBet && numberValue > ethers.parseEther(maxBet)) {
             event.preventDefault();
             setBetAmount(maxBet.toString());
             return;
         }
-
         setBetAmount(inputElement.value);
     }, [bet, setBetAmount, betAmount, gameInfo]);
 
