@@ -59,10 +59,10 @@ contract LotteryAgent is Ownable, Governance {
     uint public stackersPoolDistributionRatio = 50; // 50% to prize pool, 50% to staking pool
 
     uint public ticketCounter = 0;
-    uint public drawCounter = 0;
+    Draw public curDraw;
 
     // Mapping from drawId to Draw struct
-    mapping(uint => Draw) public draws;
+    Draw[] public drawHistory;
 
     // Mapping from user address to their ticket IDs
     mapping(address => TicketId[]) public userTickets;
@@ -75,7 +75,7 @@ contract LotteryAgent is Ownable, Governance {
         randomnessGenerator = RandomnessGenerator(_randomnessGenerator);
         dymToken = IERC20(_dymToken);
         drawBeginTime = block.timestamp;
-        draws[drawCounter].stackersPoolDistributionRatio = stackersPoolDistributionRatio;
+        curDraw.stackersPoolDistributionRatio = stackersPoolDistributionRatio;
     }
 
     function validateTicket(uint[] memory _chosenNumbers) internal view {
@@ -100,14 +100,14 @@ contract LotteryAgent is Ownable, Governance {
     }
 
     function purchaseTicket(uint[] calldata _chosenNumbers) external {
-        require(draws[drawCounter].prepareFinalizeCalled == false, "Can't purchase tickets to draw, which was prepared to finish");
+        require(curDraw.prepareFinalizeCalled == false, "Can't purchase tickets to draw, which was prepared to finish");
         validateTicket(_chosenNumbers);
 
         dymToken.transferFrom(msg.sender, address(this), ticketPrice);
 
-        uint ticketId = draws[drawCounter].tickets.length;
+        uint ticketId = curDraw.tickets.length;
 
-        draws[drawCounter].tickets.push(
+        curDraw.tickets.push(
             Ticket({
                 player: msg.sender,
                 chosenNumbers: toSet(_chosenNumbers),
@@ -117,19 +117,18 @@ contract LotteryAgent is Ownable, Governance {
         );
 
         // Store the ticket in userTickets mapping with the (drawId, ticketId) pair
-        userTickets[msg.sender].push(TicketId(drawCounter, ticketId));
+        userTickets[msg.sender].push(TicketId(drawHistory.length, ticketId));
 
         uint stackersFee = ticketPrice * curDraw.stackersPoolDistributionRatio / 100;
         // TODO: SEND TO STACKERS
         uint ticketRevenue = ticketPrice - stackersFee;
-        draws[drawCounter].ticketRevenue += ticketRevenue;
+        curDraw.ticketRevenue += ticketRevenue;
 
         emit TicketPurchased(msg.sender, ticketId, _chosenNumbers);
     }
 
     // Function to check if all randomness has been posted
-    function allRandomnessPosted(uint drawId) public view returns (bool) {
-        Draw storage curDraw = draws[drawId];
+    function allRandomnessPostedForCurDraw() public view returns (bool) {
         for (uint i = 0; i < curDraw.randomnessIDs.length; i++) {
             if (randomnessGenerator.getRandomness(curDraw.randomnessIDs[i]) == 0) {
                 return false;
@@ -140,12 +139,12 @@ contract LotteryAgent is Ownable, Governance {
 
     function prepareFinalizeDraw() external {
         require(block.timestamp >= drawBeginTime + drawFrequency, "It's not time for the draw yet");
-        require(draws[drawCounter].prepareFinalizeCalled == false, "prepareFinalizeCalled was already called");
+        require(curDraw.prepareFinalizeCalled == false, "prepareFinalizeCalled was already called");
 
-        draws[drawCounter].prepareFinalizeCalled = true;
+        curDraw.prepareFinalizeCalled = true;
 
         for (uint i = 0; i < NUMBERS_COUNT; i++) {
-            draws[drawCounter].randomnessIDs.push(randomnessGenerator.requestRandomness());
+            curDraw.randomnessIDs.push(randomnessGenerator.requestRandomness());
         }
     }
 
@@ -176,12 +175,11 @@ contract LotteryAgent is Ownable, Governance {
     }
 
     function finalizeDraw() external {
-        require(draws[drawCounter].prepareFinalizeCalled == true, "prepareFinalizeCalled wasn't called, call it first");
+        require(curDraw.prepareFinalizeCalled == true, "prepareFinalizeCalled wasn't called, call it first");
         require(block.timestamp >= drawBeginTime + drawFrequency, "It's not time for the draw yet");
-        Draw storage curDraw = draws[drawCounter];
 
         // Check if all randomness has been posted
-        require(allRandomnessPosted(drawCounter), "Not all randomness has been fulfilled");
+        require(allRandomnessPostedForCurDraw(), "Not all randomness has been fulfilled");
 
         uint[] memory randomnessIDs = curDraw.randomnessIDs;
         uint[] memory randomNumbers = new uint[](randomnessIDs.length);
@@ -202,27 +200,29 @@ contract LotteryAgent is Ownable, Governance {
             }
         }
 
+        emit DrawFinalized(drawHistory.length, winningNumbers);
+        drawHistory.push(curDraw);
+        
         // Handle the next draw's winnings
-        Draw storage nextDraw = draws[drawCounter + 1];
+        Draw memory nextDraw = Draw();
         nextDraw.totalWinnings += curDraw.ticketRevenue;
         if (curDraw.winnersCount == 0) {
             nextDraw.totalWinnings += curDraw.totalWinnings;
         }
 
-        emit DrawFinalized(drawCounter, winningNumbers);
-        drawCounter++;
-        draws[drawCounter].stackersPoolDistributionRatio = stackersPoolDistributionRatio;
-        draws[drawCounter].ticketPrice = ticketPrice;
+        nextDraw.stackersPoolDistributionRatio = stackersPoolDistributionRatio;
+        nextDraw.ticketPrice = ticketPrice;
         drawBeginTime = block.timestamp;
+        curDraw = nextDraw;
     }
 
     function claimPrize(uint drawId, uint ticketId) external {
-        Ticket storage ticket = draws[drawId].tickets[ticketId];
+        Ticket storage ticket = drawHistory[drawId].tickets[ticketId];
         require(ticket.player == msg.sender, "You are not the owner of this ticket");
         require(!ticket.claimed, "Prize already claimed");
         require(ticket.winner, "The ticket is not winning one!");
 
-        uint prizeAmount = draws[drawId].totalWinnings / draws[drawId].winnersCount;
+        uint prizeAmount = drawHistory[drawId].totalWinnings / drawHistory[drawId].winnersCount;
         dymToken.transfer(msg.sender, prizeAmount);
         ticket.claimed = true;
         emit PrizeClaimed(msg.sender, prizeAmount);
