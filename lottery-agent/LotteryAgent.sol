@@ -5,7 +5,19 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RandomnessGenerator.sol";
 
-contract LotteryAgent is Ownable {
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.10;
+
+abstract contract Governance {
+    address constant public govAddress = 0x7b5Fe22B5446f7C62Ea27B8BD71CeF94e03f3dF2;
+
+    modifier onlyGovernance() {
+        require(msg.sender == govAddress, "Governance: caller is not the governance");
+        _;
+    }
+}
+
+contract LotteryAgent is Ownable, Governance {
     // Token contract address (DYM token)
     IERC20 public dymToken;
 
@@ -63,6 +75,7 @@ contract LotteryAgent is Ownable {
         randomnessGenerator = RandomnessGenerator(_randomnessGenerator);
         dymToken = IERC20(_dymToken);
         drawBeginTime = block.timestamp;
+        draws[drawCounter].stackersPoolDistributionRatio = stackersPoolDistributionRatio;
     }
 
     function validateTicket(uint[] memory _chosenNumbers) internal view {
@@ -106,7 +119,11 @@ contract LotteryAgent is Ownable {
         // Store the ticket in userTickets mapping with the (drawId, ticketId) pair
         userTickets[msg.sender].push(TicketId(drawCounter, ticketId));
 
-        draws[drawCounter].ticketRevenue += ticketPrice;
+        uint stackersFee = ticketPrice * curDraw.stackersPoolDistributionRatio / 100;
+        // TODO: SEND TO STACKERS
+        uint ticketRevenue = ticketPrice - stackersFee;
+        draws[drawCounter].ticketRevenue += ticketRevenue;
+
         emit TicketPurchased(msg.sender, ticketId, _chosenNumbers);
     }
 
@@ -134,26 +151,25 @@ contract LotteryAgent is Ownable {
 
     // New function to generate winning numbers
     function generateWinningNumbers(uint[] memory randomNumbers) internal pure returns (bool[] memory) {
-        uint[] memory winningNumbersSample = new uint[](NUMBERS_COUNT);
+        uint[] memory lotteryDrum = new uint[](NUMBERS_COUNT);
 
         // Initialize the array with numbers from 0 to NUMBERS_COUNT-1
-        for (uint i = 0; i < winningNumbersSample.length; i++) {
-            winningNumbersSample[i] = i;
+        for (uint i = 0; i < lotteryDrum.length; i++) {
+            lotteryDrum[i] = i;
         }
 
-        uint winningNumbersLength = winningNumbersSample.length;
-
-        // Remove elements from winningNumbersSample based on random numbers
-        for (uint i = 0; i < randomNumbers.length; i++) {
-            uint deleteIdx = randomNumbers[i] % winningNumbersLength;
-            winningNumbersSample[deleteIdx] = winningNumbersSample[winningNumbersLength - 1];
-            winningNumbersLength--; // Simulate pop operation
-        }
-
-        // Create the winning numbers array where true indicates a winning number
         bool[] memory winningNumbers = new bool[](NUMBERS_COUNT);
         for (uint i = 0; i < winningNumbersLength; i++) {
-            winningNumbers[winningNumbersSample[i]] = true;
+            winningNumbers[lotteryDrum[i]] = true;
+        }
+
+        uint numbersLeft = lotteryDrum.length;
+        // Remove elements from lotteryDrum
+        for (uint i = 0; i < randomNumbers.length; i++) {
+            uint winningNumberIdx = randomNumbers[i] % winningNumbersLength;
+            winningNumbers[lotteryDrum[winningNumberIdx]] = true;
+            lotteryDrum[winningNumberIdx] = lotteryDrum[winningNumbersLength - 1];
+            numbersLeft--; // Simulate pop operation
         }
 
         return winningNumbers;
@@ -186,13 +202,9 @@ contract LotteryAgent is Ownable {
             }
         }
 
-        uint stackersFee = curDraw.ticketRevenue * curDraw.stackersPoolDistributionRatio / 100;
-        // TODO: SEND TO STACKERS
-
         // Handle the next draw's winnings
         Draw storage nextDraw = draws[drawCounter + 1];
-        uint nextWinningsBonus = curDraw.ticketRevenue - stackersFee;
-        nextDraw.totalWinnings += nextWinningsBonus;
+        nextDraw.totalWinnings += curDraw.ticketRevenue;
         if (curDraw.winnersCount == 0) {
             nextDraw.totalWinnings += curDraw.totalWinnings;
         }
@@ -231,19 +243,19 @@ contract LotteryAgent is Ownable {
     }
 
     // Admin functions to adjust contract parameters
-    function setTicketPrice(uint newTicketPrice) external onlyOwner {
+    function setTicketPrice(uint newTicketPrice) external onlyGovernance {
         ticketPrice = newTicketPrice;
     }
 
-    function setDrawFrequency(uint newFrequency) external onlyOwner {
+    function setDrawFrequency(uint newFrequency) external onlyGovernance {
         drawFrequency = newFrequency;
     }
 
-    function setstackersPoolDistributionRatio(uint newRatio) external onlyOwner {
+    function setstackersPoolDistributionRatio(uint newRatio) external onlyGovernance {
         stackersPoolDistributionRatio = newRatio;
     }
 
-    function setDYMTokenAddress(address newTokenAddress) external onlyOwner {
+    function setDYMTokenAddress(address newTokenAddress) external onlyGovernance {
         dymToken = IERC20(newTokenAddress);
     }
 
