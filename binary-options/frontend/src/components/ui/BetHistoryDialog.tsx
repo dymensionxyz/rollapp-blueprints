@@ -76,7 +76,6 @@ const BetHistoryDialog = ({ isOpen, history, onClose, onSettle, settlingIds }: B
                                 Expiration: {new Date(bet.expiration * 1000).toLocaleString()}
                             </div>
 
-                            {/* Settlement button */}
                             {!bet.settled && Date.now() > bet.expiration * 1000 && (
                                 <button
                                     onClick={() => onSettle(bet.id)}

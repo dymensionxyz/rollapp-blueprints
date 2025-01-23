@@ -32,6 +32,8 @@ const BinaryOptionsDApp = () => {
         type: 'pending' | 'success' | 'error';
     } | null>(null);
     const [settlingIds, setSettlingIds] = useState<number[]>([]);
+    const [expiredBetsCount, setExpiredBetsCount] = useState(0);
+
 
     const dymensionConnectRef = useRef(null);
 
@@ -117,7 +119,7 @@ const BinaryOptionsDApp = () => {
             const { data } = await response.json();
             const formattedHistory = data.options.map((option: any) => ({
                 id: option.id,
-                direction: option.direction === "Up" ? "up" : "down",
+                direction: option.direction === "up" ? "up" : "down",
                 strikePrice: parseFloat(option.strike_price),
                 expiration: option.expiration,
                 betAmount: `${parseInt(option.bet_amount.amount) / 1000000} AUOD`,
@@ -139,6 +141,13 @@ const BinaryOptionsDApp = () => {
             return () => clearTimeout(timer);
         }
     }, [txNotification]);
+
+    useEffect(() => {
+        const count = betHistory.filter(bet =>
+            !bet.settled && Date.now() > bet.expiration * 1000
+        ).length;
+        setExpiredBetsCount(count);
+    }, [betHistory]);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -383,9 +392,17 @@ const BinaryOptionsDApp = () => {
                 {/* Bet History Button */}
                 <button
                     onClick={() => setShowHistory(true)}
-                    className="w-full bg-gray-800 p-4 rounded-lg flex justify-between items-center"
+                    className="w-full bg-gray-800 p-4 rounded-lg flex justify-between items-center relative"
                 >
-                    <span>Bet History</span>
+                    <div className="flex items-center gap-2">
+                        <span>Bet History</span>
+                        {expiredBetsCount > 0 && (
+                            <span
+                                className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {expiredBetsCount}
+                        </span>
+                        )}
+                    </div>
                     <ChevronRight className="w-5 h-5"/>
                 </button>
             </div>
