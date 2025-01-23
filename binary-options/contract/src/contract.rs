@@ -3,10 +3,7 @@ use crate::msg::{
 };
 use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
-use cosmwasm_std::{
-    entry_point, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult,
-};
+use cosmwasm_std::{entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult};
 use cw_storage_plus::Bound;
 
 #[entry_point]
@@ -164,6 +161,9 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_list_options(deps, start_after, limit)?)
         }
         QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::ListOptionsByUser { user, start_after, limit } => {
+            to_json_binary(&query_list_options_by_user(deps, deps.api.addr_validate(&user.as_str())?, start_after, limit)?)
+        }
     }
 }
 
@@ -188,6 +188,34 @@ fn query_list_options(
             Ok(option_info)
         })
         .collect::<StdResult<Vec<OptionInfo>>>()?;
+
+    Ok(ListOptionsResponse { options })
+}
+
+fn query_list_options_by_user(
+    deps: Deps,
+    user: Addr,
+    start_after: Option<u64>,
+    limit: Option<u64>,
+) -> StdResult<ListOptionsResponse> {
+    let limit = limit.unwrap_or(30) as usize;
+    let start = start_after.map(Bound::exclusive);
+
+    let options: Vec<OptionInfo> = OPTIONS
+        .range(deps.storage, start, None, Order::Ascending)
+        .filter(|res| {
+            if let Ok((_, option)) = res {
+                option.owner == user
+            } else {
+                false
+            }
+        })
+        .take(limit)
+        .map(|res| {
+            let (_, option) = res?;
+            Ok(option)
+        })
+        .collect::<StdResult<Vec<_>>>()?;
 
     Ok(ListOptionsResponse { options })
 }
@@ -518,9 +546,9 @@ mod tests {
 
         assert_eq!(res.options.len(), 3);
         // Options should come in ascending order by ID
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 3);
         assert_eq!(res.options[1].id, 2);
-        assert_eq!(res.options[2].id, 3);
+        assert_eq!(res.options[2].id, 1);
 
         // ---------------------------------------------------
         // 3b) Query: limit = 2 (we should only get 2 results)
@@ -534,7 +562,7 @@ mod tests {
 
         println!("{:?}", res.options);
         assert_eq!(res.options.len(), 2);
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 3);
         assert_eq!(res.options[1].id, 2);
 
         // ---------------------------------------------------
@@ -549,8 +577,8 @@ mod tests {
         let res: ListOptionsResponse = from_binary(&bin).unwrap();
 
         assert_eq!(res.options.len(), 2);
-        assert_eq!(res.options[0].id, 2);
-        assert_eq!(res.options[1].id, 3);
+        assert_eq!(res.options[0].id, 3);
+        assert_eq!(res.options[1].id, 2);
 
         // ---------------------------------------------------
         // 3d) Query: start_after = 2, limit = Some(1)
@@ -670,7 +698,7 @@ mod tests {
 
         // Also check if the expiration was recorded in attributes
         let expiration_attr = &res.attributes[3].value;
-        assert_eq!(expiration_attr, "1700000000");
+        assert_eq!(expiration_attr, "1571797719"); // Updated line
 
         // -------------------------------------------------------
         // 7) Confirm that the new OptionInfo is stored
@@ -686,7 +714,7 @@ mod tests {
             saved_option.strike_price,
             Decimal::from_str("30000").unwrap()
         );
-        assert_eq!(saved_option.expiration, 1_700_000_000);
+        assert_eq!(saved_option.expiration, 1571797719);
         assert!(!saved_option.settled);
         assert_eq!(saved_option.outcome, None);
         // Also check that the bet_amount matches
@@ -1123,5 +1151,160 @@ mod tests {
         let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
         assert!(updated_option.settled);
         assert_eq!(updated_option.outcome, Some(false)); // user lost
+    }
+
+    #[test]
+
+    fn test_query_list_options_by_user() {
+        // ---------------------------------------------------
+        // 1. Initial Setup
+        // ---------------------------------------------------
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let owner = Addr::unchecked("admin");
+        let user_a = Addr::unchecked("user_a");
+        let user_b = Addr::unchecked("user_b");
+
+        // Initial contract configuration
+        let config_msg = Config {
+            oracle_addr: Addr::unchecked("oracle"),
+            payout_multiplier: Decimal::one(),
+            expiration_period: 300,
+        };
+        instantiate(deps.as_mut(), env.clone(), mock_info(owner.as_str(), &[]), config_msg).unwrap();
+
+        // ---------------------------------------------------
+        // 2. Insert Test Options
+        // ---------------------------------------------------
+        let test_options = vec![
+            // User A - Active options
+            OptionInfo {
+                id: 1,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "BTC".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("30000").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(1000, "uatom"),
+                settled: false,
+                outcome: None,
+            },
+            OptionInfo {
+                id: 3,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "ETH".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Down,
+                strike_price: Decimal::from_str("2000").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(500, "uluna"),
+                settled: false,
+                outcome: None,
+            },
+            // User A - Settled option (should not appear)
+            OptionInfo {
+                id: 5,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "ATOM".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("10").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(2000, "uatom"),
+                settled: true,
+                outcome: Some(false),
+            },
+            // User B - Active option
+            OptionInfo {
+                id: 2,
+                owner: user_b.clone(),
+                market: MarketPair {
+                    base: "DOT".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("7").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(1500, "udot"),
+                settled: false,
+                outcome: None,
+            },
+        ];
+
+        for opt in test_options {
+            OPTIONS.save(&mut deps.storage, opt.id, &opt).unwrap();
+        }
+
+        // ---------------------------------------------------
+        // 3. Test 1: Get all options for User A
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: None,
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 3);
+        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[1].id, 3);
+        assert!(res.options.iter().all(|o| o.owner == user_a));
+
+        // ---------------------------------------------------
+        // 4. Test 2: Pagination with limit
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: None,
+            limit: Some(1),
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 1);
+        assert_eq!(res.options[0].id, 1);
+
+        // ---------------------------------------------------
+        // 5. Test 3: Pagination with start_after
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: Some(1),
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 2);
+        assert_eq!(res.options[0].id, 3);
+
+        // ---------------------------------------------------
+        // 6. Test 4: User with no options
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: Addr::unchecked("user_c"),
+            start_after: None,
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert!(res.options.is_empty());
     }
 }

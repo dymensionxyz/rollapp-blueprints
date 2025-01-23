@@ -101,10 +101,24 @@ const BinaryOptionsDApp = () => {
         }
     };
 
+    const handleConnectChange = (isConnected: boolean) => {
+        if (isConnected) {
+            fetchBetHistory();
+            fetchUserBalance();
+        } else {
+            setBetHistory([]);
+            setUserBalance("0");
+        }
+    };
+
     const fetchBetHistory = async () => {
         try {
+            const userAddress = dymensionConnectRef.current?.address;
+            if (!userAddress) return;
+
             const query = {
-                list_options: {
+                list_options_by_user: {
+                    user: userAddress,
                     start_after: null,
                     limit: 10
                 }
@@ -155,6 +169,7 @@ const BinaryOptionsDApp = () => {
         const checkAndFetchBalance = async () => {
             if (dymensionConnectRef.current?.address) {
                 await fetchUserBalance();
+                await fetchBetHistory();
                 clearInterval(intervalId);
             }
         };
@@ -345,7 +360,7 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-6">
-                <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus}/>
+                <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus} onConnectChange={handleConnectChange} />
                 <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
                     {isBalanceLoading ? (
                         <div className="flex items-center gap-2">

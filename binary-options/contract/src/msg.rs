@@ -36,6 +36,12 @@ pub enum QueryMsg {
         start_after: Option<u64>,
         limit: Option<u64>,
     },
+    #[returns(ListOptionsResponse)]
+    ListOptionsByUser {
+        user: Addr,
+        start_after: Option<u64>,
+        limit: Option<u64>,
+    },
     #[returns(Config)]
     GetConfig {},
 }

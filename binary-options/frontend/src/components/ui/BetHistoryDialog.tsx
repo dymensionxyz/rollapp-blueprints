@@ -97,7 +97,7 @@ const BetHistoryDialog = ({ isOpen, history, onClose, onSettle, settlingIds }: B
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogAction
-                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                        className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-xl transition-all duration-200 active:scale-95"
                         onClick={onClose}
                     >
                         Close

@@ -10,6 +10,7 @@ const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
 
 interface DymensionConnectProps {
     onTxStatus?: (status: 'success' | 'error', txData?: any) => void;
+    onConnectChange?: (isConnected: boolean) => void;
 }
 
 export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) => {
@@ -73,11 +74,13 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
             if (event.data.type === 'connect') {
                 setAddress(event.data.address);
                 setIsConnected(true);
+                props.onConnectChange?.(true);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'disconnect') {
                 setAddress("");
                 setIsConnected(false);
+                props.onConnectChange?.(false);
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
