@@ -13,7 +13,7 @@ import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
 import logo from "../../assets/logo.png";
 
-const COUNT_DOWN_INTERVAL = 60;
+const COUNT_DOWN_INTERVAL = 15;
 
 const BinaryOptionsDApp = () => {
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
