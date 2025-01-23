@@ -10,6 +10,10 @@ import BetHistoryList, {BetHistoryItem} from "../ui/BetHistoryList";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
 import BetButton from "../ui/BetButton";
 import logo from "../../assets/logo.png";
+import { useReward } from 'react-rewards';
+import { BetOutcomeAnimation } from '../ui/BetOutcomeAnimation'
+
+
 
 const PRICE_UPDATE_INTERVAL = 15;
 
@@ -30,8 +34,22 @@ const BinaryOptionsDApp = () => {
         type: 'pending' | 'success' | 'error';
     } | null>(null);
     const [settlingIds, setSettlingIds] = useState<number[]>([]);
+    const [currentOutcome, setCurrentOutcome] = useState<'win' | 'loss' | null>(null)
 
     const dymensionConnectRef = useRef(null);
+
+    const { reward: confettiReward } = useReward('confettiReward', 'confetti', {
+        elementCount: 150,
+        spread: 100,
+        lifetime: 300,
+        colors: ['#FFD700', '#FF0000', '#00FF00', '#0000FF']
+    });
+    const { reward: explosionReward } = useReward('explosionReward', 'emoji', {
+        emoji: ['💥','😭','💸','🔥'],
+        elementCount: 20,
+        spread: 100,
+        lifetime: 300
+    });
 
     const fetchUserBalance = async () => {
         try {
@@ -88,10 +106,23 @@ const BinaryOptionsDApp = () => {
             };
 
             await dymensionConnectRef.current.sendMessage(msg);
-            setTimeout(() => {
-                fetchBetHistory();
-                setSettlingIds(prev => prev.filter(id => id !== optionId));
-            }, 5000);
+            setTimeout(async () => {
+                await fetchBetHistory()
+                const settledBet = betHistory.find(b => b.id === optionId)
+
+                if (settledBet?.outcome === 'win') {
+                    confettiReward()
+                    new Audio('/sounds/win.mp3').play().catch(() => {})
+                    setCurrentOutcome('win')
+                } else if (settledBet?.outcome === 'loss') {
+                    explosionReward()
+                    new Audio('/sounds/loss.mp3').play().catch(() => {})
+                    setCurrentOutcome('loss')
+                }
+
+                setTimeout(() => setCurrentOutcome(null), 3000)
+                setSettlingIds(prev => prev.filter(id => id !== optionId))
+            }, 5000)
         } catch (error) {
             console.error("Error settling option:", error);
         }
@@ -325,7 +356,7 @@ const BinaryOptionsDApp = () => {
 
     return (
         <div className="min-h-screen bg-gray-900 text-white p-4">
-            <div className="fixed bottom-4 right-4 space-y-2">
+            <div className="fixed bottom-4 right-4 space-y-2 z-[1000]">
                 {txNotification && (
                     <div className={`p-4 rounded-lg ${
                         txNotification.type === 'pending' ? 'bg-blue-600' :
@@ -434,6 +465,9 @@ const BinaryOptionsDApp = () => {
                     settlingIds={settlingIds}
                 />
             </div>
+            <BetOutcomeAnimation outcome={currentOutcome} />
+            <span id="confettiReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
+            <span id="explosionReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
         </div>
     );
 };
