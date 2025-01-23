@@ -7,18 +7,16 @@ import { ChevronRight } from 'lucide-react';
 import { DymensionConnect } from "../ui/DymensionConnect";
 import config from "../../config/config";
 import BtcPriceDisplay from "../ui/BtcPriceDisplay";
-import BetHistoryDialog, { BetHistoryItem } from "../ui/BetHistoryDialog";
-import BetHistoryList from "../ui/BetHistoryList";
+import BetHistoryList, {BetHistoryItem} from "../ui/BetHistoryList";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
-import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
 import logo from "../../assets/logo.png";
 
-const COUNT_DOWN_INTERVAL = 15;
+const PRICE_UPDATE_INTERVAL = 15;
 
 const BinaryOptionsDApp = () => {
     const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-    const [timeLeft, setTimeLeft] = useState(COUNT_DOWN_INTERVAL);
+    const [timeLeft, setTimeLeft] = useState(PRICE_UPDATE_INTERVAL);
     const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
     const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
@@ -215,7 +213,7 @@ const BinaryOptionsDApp = () => {
             setTimeLeft(prev => {
                 if (prev <= 1) {
                     fetchBTCPrice();
-                    return COUNT_DOWN_INTERVAL;
+                    return PRICE_UPDATE_INTERVAL;
                 }
                 return prev - 1;
             });
@@ -389,21 +387,13 @@ const BinaryOptionsDApp = () => {
                 />
             </div>
 
-            {/* Main Content */}
             <div className="space-y-8">
-                {/* Current BTC Price */}
                 <BtcPriceDisplay
                     currentPrice={currentPrice}
                     isLoading={isLoading}
                     error={error}
                 />
 
-                <ProgressBar
-                    progress={(timeLeft / COUNT_DOWN_INTERVAL) * 100}
-                    label={`Next price update in ${timeLeft}s`}
-                />
-
-                {/* Bet Buttons */}
                 <div className="grid grid-cols-2 gap-4">
                     <BetButton
                         direction="up"
@@ -417,7 +407,6 @@ const BinaryOptionsDApp = () => {
                     />
                 </div>
 
-                {/* Bet Information */}
                 <div className="text-center text-gray-400">
                     Fixed bet amount: 1 {config.screenDenom}
                 </div>

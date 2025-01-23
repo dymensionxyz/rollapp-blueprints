@@ -1,6 +1,16 @@
 import { ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+export interface BetHistoryItem {
+    id: number;
+    direction: 'up' | 'down';
+    strikePrice: number;
+    expiration: number;
+    betAmount: string;
+    outcome: boolean | null;
+    settled: boolean;
+}
+
 const BetHistoryList = ({ history, onSettle, settlingIds }) => {
     const [, forceUpdate] = useState(0);
 

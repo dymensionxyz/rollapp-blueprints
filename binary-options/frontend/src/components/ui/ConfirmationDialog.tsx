@@ -8,6 +8,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "./AlertDialog";
+import config from "../../config/config";
 
 interface ConfirmationDialogProps {
     isOpen: boolean;
@@ -23,7 +24,7 @@ const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel }: Confirma
                 <AlertDialogHeader>
                     <AlertDialogTitle className="mb-4">Confirm Your Bet</AlertDialogTitle> {/* Añadido mb-4 */}
                     <AlertDialogDescription>
-                        You are betting 1 AUOD that the price
+                        You are betting 1 {config.screenDenom} that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
                         in 5 minutes.
                     </AlertDialogDescription>
