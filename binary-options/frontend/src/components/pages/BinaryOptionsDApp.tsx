@@ -361,15 +361,7 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-10 px-4 py-4 bg-gray-900">
-                    <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus}
-                                      onConnectChange={handleConnectChange}/>
-                <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
-                    <img
-                        src={logo}
-                        alt="Logo"
-                        className="w-24 h-24 object-contain hover:scale-105 transition-transform"
-                    />
-                </div>
+                {/* Balance a la izquierda */}
                 <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
                     {isBalanceLoading ? (
                         <div className="flex items-center gap-2">
@@ -382,6 +374,22 @@ const BinaryOptionsDApp = () => {
                         `Balance: ${(Number(userBalance) / 1000000000000000000).toFixed(2)} AUOD`
                     )}
                 </div>
+
+                {/* Logo centrado */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+                    <img
+                        src={logo}
+                        alt="Logo"
+                        className="w-24 h-24 object-contain hover:scale-105 transition-transform"
+                    />
+                </div>
+
+                {/* Dymension Connect a la derecha */}
+                <DymensionConnect
+                    ref={dymensionConnectRef}
+                    onTxStatus={handleTxStatus}
+                    onConnectChange={handleConnectChange}
+                />
             </div>
 
             {/* Main Content */}
