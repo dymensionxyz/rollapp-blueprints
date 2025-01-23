@@ -31,6 +31,7 @@ const BinaryOptionsDApp = () => {
         message: string;
         type: 'pending' | 'success' | 'error';
     } | null>(null);
+    const [settlingIds, setSettlingIds] = useState<number[]>([]);
 
     const dymensionConnectRef = useRef(null);
 
@@ -67,6 +68,8 @@ const BinaryOptionsDApp = () => {
         try {
             if (!dymensionConnectRef.current?.address) return;
 
+            setSettlingIds(prev => [...prev, optionId]);
+
             const msg = {
                 type: "executeTx",
                 messages: [
@@ -87,7 +90,10 @@ const BinaryOptionsDApp = () => {
             };
 
             await dymensionConnectRef.current.sendMessage(msg);
-            setTimeout(fetchBetHistory, 5000);
+            setTimeout(() => {
+                fetchBetHistory();
+                setSettlingIds(prev => prev.filter(id => id !== optionId));
+            }, 5000);
         } catch (error) {
             console.error("Error settling option:", error);
         }
@@ -396,6 +402,7 @@ const BinaryOptionsDApp = () => {
                 history={betHistory}
                 onClose={() => setShowHistory(false)}
                 onSettle={handleSettleOption}
+                settlingIds={settlingIds}
             />
         </div>
     );

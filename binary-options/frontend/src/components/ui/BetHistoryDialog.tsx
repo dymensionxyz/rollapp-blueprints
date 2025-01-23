@@ -23,9 +23,10 @@ interface BetHistoryDialogProps {
     history: BetHistoryItem[];
     onClose: () => void;
     onSettle: (optionId: number) => void;
+    settlingIds: number[];
 }
 
-const BetHistoryDialog = ({ isOpen, history, onClose, onSettle }: BetHistoryDialogProps) => {
+const BetHistoryDialog = ({ isOpen, history, onClose, onSettle, settlingIds }: BetHistoryDialogProps) => {
     const getResultStatus = (outcome: boolean | null, settled: boolean, expiration: number) => {
         if (!settled) {
             return Date.now() > expiration * 1000 ? "Expired" : "Pending";
@@ -79,9 +80,17 @@ const BetHistoryDialog = ({ isOpen, history, onClose, onSettle }: BetHistoryDial
                             {!bet.settled && Date.now() > bet.expiration * 1000 && (
                                 <button
                                     onClick={() => onSettle(bet.id)}
-                                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 rounded self-end"
+                                    disabled={settlingIds.includes(bet.id)}
+                                    className="mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-1 px-2 rounded self-end disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Settle Now
+                                    {settlingIds.includes(bet.id) ? (
+                                        <span className="flex items-center gap-1">
+                                            <span className="animate-spin">🌀</span>
+                                            Settling...
+                                        </span>
+                                    ) : (
+                                        'Settle Now'
+                                    )}
                                 </button>
                             )}
                         </div>
