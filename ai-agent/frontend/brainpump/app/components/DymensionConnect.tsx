@@ -22,6 +22,9 @@ export function DymensionConnect() {
         setAddresses,
         setWalletBalance,
         handleTxResponse,
+        setPersuasion,
+        setGuessedNumber,
+        setBetAmount,
     } = useContract();
 
     const qrAccount = useMemo(() => typeof window !==
@@ -46,6 +49,17 @@ export function DymensionConnect() {
 
     const initModal = useCallback(() => {
         updateTriggerBoundingRect();
+        sendMessage({
+            type: "setStyles",
+            styles: {
+                "--black-light": "rgb(63 81 59)",
+                "--black-light-rgb": "63, 81, 59",
+                "--black-dark": "rgb(27 40 24)",
+                "--black-dark-rgb": "27, 40, 24",
+                "--background-color": "rgb(42 59 42)",
+                "--background-color-secondary": "rgb(63 78 63)",
+            },
+        });
         sendMessage({type: 'setMenuAlign', align: 'right'});
     }, [sendMessage, updateTriggerBoundingRect]);
 
@@ -146,6 +160,9 @@ export function DymensionConnect() {
             }
             if (event.data.type === 'disconnect') {
                 setAddresses('', '');
+                setPersuasion('');
+                setGuessedNumber(undefined);
+                setBetAmount(undefined);
                 setWalletBalance('0');
                 updateTriggerBoundingRect();
             }

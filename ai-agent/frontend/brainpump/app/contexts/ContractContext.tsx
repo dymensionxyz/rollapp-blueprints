@@ -136,6 +136,9 @@ export function ContractProvider({children}: { children: ReactNode }) {
         }
 
         if (!hexAddress) {
+            setPersuasion('');
+            setGuessedNumber(undefined);
+            setBetAmount(undefined);
             setGameStatusLoading(false);
             setBroadcastingMessage(undefined);
             setBroadcastingAttempts(0);

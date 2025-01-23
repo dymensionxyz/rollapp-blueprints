@@ -131,7 +131,7 @@ export function BetForm() {
             setGuessedNumber(undefined);
             return;
         }
-        const match = inputElement.value.match(/^(10|[1-9])$/);
+        const match = inputElement.value.match(/^-?\d+$/);
         if (!match) {
             event.preventDefault();
             inputElement.value = String(guessedNumber) || '';
@@ -223,7 +223,6 @@ export function BetForm() {
                                                         value={persuasion ?? ''}
                                                         className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
                                                         disabled={isLoading}
-                                                        onInput={onPersuasionChange}
                                                     />
                                                 )}
                                             />
