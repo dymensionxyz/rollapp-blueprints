@@ -380,7 +380,7 @@ const BinaryOptionsDApp = () => {
                     <img
                         src={logo}
                         alt="Logo"
-                        className="w-24 h-24 object-contain hover:scale-105 transition-transform"
+                        className="w-40 h-40 object-contain hover:scale-105 transition-transform"
                     />
                 </div>
 
