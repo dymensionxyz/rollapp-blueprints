@@ -1,7 +1,7 @@
 import { Bounce, toast, TypeOptions } from 'react-toastify';
 
 export const showToast = (message: string, type: TypeOptions) => toast(message, {
-    position: 'top-center',
+    position: 'top-right',
     autoClose: 5000,
     hideProgressBar: true,
     theme: 'colored',

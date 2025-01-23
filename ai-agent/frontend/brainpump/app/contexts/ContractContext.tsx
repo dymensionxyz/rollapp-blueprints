@@ -136,6 +136,9 @@ export function ContractProvider({children}: { children: ReactNode }) {
         }
 
         if (!hexAddress) {
+            setPersuasion('');
+            setGuessedNumber(undefined);
+            setBetAmount(undefined);
             setGameStatusLoading(false);
             setBroadcastingMessage(undefined);
             setBroadcastingAttempts(0);
@@ -201,22 +204,16 @@ export function ContractProvider({children}: { children: ReactNode }) {
 
     const handleLastGameResult = useCallback(async () => {
         try {
-            console.log(">>>>>>>>2")
             const gameResult = (await aiGamblingContract.methods.bets(hexAddress).call()) as BetInfo;
 
-            console.log(">>>>>>>>3", gameResult)
-
             if (gameResult.won) {
-                console.log(">>>>>>>>4")
                 const successMessage = SUCCESS_MESSAGES[Math.floor(Math.random() * SUCCESS_MESSAGES.length)];
                 showSuccessToast(successMessage);
             } else {
-                console.log(">>>>>>>>5")
                 const losingMessage = LOSING_MESSAGES[Math.floor(Math.random() * LOSING_MESSAGES.length)];
                 showErrorToast(losingMessage);
             }
         } catch (error) {
-            console.log(">>>>>>>>6")
             console.error(error);
             showErrorToast(`Can't fetch game status, please try again later`);
         }
@@ -227,22 +224,23 @@ export function ContractProvider({children}: { children: ReactNode }) {
             error?.originalError?.message?.toLowerCase().includes('reject') ||
             error?.originalError?.shortMessage?.toLowerCase().includes('reject');
 
-        console.log(">>>>>>>>", response, error, broadcastingMessage)
+        console.log('response', response);
         if (response?.deliveryTxCode === 0 && !error) {
             setBroadcastingMessage(undefined);
             setBroadcastingAttempts(0);
             if (broadcastingMessage === ContractFunction.placeBet) {
                 refreshAllInfo();
+                showSuccessToast(`Your bet has been successfully placed! Transaction hash: ${response.hash}`);
             } else if (broadcastingMessage === ContractFunction.resolveBet) {
-                console.log(">>>>>>>>1")
                 refreshAllInfo();
                 setPersuasion('');
                 setGuessedNumber(undefined);
                 setBetAmount(undefined);
+                showSuccessToast(`Your bet has been successfully resolved! Transaction hash: ${response.hash}`)
                 handleLastGameResult().then();
             } else if (broadcastingMessage === ContractFunction.withdraw) {
                 refreshAllInfo();
-                showSuccessToast('🏆 Congratulations! Your rewards have been successfully claimed!');
+                showSuccessToast(`🏆 Congratulations! Your rewards have been successfully claimed! Transaction hash: ${response.hash}`);
             }
         } else if (broadcastingAttempts > 0 && !isUserReject) {
             setBroadcastingAttempts(broadcastingAttempts - 1);

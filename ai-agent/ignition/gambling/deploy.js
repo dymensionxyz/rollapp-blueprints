@@ -4,13 +4,15 @@ const {ethers, upgrades} = require('hardhat');
 async function main() {
     // 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     [owner] = await ethers.getSigners();
-    const aiOracleAddr = "0x813c3A4CC989000FA93bdB0183618EAcef2d193b";
+    const aiOracleAddr = "0xe07b29560776ba4Cfbe0BbF8537C847907909D09";
     console.log("Deploying AIGambling contract with the account:", owner.address);
 
     const deployOptions = {
-        maxFeePerGas: ethers.parseUnits('30', 'gwei'),
-        maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei'),
         initializer: 'initialize',
+        txOverrides: ethers.Overrides = {
+            maxFeePerGas: ethers.parseUnits('300', 'gwei'),
+            maxPriorityFeePerGas: ethers.parseUnits('100', 'gwei'),
+        }
     };
 
     try {

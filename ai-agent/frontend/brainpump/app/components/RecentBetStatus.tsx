@@ -1,20 +1,20 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import {useState, useEffect, useMemo} from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useContract } from '../contexts/ContractContext'
-import { useToast } from '@/components/ui/use-toast'
 import { ErrorDisplay } from './ErrorDisplay'
 import { Loader2 } from 'lucide-react'
 import { BetDetails } from './BetDetails'
+import {ContractFunction} from "@/app/contexts/types";
+import {showSuccessToast, showToast} from "@/app/utils/toast-utils";
 
 export function RecentBetStatus() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const { bet, resolveBet, checkAnswerStatus } = useContract()
-    const { toast } = useToast()
+    const { bet, resolveBet, checkAnswerStatus, broadcastingMessage } = useContract()
 
     useEffect(() => {
         const fetchAiAnswer = async () => {
@@ -70,21 +70,17 @@ export function RecentBetStatus() {
     }, [bet, checkAnswerStatus])
 
     const handleResolveBet = async () => {
-        setIsLoading(true)
         setError(null)
         try {
-            await resolveBet()
-            toast({
-                title: "Bet Resolved",
-                description: "Your bet has been successfully resolved!",
-            })
+            resolveBet()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to resolve bet')
-        } finally {
-            setIsLoading(false)
         }
     }
 
+    const broadcastingResolveBet = useMemo(() => broadcastingMessage === ContractFunction.resolveBet, [broadcastingMessage]);
+
+    const broadcasting = useMemo(() => Boolean(broadcastingMessage), [broadcastingMessage]);
 
     return (
         <Card className="neon-border glass-effect border-0 h-full">
@@ -142,9 +138,9 @@ export function RecentBetStatus() {
                                 <Button
                                     onClick={handleResolveBet}
                                     className="w-full mt-4 bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]"
-                                    disabled={isLoading || !answerStatus?.exists}
+                                    disabled={broadcasting || !answerStatus?.exists}
                                 >
-                                    {isLoading ? (
+                                    {broadcastingResolveBet ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             Resolving...
