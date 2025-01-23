@@ -11,6 +11,7 @@ import BetHistoryDialog, { BetHistoryItem } from "../ui/BetHistoryDialog";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
 import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
+import logo from "../../assets/logo.png";
 
 const COUNT_DOWN_INTERVAL = 60;
 
@@ -359,8 +360,16 @@ const BinaryOptionsDApp = () => {
             </div>
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-6">
-                <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus} onConnectChange={handleConnectChange} />
+            <div className="flex justify-between items-center mb-10 px-4 py-4 bg-gray-900">
+                    <DymensionConnect ref={dymensionConnectRef} onTxStatus={handleTxStatus}
+                                      onConnectChange={handleConnectChange}/>
+                <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+                    <img
+                        src={logo}
+                        alt="Logo"
+                        className="w-24 h-24 object-contain hover:scale-105 transition-transform"
+                    />
+                </div>
                 <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
                     {isBalanceLoading ? (
                         <div className="flex items-center gap-2">
