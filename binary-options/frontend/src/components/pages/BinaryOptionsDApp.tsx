@@ -212,6 +212,12 @@ const BinaryOptionsDApp = () => {
         fetchBTCPrice();
         fetchUserBalance();
         fetchBetHistory();
+
+        const historyInterval = setInterval(fetchBetHistory, 30000);
+
+        return () => {
+            clearInterval(historyInterval);
+        };
     }, []);
 
     useEffect(() => {
@@ -235,7 +241,6 @@ const BinaryOptionsDApp = () => {
             setIsLoading(true);
 
             if (dymensionConnectRef.current) {
-                console.log("Sending message to Dymension Connect");
                 let msg = {
                     type: "executeTx",
                     messages: [
@@ -306,7 +311,6 @@ const BinaryOptionsDApp = () => {
             });
         }
 
-        // Update data even with non-critical errors
         if (status === 'success') {
             setTimeout(() => {
                 fetchBetHistory();
