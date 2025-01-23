@@ -1,6 +1,6 @@
 import {NextRequest, NextResponse} from 'next/server'
 
-const AgentHost = 'http://localhost:8080'
+const AgentHost = 'http://34.22.139.140:8080'
 
 export async function GET(
     request: NextRequest,

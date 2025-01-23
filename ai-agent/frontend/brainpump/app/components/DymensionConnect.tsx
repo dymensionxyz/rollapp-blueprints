@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useContract} from '../contexts/ContractContext';
-import {showErrorToast, showWarningToast} from "@/app/utils/toast-utils";
-import {formatEther} from "ethers";
-import {getShortenedAddress} from "@/app/utils/address-utils";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useContract } from '../contexts/ContractContext';
+import { showErrorToast, showWarningToast } from '@/app/utils/toast-utils';
+import { formatEther } from 'ethers';
+import { getShortenedAddress } from '@/app/utils/address-utils';
 
 const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-const DYMENSION_CONNECT_NETWORK_IDS = ['desmosai_433519-1'];
-const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adesmos'
+const DYMENSION_CONNECT_NETWORK_IDS = [ 'desmosai_433519-1' ];
+const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adesmos';
 
 export function DymensionConnect() {
-    const [dymensionConnectOpen, setDymensionConnectOpen] = useState(false);
-    const [dymensionConnectReady, setDymensionConnectReady] = useState(false);
+    const [ dymensionConnectOpen, setDymensionConnectOpen ] = useState(false);
+    const [ dymensionConnectReady, setDymensionConnectReady ] = useState(false);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const {
@@ -31,7 +31,7 @@ export function DymensionConnect() {
     const dymensionConnectUrl = useMemo(
         () => `${DYMENSION_CONNECT_URL}/connect` +
             `${qrAccount ? `/account/${qrAccount}` : ''}?networkIds=${DYMENSION_CONNECT_NETWORK_IDS.join(',')}`,
-        [qrAccount],
+        [ qrAccount ],
     );
 
     const sendMessage = useCallback((message: any) =>
@@ -40,20 +40,20 @@ export function DymensionConnect() {
     const updateTriggerBoundingRect = useCallback(() => {
         const boundingRect = buttonRef.current?.getBoundingClientRect();
         if (boundingRect) {
-            sendMessage({type: 'setTriggerBoundingRect', rect: boundingRect});
+            sendMessage({ type: 'setTriggerBoundingRect', rect: boundingRect });
         }
-    }, [sendMessage]);
+    }, [ sendMessage ]);
 
     const initModal = useCallback(() => {
         updateTriggerBoundingRect();
-        sendMessage({type: 'setMenuAlign', align: 'right'});
-    }, [sendMessage, updateTriggerBoundingRect]);
+        sendMessage({ type: 'setMenuAlign', align: 'left' });
+    }, [ sendMessage, updateTriggerBoundingRect ]);
 
     const handleWalletError = useCallback(({
-                                               code,
-                                               walletType,
-                                               originalError,
-                                           }: { code?: string, walletType?: string, originalError?: any }) => {
+        code,
+        walletType,
+        originalError,
+    }: { code?: string, walletType?: string, originalError?: any }) => {
         if (!code) {
             return;
         }
@@ -112,10 +112,10 @@ export function DymensionConnect() {
 
     useEffect(() => {
         if (contractMessageToExecute) {
-            sendMessage({type: 'executeEthTx', contract: contractMessageToExecute});
+            sendMessage({ type: 'executeEthTx', contract: contractMessageToExecute });
             setContractMessageExecuted();
         }
-    }, [contractMessageToExecute, sendMessage, setContractMessageExecuted]);
+    }, [ contractMessageToExecute, sendMessage, setContractMessageExecuted ]);
 
     useEffect(() => {
         window.addEventListener('scroll', updateTriggerBoundingRect, true);
@@ -124,7 +124,7 @@ export function DymensionConnect() {
             window.removeEventListener('scroll', updateTriggerBoundingRect, true);
             window.removeEventListener('resize', updateTriggerBoundingRect, true);
         };
-    }, [updateTriggerBoundingRect]);
+    }, [ updateTriggerBoundingRect ]);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {
@@ -133,6 +133,7 @@ export function DymensionConnect() {
             }
             if (event.data.type === 'ready') {
                 setDymensionConnectReady(true);
+                console.log(">> ready")
             }
             if (event.data.type === 'menu-visible') {
                 setDymensionConnectOpen(event.data.value);
@@ -140,6 +141,7 @@ export function DymensionConnect() {
             if (event.data.type === 'connect') {
                 setAddresses(event.data.address, event.data.hexAddress);
                 updateTriggerBoundingRect();
+                console.log(">> addresses", event.data)
             }
             if (event.data.type === 'balances') {
                 setWalletBalance(formatEther(event.data.balances[0]?.amount || '0'));
@@ -150,10 +152,14 @@ export function DymensionConnect() {
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
+                console.log("tx-response: ", event.data)
                 handleTxResponse({
                     response: event.data.response && JSON.parse(event.data.response),
                     error: event.data.error && JSON.parse(event.data.error),
                 });
+            }
+            if (event.data.type === 'notification') {
+                console.log("notifications: ", event.data)
             }
             if (event.data.type === 'wallet-error') {
                 handleWalletError(JSON.parse(event.data.error || '{}'));
@@ -172,9 +178,9 @@ export function DymensionConnect() {
     ]);
 
     return (
-        <div className="absolute">
+        <>
             <button
-                className="px-4 py-2 bg-[rgb(var(--neon-green))] text-black rounded-md hover:opacity-90 transition-opacity"
+                className='fixed top-4 left-4 z-10 px-4 py-2 bg-[rgb(var(--neon-green))] text-black rounded-md hover:opacity-90 transition-opacity'
                 disabled={!dymensionConnectReady}
                 ref={buttonRef}
                 onClick={() => {
@@ -187,13 +193,13 @@ export function DymensionConnect() {
             <iframe
                 ref={iframeRef}
                 onLoad={initModal}
-                style={{display: dymensionConnectOpen || qrAccount ? 'block' : 'none'}}
+                style={{ display: dymensionConnectOpen || qrAccount ? 'block' : 'none' }}
                 allow='clipboard-read; clipboard-write; camera'
                 title='dymension-connect'
-                className='relative w-70 h-96 z-10'
+                className='fixed left-0 top-0 w-full h-full border-0 outline-none z-[100000000000]'
                 src={dymensionConnectUrl}
             />
-        </div>
+        </>
     );
 }
 
