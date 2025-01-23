@@ -136,13 +136,27 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                     setDymensionConnectOpen(!dymensionConnectOpen);
                     updateTriggerBoundingRect();
                 }}
-                className="px-4 py-2 bg-[rgb(34,34,34)] text-white border border-[rgb(60,179,113)] rounded-md hover:bg-[rgb(60,179,113)] hover:text-black transition-all flex items-center space-x-2 shadow-md"
+                className="px-4 py-2 bg-[rgb(34,34,34)] text-white border border-[rgb(60,179,113)] rounded-md hover:bg-[rgb(60,179,113)] hover:text-black transition-all flex items-center space-x-2 shadow-md relative"
             >
                 <Wallet className="w-5 h-5" />
                 <span>
-                    {address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Connect'}
-                </span>
+                {address ? address.slice(0, 6) + '...' + address.slice(-4) : 'Connect'}
+            </span>
+                {!isConnected && (
+                    <div className="absolute inset-0 overflow-hidden rounded-md">
+                        <div className="animate-shine absolute inset-0 bg-gradient-to-r from-transparent via-[rgb(60,179,113,0.4)] to-transparent"></div>
+                    </div>
+                )}
             </button>
+
+            {!isConnected && (
+                <div className="absolute top-full left-0 mt-3 w-full min-w-[200px]">
+                    <div className="bg-[rgb(60,179,113)] text-black px-3 py-2 rounded-md text-sm font-medium animate-bounce">
+                        🔥 Connect to start winning!
+                        <div className="absolute -top-1 left-4 w-3 h-3 bg-[rgb(60,179,113)] rotate-45"></div>
+                    </div>
+                </div>
+            )}
             <iframe
                 ref={iframeRef}
                 onLoad={initModal}
