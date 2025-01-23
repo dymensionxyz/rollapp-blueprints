@@ -384,6 +384,22 @@ const BinaryOptionsDApp = () => {
                     error={error}
                 />
 
+                <div className="text-center animate-pulse">
+                    <h1 className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-red-500 bg-clip-text text-transparent mb-4">
+                        🚨 BITCOIN SHOWDOWN! 🚨
+                    </h1>
+                    <h2 className="text-3xl font-bold text-gray-200">
+                        WILL BTC PUMP 🚀 OR DUMP 💥 IN 5 MINUTES?
+                        <span
+                            className="block mt-4 text-2xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
+            BET NOW - DOUBLE YOUR MONEY!
+        </span>
+                    </h2>
+                    <div className="mt-6 text-xl text-gray-400 flex justify-center items-center gap-2">
+                        <span>🔥 LIMITED TIME ACTION 🔥</span>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <BetButton
                         direction="up"

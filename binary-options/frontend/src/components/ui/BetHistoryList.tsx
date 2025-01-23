@@ -31,7 +31,6 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
         <div className="space-y-3">
             {history.map((bet) => {
                 const timeLeft = getTimeLeft(bet.expiration);
-                const isExpired = Date.now() > bet.expiration * 1000;
                 const totalDuration = 300; // 5 minutos
                 const progressWidth = (timeLeft / totalDuration) * 100;
 
