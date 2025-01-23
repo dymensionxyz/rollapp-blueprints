@@ -143,20 +143,13 @@ export function BetForm() {
         setGuessedNumber(Number(inputElement.value));
     }, [bet, setGuessedNumber, guessedNumber, gameInfo]);
 
-    const onPersuasionChange = useCallback((event: FormEvent<HTMLInputElement>) => {
-        const inputElement = event.target as HTMLInputElement;
-        if (!inputElement.value) {
+    const onPersuasionChange = useCallback((event: FormEvent<HTMLTextAreaElement>) => {
+        const textAreaElement = event.target as HTMLTextAreaElement;
+        if (!textAreaElement.value) {
             setPersuasion(undefined);
             return;
         }
-        const match = inputElement.value.length <= 500
-        if (!match) {
-            event.preventDefault();
-            inputElement.value = String(persuasion) || '';
-            return;
-        }
-
-        setPersuasion(inputElement.value);
+        setPersuasion(textAreaElement.value);
     }, [bet, setPersuasion, persuasion, gameInfo]);
 
     const canPlaceBet = !bet || bet.resolved || Number(bet.promptId) === 0
@@ -211,6 +204,7 @@ export function BetForm() {
                                                 render={({ field }) => (
                                                     <Textarea
                                                         {...field}
+                                                        maxLength={500}
                                                         placeholder="Enter your Jailbreak prompt here..."
                                                         value={persuasion ?? ''}
                                                         className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
