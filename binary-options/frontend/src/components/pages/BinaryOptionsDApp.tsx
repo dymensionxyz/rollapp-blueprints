@@ -126,6 +126,15 @@ const BinaryOptionsDApp = () => {
     };
 
     useEffect(() => {
+        if (txNotification) {
+            const timer = setTimeout(() => {
+                setTxNotification(null);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [txNotification]);
+
+    useEffect(() => {
         let intervalId: NodeJS.Timeout;
 
         const checkAndFetchBalance = async () => {
