@@ -32,6 +32,8 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
             {history.map((bet) => {
                 const timeLeft = getTimeLeft(bet.expiration);
                 const isExpired = Date.now() > bet.expiration * 1000;
+                const totalDuration = 300; // 5 minutos
+                const progressWidth = (timeLeft / totalDuration) * 100;
 
                 return (
                     <div key={bet.id} className="bg-gray-700 p-3 rounded-lg">
@@ -46,36 +48,42 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
                                     <div className="font-medium">
                                         ${bet.strikePrice.toFixed(2)} • {bet.betAmount}
                                     </div>
-                                    <div className="text-sm text-gray-400">
-                                        {timeLeft > 0 ? (
-                                            <span>Expires in {timeLeft}s</span>
-                                        ) : (
-                                            <span>Expired {new Date(bet.expiration * 1000).toLocaleTimeString()}</span>
-                                        )}
-                                    </div>
+                                    {/* Estado de ganado/perdido */}
+                                    {bet.settled && (
+                                        <div className={`text-sm ${
+                                            bet.outcome ? 'text-green-500' : 'text-red-500'
+                                        }`}>
+                                            {bet.outcome ? 'WON' : 'LOST'}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
                             {!bet.settled && (
-                                <div className="flex items-center gap-2">
+                                <div className="flex flex-col items-end gap-2 min-w-[120px]">
+                                    <div className="text-sm text-gray-400">
+                                        {timeLeft > 0 && `${timeLeft}s remaining`}
+                                    </div>
+
+                                    {/* Barra de progreso */}
                                     {timeLeft > 0 ? (
-                                        <div className="w-20 h-2 bg-gray-600 rounded-full">
+                                        <div className="w-32 h-2 bg-gray-600 rounded-full">
                                             <div
-                                                className="h-2 bg-blue-500 rounded-full"
-                                                style={{ width: `${(timeLeft / 300) * 100}%` }} // 5 minutos = 300 segundos
+                                                className="h-2 bg-blue-500 rounded-full transition-all duration-1000"
+                                                style={{width: `${progressWidth}%`}}
                                             />
                                         </div>
                                     ) : (
                                         <button
                                             onClick={() => onSettle(bet.id)}
                                             disabled={settlingIds.includes(bet.id)}
-                                            className="text-xs bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded disabled:opacity-50"
+                                            className="text-xs bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded disabled:opacity-50"
                                         >
                                             {settlingIds.includes(bet.id) ? (
                                                 <span className="flex items-center gap-1">
-                          <span className="animate-spin">🌀</span>
-                          Claiming...
-                        </span>
+                                                    <span className="animate-spin">🌀</span>
+                                                    Claiming...
+                                                </span>
                                             ) : (
                                                 'Claim Now'
                                             )}
