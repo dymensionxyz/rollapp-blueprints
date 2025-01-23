@@ -202,7 +202,7 @@ fn query_list_options_by_user(
     let start = start_after.map(Bound::exclusive);
 
     let options: Vec<OptionInfo> = OPTIONS
-        .range(deps.storage, start, None, Order::Ascending)
+        .range(deps.storage, start, None, Order::Descending)
         .filter(|res| {
             if let Ok((_, option)) = res {
                 option.owner == user
@@ -1256,7 +1256,7 @@ mod tests {
         ).unwrap();
 
         assert_eq!(res.options.len(), 3);
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 5);
         assert_eq!(res.options[1].id, 3);
         assert!(res.options.iter().all(|o| o.owner == user_a));
 
@@ -1274,7 +1274,7 @@ mod tests {
         ).unwrap();
 
         assert_eq!(res.options.len(), 1);
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 5);
 
         // ---------------------------------------------------
         // 5. Test 3: Pagination with start_after
@@ -1290,7 +1290,7 @@ mod tests {
         ).unwrap();
 
         assert_eq!(res.options.len(), 2);
-        assert_eq!(res.options[0].id, 3);
+        assert_eq!(res.options[0].id, 5);
 
         // ---------------------------------------------------
         // 6. Test 4: User with no options
