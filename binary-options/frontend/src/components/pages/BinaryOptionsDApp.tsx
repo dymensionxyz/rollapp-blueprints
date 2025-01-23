@@ -112,11 +112,9 @@ const BinaryOptionsDApp = () => {
 
                 if (settledBet?.outcome === 'win') {
                     confettiReward()
-                    new Audio('/sounds/win.mp3').play().catch(() => {})
                     setCurrentOutcome('win')
                 } else if (settledBet?.outcome === 'loss') {
                     explosionReward()
-                    new Audio('/sounds/loss.mp3').play().catch(() => {})
                     setCurrentOutcome('loss')
                 }
 
