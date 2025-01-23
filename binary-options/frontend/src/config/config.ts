@@ -6,6 +6,8 @@ const config = {
     quote: "factory/osmo13s0f55s8ppwm35npn53pkndphzyctfl7gu8q9d/uusdc",
     betAmount: "1000000000000000000",
     denom: "auod",
+    screenDenom: "UOD",
+    denomPrecision: 1000000000000000000,
 };
 
 export default config;

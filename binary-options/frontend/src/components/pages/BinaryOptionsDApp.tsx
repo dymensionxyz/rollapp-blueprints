@@ -137,7 +137,7 @@ const BinaryOptionsDApp = () => {
                 direction: option.direction === "up" ? "up" : "down",
                 strikePrice: parseFloat(option.strike_price),
                 expiration: option.expiration,
-                betAmount: `${parseInt(option.bet_amount.amount) / 1000000} AUOD`,
+                betAmount: `${parseInt(option.bet_amount.amount) / config.denomPrecision} ${config.screenDenom}`,
                 outcome: option.outcome,
                 settled: option.settled
             }));
@@ -361,7 +361,6 @@ const BinaryOptionsDApp = () => {
 
             {/* Header */}
             <div className="flex justify-between items-center mb-10 px-4 py-4 bg-gray-900">
-                {/* Balance a la izquierda */}
                 <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
                     {isBalanceLoading ? (
                         <div className="flex items-center gap-2">
@@ -371,11 +370,10 @@ const BinaryOptionsDApp = () => {
                     ) : balanceError ? (
                         <div className="text-red-400 text-sm">{balanceError}</div>
                     ) : (
-                        `Balance: ${(Number(userBalance) / 1000000000000000000).toFixed(2)} AUOD`
+                        `Balance: ${(Number(userBalance) / config.denomPrecision).toFixed(2)} ${config.screenDenom}`
                     )}
                 </div>
 
-                {/* Logo centrado */}
                 <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
                     <img
                         src={logo}
@@ -384,7 +382,6 @@ const BinaryOptionsDApp = () => {
                     />
                 </div>
 
-                {/* Dymension Connect a la derecha */}
                 <DymensionConnect
                     ref={dymensionConnectRef}
                     onTxStatus={handleTxStatus}
@@ -422,7 +419,7 @@ const BinaryOptionsDApp = () => {
 
                 {/* Bet Information */}
                 <div className="text-center text-gray-400">
-                    Fixed bet amount: 1 AUOD
+                    Fixed bet amount: 1 {config.screenDenom}
                 </div>
 
                 {/* Bet History Button */}
