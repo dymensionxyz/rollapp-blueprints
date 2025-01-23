@@ -2,7 +2,6 @@
 
 // @ts-ignore
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronRight } from 'lucide-react';
 
 import { DymensionConnect } from "../ui/DymensionConnect";
 import config from "../../config/config";
@@ -31,8 +30,6 @@ const BinaryOptionsDApp = () => {
         type: 'pending' | 'success' | 'error';
     } | null>(null);
     const [settlingIds, setSettlingIds] = useState<number[]>([]);
-    const [expiredBetsCount, setExpiredBetsCount] = useState(0);
-
 
     const dymensionConnectRef = useRef(null);
 
@@ -154,13 +151,6 @@ const BinaryOptionsDApp = () => {
             return () => clearTimeout(timer);
         }
     }, [txNotification]);
-
-    useEffect(() => {
-        const count = betHistory.filter(bet =>
-            !bet.settled && Date.now() > bet.expiration * 1000
-        ).length;
-        setExpiredBetsCount(count);
-    }, [betHistory]);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
