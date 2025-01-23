@@ -8,6 +8,7 @@ import { DymensionConnect } from "../ui/DymensionConnect";
 import config from "../../config/config";
 import BtcPriceDisplay from "../ui/BtcPriceDisplay";
 import BetHistoryDialog, { BetHistoryItem } from "../ui/BetHistoryDialog";
+import BetHistoryList from "../ui/BetHistoryList";
 import ConfirmationDialog from "../ui/ConfirmationDialog";
 import ProgressBar from "../ui/ProgressBar";
 import BetButton from "../ui/BetButton";
@@ -20,7 +21,6 @@ const BinaryOptionsDApp = () => {
     const [timeLeft, setTimeLeft] = useState(COUNT_DOWN_INTERVAL);
     const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
     const [showConfirmation, setShowConfirmation] = useState(false);
-    const [showHistory, setShowHistory] = useState(false);
     const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -421,23 +421,6 @@ const BinaryOptionsDApp = () => {
                 <div className="text-center text-gray-400">
                     Fixed bet amount: 1 {config.screenDenom}
                 </div>
-
-                {/* Bet History Button */}
-                <button
-                    onClick={() => setShowHistory(true)}
-                    className="w-full bg-gray-800 p-4 rounded-lg flex justify-between items-center relative"
-                >
-                    <div className="flex items-center gap-2">
-                        <span>Bet History</span>
-                        {expiredBetsCount > 0 && (
-                            <span
-                                className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            {expiredBetsCount}
-                        </span>
-                        )}
-                    </div>
-                    <ChevronRight className="w-5 h-5"/>
-                </button>
             </div>
 
             <ConfirmationDialog
@@ -447,13 +430,15 @@ const BinaryOptionsDApp = () => {
                 onCancel={() => setShowConfirmation(false)}
             />
 
-            <BetHistoryDialog
-                isOpen={showHistory}
-                history={betHistory}
-                onClose={() => setShowHistory(false)}
-                onSettle={handleSettleOption}
-                settlingIds={settlingIds}
-            />
+            <div
+                className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 h-[300px] overflow-y-auto border-t border-gray-700">
+                <h3 className="text-lg font-bold mb-4">Active Bets</h3>
+                <BetHistoryList
+                    history={betHistory}
+                    onSettle={handleSettleOption}
+                    settlingIds={settlingIds}
+                />
+            </div>
         </div>
     );
 };
