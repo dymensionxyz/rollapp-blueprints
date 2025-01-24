@@ -98,7 +98,7 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                     props.onTxStatus?.(success ? 'success' : 'error', {
                         hash: responseData.hash,
                         rawData: responseData,
-                        isNonCriticalError: hasNonCriticalErrors // New flag for non-critical errors
+                        isNonCriticalError: hasNonCriticalErrors
                     });
 
                     // Detailed log

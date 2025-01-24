@@ -36,7 +36,11 @@ const BinaryOptionsDApp = () => {
     const [settlingIds, setSettlingIds] = useState<number[]>([]);
     const [currentOutcome, setCurrentOutcome] = useState<'win' | 'loss' | null>(null)
 
-    const dymensionConnectRef = useRef(null);
+    const dymensionConnectRef = useRef<{
+        address?: string;
+        isConnected?: boolean;
+        sendMessage?: (msg: any) => void;
+    }>(null);
 
     const { reward: confettiReward } = useReward('confettiReward', 'confetti', {
         elementCount: 150,
@@ -50,10 +54,6 @@ const BinaryOptionsDApp = () => {
         spread: 100,
         lifetime: 300
     });
-
-    useEffect(() => {
-        console.log('Estado currentOutcome cambiado:', currentOutcome);
-    }, [currentOutcome]);
 
     const fetchUserBalance = async () => {
         try {
@@ -255,15 +255,18 @@ const BinaryOptionsDApp = () => {
     }, []);
 
     useEffect(() => {
-        fetchBTCPrice();
-        fetchUserBalance();
-        fetchBetHistory();
+        const fetchData = async () => {
+            await Promise.all([
+                fetchBTCPrice(),
+                fetchUserBalance(),
+                fetchBetHistory()
+            ]);
+        }
 
-        const historyInterval = setInterval(fetchBetHistory, 30000);
+        const interval = setInterval(fetchBetHistory, 30000);
+        fetchData();
 
-        return () => {
-            clearInterval(historyInterval);
-        };
+        return () => clearInterval(interval);
     }, []);
 
     useEffect(() => {
@@ -338,11 +341,8 @@ const BinaryOptionsDApp = () => {
     };
 
     const handleTxStatus = (status: 'success' | 'error', txData?: any) => {
-        console.log('[DEBUG] Transaction status:', status, txData);
-
         setLastTxHash(txData?.hash || null);
 
-        // Handle non-critical errors
         if (status === 'success' && txData?.isNonCriticalError) {
             setTxNotification({
                 message: 'Transaction successful with warnings (check logs)',
