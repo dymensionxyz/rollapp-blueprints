@@ -1,6 +1,6 @@
-export const JSON_RPC = 'https://json-rpc.ra-2.rollapp.network';
+export const JSON_RPC = 'https://json-rpc.desmosai.evm.ra.mn.rollapp.network';
 
-export const CONTRACT_ADDRESS = "0x323EE43220aa77144375ed1128bf8ECf0c526328"
+export const CONTRACT_ADDRESS = "0x8A3B509ab1188386ba41CAfaEbD43BcBD218C085"
 
 export const DEFAULT_BROADCAST_ATTEMPTS = 3;
 

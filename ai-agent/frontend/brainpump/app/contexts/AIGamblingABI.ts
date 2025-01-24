@@ -94,7 +94,7 @@ export const AIGamblingABI = [
                     }
                 ],
                 "indexed": false,
-                "internalType": "struct AIGambling.Bet",
+                "internalType": "struct AIGamblingV1.Bet",
                 "name": "bet",
                 "type": "tuple"
             }
@@ -160,7 +160,7 @@ export const AIGamblingABI = [
                     }
                 ],
                 "indexed": false,
-                "internalType": "struct AIGambling.Bet",
+                "internalType": "struct AIGamblingV1.Bet",
                 "name": "bet",
                 "type": "tuple"
             }
@@ -395,19 +395,6 @@ export const AIGamblingABI = [
     },
     {
         "inputs": [],
-        "name": "feeCollectorAddress",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
         "name": "getGameInfo",
         "outputs": [
             {
@@ -438,7 +425,7 @@ export const AIGamblingABI = [
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct AIGambling.GameInfo",
+                "internalType": "struct AIGamblingV1.GameInfo",
                 "name": "",
                 "type": "tuple"
             }
@@ -504,22 +491,9 @@ export const AIGamblingABI = [
                         "type": "bool"
                     }
                 ],
-                "internalType": "struct AIGambling.Bet[]",
+                "internalType": "struct AIGamblingV1.Bet[]",
                 "name": "",
                 "type": "tuple[]"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "govAddress",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "",
-                "type": "address"
             }
         ],
         "stateMutability": "view",
@@ -782,6 +756,11 @@ export const AIGamblingABI = [
                 "internalType": "uint256",
                 "name": "amount",
                 "type": "uint256"
+            },
+            {
+                "internalType": "address",
+                "name": "receiver",
+                "type": "address"
             }
         ],
         "name": "withdrawSupply",
