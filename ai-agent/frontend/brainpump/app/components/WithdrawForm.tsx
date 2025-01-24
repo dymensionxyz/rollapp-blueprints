@@ -1,41 +1,31 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import {useState, useEffect, useMemo} from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { useContract } from '../contexts/ContractContext'
 import { useToast } from '@/components/ui/use-toast'
 import { ErrorDisplay } from './ErrorDisplay'
 import { Loader2 } from 'lucide-react'
+import {ContractFunction} from "@/app/contexts/types";
 
 export function WithdrawForm() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const { withdraw, isConnected, balance, refreshBalance } = useContract()
-  const { toast } = useToast()
-
-  useEffect(() => {
-    if (isConnected) {
-      const interval = setInterval(refreshBalance, 5000) // Poll every 5 seconds
-      return () => clearInterval(interval)
-    }
-  }, [isConnected, refreshBalance])
+  const { withdraw, balance, broadcastingMessage } = useContract()
 
   const handleWithdraw = async () => {
-    setIsLoading(true)
     setError(null)
     try {
-      await withdraw()
-      toast({
-        title: "Withdrawal Successful",
-        description: "Your funds have been withdrawn!",
-      })
+      withdraw()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to withdraw funds')
-    } finally {
-      setIsLoading(false)
     }
   }
+
+  const broadcastingWithdraw = useMemo(() => broadcastingMessage === ContractFunction.withdraw, [broadcastingMessage]);
+
+  const broadcasting = useMemo(() => Boolean(broadcastingMessage), [broadcastingMessage]);
 
   return (
     <Card className="neon-border glass-effect border-0">
@@ -50,9 +40,9 @@ export function WithdrawForm() {
         <Button 
           onClick={handleWithdraw} 
           className="w-full bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]"
-          disabled={balance === '0' || isLoading || !isConnected}
+          disabled={broadcasting || balance === '0'}
         >
-          {isLoading ? (
+          {broadcastingWithdraw ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               Withdrawing...

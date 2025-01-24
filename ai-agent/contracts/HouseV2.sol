@@ -16,7 +16,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  * internal functions {addBalance} and {reduceBalance} to manage the balances
  * of the players.
  */
-contract House is OwnableUpgradeable, Governance, FeeCollector {
+contract HouseV2 is OwnableUpgradeable, Governance {
     // Minimum bet amount
     uint256 public minBetAmount;
 
@@ -56,15 +56,16 @@ contract House is OwnableUpgradeable, Governance, FeeCollector {
     /**
      * @dev Allows the owner to deposit funds into the house.
      */
-    function depositSupply() external payable onlyOwner {}
+    function depositSupply() external payable {}
 
     /**
      * @dev Allows the owner to withdraw a specified amount from the contract.
      * @param amount The amount to withdraw.
+     * @param receiver The address to receive the funds.
      */
-    function withdrawSupply(uint256 amount) external onlyOwner {
+    function withdrawSupply(uint256 amount, address receiver) external onlyOwner {
         require(amount <= activeBalance(), "House: insufficient non-withdrawal balance");
-        payable(msg.sender).transfer(amount);
+        payable(receiver).transfer(amount);
     }
 
     /**

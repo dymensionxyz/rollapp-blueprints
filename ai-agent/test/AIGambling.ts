@@ -22,7 +22,7 @@ describe("AIGambling", function () {
     beforeEach(async function () {
         const { aiOracle, owner1, prompter1, prompter2 } = await deployAIOracleFixture();
 
-        const AIGamblingFactory = await ethers.getContractFactory("AIGambling");
+        const AIGamblingFactory = await ethers.getContractFactory("AIGamblingV1");
         const aiOracleAddr = await aiOracle.getAddress()
         aiGambling = await AIGamblingFactory.deploy(owner.address, aiOracleAddr);
 

@@ -6,8 +6,8 @@ import { showErrorToast, showWarningToast } from '@/app/utils/toast-utils';
 import { formatEther } from 'ethers';
 import { getShortenedAddress } from '@/app/utils/address-utils';
 
-const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-const DYMENSION_CONNECT_NETWORK_IDS = [ 'desmosai_433519-1' ];
+const DYMENSION_CONNECT_URL = 'https://portal.dymension.xyz';
+const DYMENSION_CONNECT_NETWORK_IDS = [ 'desmosai_253368-1' ];
 const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adesmos';
 
 export function DymensionConnect() {
@@ -22,6 +22,9 @@ export function DymensionConnect() {
         setAddresses,
         setWalletBalance,
         handleTxResponse,
+        setPersuasion,
+        setGuessedNumber,
+        setBetAmount,
     } = useContract();
 
     const qrAccount = useMemo(() => typeof window !==
@@ -46,6 +49,17 @@ export function DymensionConnect() {
 
     const initModal = useCallback(() => {
         updateTriggerBoundingRect();
+        sendMessage({
+            type: "setStyles",
+            styles: {
+                "--black-light": "rgb(63 81 59)",
+                "--black-light-rgb": "63, 81, 59",
+                "--black-dark": "rgb(27 40 24)",
+                "--black-dark-rgb": "27, 40, 24",
+                "--background-color": "rgb(42 59 42)",
+                "--background-color-secondary": "rgb(63 78 63)",
+            },
+        });
         sendMessage({ type: 'setMenuAlign', align: 'left' });
     }, [ sendMessage, updateTriggerBoundingRect ]);
 
@@ -148,11 +162,13 @@ export function DymensionConnect() {
             }
             if (event.data.type === 'disconnect') {
                 setAddresses('', '');
+                setPersuasion('');
+                setGuessedNumber(undefined);
+                setBetAmount(undefined);
                 setWalletBalance('0');
                 updateTriggerBoundingRect();
             }
             if (event.data.type === 'tx-response') {
-                console.log("tx-response: ", event.data)
                 handleTxResponse({
                     response: event.data.response && JSON.parse(event.data.response),
                     error: event.data.error && JSON.parse(event.data.error),

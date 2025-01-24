@@ -1,7 +1,7 @@
 const { ethers } = require("hardhat");
 
 async function main() {
-    const aiGamblingAddr = "0x64EAE44a2d4746eCd4b34EE80bbe82B393d1679D";
+    const aiGamblingAddr = "0x90C4E3e24E9337DbE43E061d762102b967553050";
     // owner address: 0x84ac82e5Ae41685D76021b909Db4f8E7C4bE279E
     [ owner ] = await ethers.getSigners();
 
@@ -10,20 +10,13 @@ async function main() {
     const AIGambling = await ethers.getContractAt("AIGamblingV1", aiGamblingAddr);
 
     const txOptions = {
-        value: ethers.parseEther("0.2"),
         maxFeePerGas: ethers.parseUnits('30', 'gwei'),
         maxPriorityFeePerGas: ethers.parseUnits('2', 'gwei'),
     };
 
     try {
-        let guessed = 5;
-        const tx = await AIGambling.placeBet(guessed, '', txOptions);
-
-        const receipt = await tx.wait()
-        console.log("Bet placed. TX receipt: ", receipt);
-
-        const balance = await AIGambling.balances(owner.address)
-        console.log("Current House balance for AIAgent: ", balance);
+        const tx = await AIGambling.connect(owner).communityPoolPercentage(txOptions);
+        console.log("Community pool percentage: ", tx);
     } catch (error) {
         console.error("Error:", error.message);
     }

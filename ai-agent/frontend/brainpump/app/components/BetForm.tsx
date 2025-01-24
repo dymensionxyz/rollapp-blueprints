@@ -1,6 +1,6 @@
 'use client'
 
-import {FormEvent, useCallback, useEffect, useState} from 'react'
+import {FormEvent, useCallback, useEffect, useMemo, useState} from 'react'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
 import {Textarea} from '@/components/ui/textarea'
@@ -11,10 +11,11 @@ import {ErrorDisplay} from './ErrorDisplay'
 import {Loader2} from 'lucide-react'
 import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage,} from "@/components/ui/form"
 import {ethers} from "ethers";
-import {useForm} from "react-hook-form";
+import {Controller, useForm} from "react-hook-form";
 import {zodResolver} from '@hookform/resolvers/zod'
 import * as z from 'zod'
-import { Controller } from 'react-hook-form';
+import {ContractFunction} from "@/app/contexts/types";
+import {showSuccessToast} from "@/app/utils/toast-utils";
 
 const formSchema = z.object({
     guessedNumber: z.string(),
@@ -23,7 +24,6 @@ const formSchema = z.object({
 })
 
 export function BetForm() {
-    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [estimatedReward, setEstimatedReward] = useState<string | null>(null)
     const [estimatedCommunityFee, setEstimatedCommunityFee] = useState<string | null>(null)
@@ -39,7 +39,8 @@ export function BetForm() {
         hexAddress,
         bet,
         estimateReward,
-        estimateCommunityFee
+        estimateCommunityFee,
+        broadcastingMessage,
     } = useContract()
     const {toast} = useToast()
 
@@ -58,19 +59,12 @@ export function BetForm() {
             return
         }
 
-        setIsLoading(true)
         setError(null)
         try {
             placeBet(false)
-            toast({
-                title: "Bet Placed",
-                description: "Your bet has been successfully placed!",
-            })
             setEstimatedReward(null)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to place bet')
-        } finally {
-            setIsLoading(false)
         }
     }
 
@@ -123,7 +117,7 @@ export function BetForm() {
             setGuessedNumber(undefined);
             return;
         }
-        const match = inputElement.value.match(/^(10|[1-9])$/);
+        const match = inputElement.value.match(/^-?\d+$/);
         if (!match) {
             event.preventDefault();
             inputElement.value = String(guessedNumber) || '';
@@ -152,7 +146,11 @@ export function BetForm() {
         setPersuasion(textAreaElement.value);
     }, [bet, setPersuasion, persuasion, gameInfo]);
 
-    const canPlaceBet = !bet || bet.resolved || Number(bet.promptId) === 0
+    const canPlaceBet = useMemo(() => !bet || bet.resolved || Number(bet.promptId) === 0, [bet]);
+
+    const broadcastingPlaceBet = useMemo(() => broadcastingMessage === ContractFunction.placeBet, [broadcastingMessage]);
+
+    const broadcasting = useMemo(() => Boolean(broadcastingMessage), [broadcastingMessage]);
 
     return (
         <Card className="neon-border glass-effect border-0">
@@ -183,7 +181,7 @@ export function BetForm() {
                                                 value={guessedNumber ?? ''}
                                                 onInput={onGuessChange}
                                                 className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                                                disabled={isLoading}
+                                                disabled={broadcasting}
                                             />
                                         </FormControl>
                                         <FormMessage/>
@@ -201,15 +199,15 @@ export function BetForm() {
                                             <Controller
                                                 name="persuasion"
                                                 control={form.control}
-                                                render={({ field }) => (
+                                                render={({field}) => (
                                                     <Textarea
                                                         {...field}
                                                         maxLength={500}
+                                                        onInput={onPersuasionChange}
                                                         placeholder="Enter your Jailbreak prompt here..."
                                                         value={persuasion ?? ''}
                                                         className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                                                        disabled={isLoading}
-                                                        onInput={onPersuasionChange}
+                                                        disabled={broadcasting}
                                                     />
                                                 )}
                                             />
@@ -229,10 +227,10 @@ export function BetForm() {
                                                 type="number"
                                                 {...field}
                                                 onInput={onBetChange}
-                                                placeholder='0,00'
+                                                placeholder='0.00'
                                                 value={betAmount ?? ''}
                                                 className="bg-[rgb(var(--dark-gray))] border-gray-600 focus:border-[rgb(var(--neon-green))] text-white"
-                                                disabled={isLoading}
+                                                disabled={broadcasting}
                                             />
                                         </FormControl>
                                         <FormMessage/>
@@ -252,9 +250,9 @@ export function BetForm() {
                             <Button
                                 type="submit"
                                 className="w-full bg-[rgb(var(--neon-green))] text-black hover:bg-[rgb(var(--neon-green))] hover:opacity-90"
-                                disabled={isLoading || !hexAddress}
+                                disabled={broadcasting || !hexAddress}
                             >
-                                {isLoading ? (
+                                {broadcastingPlaceBet ? (
                                     <>
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                                         Placing Bet...
