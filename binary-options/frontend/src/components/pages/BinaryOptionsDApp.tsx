@@ -326,10 +326,12 @@ const BinaryOptionsDApp = () => {
 
                 dymensionConnectRef.current.sendMessage(msg);
 
+/*
                 setTimeout(() => {
                     fetchBetHistory();
                     fetchUserBalance();
                 }, 5000);
+*/
             }
 
         } catch (error) {
@@ -355,12 +357,12 @@ const BinaryOptionsDApp = () => {
                     : `Error (Code: ${txData?.rawData?.nativeResponse?.code || 'unknown'})`,
                 type: status
             });
+            fetchBetHistory();
+            fetchUserBalance();
         }
 
         if (status === 'success') {
             setTimeout(() => {
-                fetchBetHistory();
-                fetchUserBalance();
             }, 5000);
         }
     };
