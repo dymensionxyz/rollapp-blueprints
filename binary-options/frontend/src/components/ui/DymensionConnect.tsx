@@ -166,7 +166,7 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
                 style={{ display: dymensionConnectOpen || qrAccount ? 'block' : 'none' }}
                 allow='clipboard-read; clipboard-write; camera'
                 title='dymension-connect'
-                className='absolute top-full left-0 mt-2 w-80 h-96 z-50'
+                className='fixed left-0 top-0 w-full h-full border-0 outline-none z-[100000000000]'
                 src={`${DYMENSION_CONNECT_URL}/connect${qrAccount ? `/account/${qrAccount}` : ''}?networkIds=${DYMENSION_CONNECT_NETWORK_IDS.join(',')}`}
             />
         </div>

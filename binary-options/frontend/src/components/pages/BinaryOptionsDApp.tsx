@@ -51,6 +51,10 @@ const BinaryOptionsDApp = () => {
         lifetime: 300
     });
 
+    useEffect(() => {
+        console.log('Estado currentOutcome cambiado:', currentOutcome);
+    }, [currentOutcome]);
+
     const fetchUserBalance = async () => {
         try {
             setIsBalanceLoading(true);
@@ -111,9 +115,11 @@ const BinaryOptionsDApp = () => {
                 const settledBet = betHistory.find(b => b.id === optionId)
 
                 if (settledBet?.outcome === 'win') {
+                    console.log("Winning bet!")
                     confettiReward()
                     setCurrentOutcome('win')
                 } else if (settledBet?.outcome === 'loss') {
+                    console.log("Lossing bet!")
                     explosionReward()
                     setCurrentOutcome('loss')
                 }
