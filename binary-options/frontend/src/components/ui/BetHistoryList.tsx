@@ -81,10 +81,10 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
                                             {settlingIds.includes(bet.id) ? (
                                                 <span className="flex items-center gap-1">
                                                     <span className="animate-spin">🌀</span>
-                                                    Claiming...
+                                                    Cashing Out...
                                                 </span>
                                             ) : (
-                                                'Claim Now'
+                                                'Cash Out'
                                             )}
                                         </button>
                                     )}
