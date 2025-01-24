@@ -26,7 +26,8 @@
     "react-rewards": "^2.1.0",
     "stream-browserify": "^3.0.0",
     "util": "^0.12.5",
-    "uuid": "^11.0.5"
+    "uuid": "^11.0.5",
+    "vite-plugin-node-polyfills": "^0.23.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
