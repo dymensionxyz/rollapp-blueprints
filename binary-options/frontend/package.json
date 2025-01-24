@@ -15,13 +15,17 @@
     "@cosmjs/proto-signing": "^0.32.4",
     "@cosmjs/stargate": "^0.32.4",
     "@radix-ui/react-dialog": "^1.1.4",
-    "crypto": "^1.0.1",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.1",
     "framer-motion": "^12.0.3",
     "lucide-react": "^0.469.0",
+    "process": "^0.11.10",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.4.0",
     "react-rewards": "^2.1.0",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5",
     "uuid": "^11.0.5"
   },
   "devDependencies": {
