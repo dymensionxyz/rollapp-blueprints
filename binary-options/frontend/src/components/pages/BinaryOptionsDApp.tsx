@@ -353,7 +353,7 @@ const BinaryOptionsDApp = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4">
+        <div className="min-h-screen bg-gray-900 text-white p-4 pb-16">
             <div className="fixed bottom-4 right-4 space-y-2 z-[1000]">
                 {txNotification && (
                     <div className={`p-4 rounded-lg ${
@@ -454,8 +454,7 @@ const BinaryOptionsDApp = () => {
                 onCancel={() => setShowConfirmation(false)}
             />
 
-            <div
-                className="fixed bottom-0 left-0 right-0 bg-gray-800 p-4 h-[300px] overflow-y-auto border-t border-gray-700">
+            <div className="mt-8 bg-gray-800 p-4 rounded-lg border border-gray-700  overflow-y-auto">
                 <h3 className="text-lg font-bold mb-4">Active Bets</h3>
                 <BetHistoryList
                     history={betHistory}
@@ -463,7 +462,7 @@ const BinaryOptionsDApp = () => {
                     settlingIds={settlingIds}
                 />
             </div>
-            <BetOutcomeAnimation outcome={currentOutcome} />
+            <BetOutcomeAnimation outcome={currentOutcome}/>
             <span id="confettiReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
             <span id="explosionReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
         </div>
