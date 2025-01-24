@@ -111,21 +111,28 @@ const BinaryOptionsDApp = () => {
 
             await dymensionConnectRef.current.sendMessage(msg);
             setTimeout(async () => {
-                await fetchBetHistory()
-                const settledBet = betHistory.find(b => b.id === optionId)
+                await fetchBetHistory();
 
-                if (settledBet?.outcome === 'win') {
-                    console.log("Winning bet!")
-                    confettiReward()
-                    setCurrentOutcome('win')
-                } else if (settledBet?.outcome === 'loss') {
-                    console.log("Lossing bet!")
-                    explosionReward()
-                    setCurrentOutcome('loss')
-                }
+                setBetHistory(prevHistory => {
+                    const settledBet = prevHistory.find(b => b.id === optionId);
 
-                setTimeout(() => setCurrentOutcome(null), 3000)
-                setSettlingIds(prev => prev.filter(id => id !== optionId))
+                    if (!settledBet) return prevHistory;
+
+                    const outcome = settledBet.outcome === true ? 'win' : 'loss';
+
+                    if (outcome === 'win') {
+                        confettiReward();
+                        setCurrentOutcome('win');
+                    } else {
+                        explosionReward();
+                        setCurrentOutcome('loss');
+                    }
+
+                    setTimeout(() => setCurrentOutcome(null), 3000);
+                    setSettlingIds(prev => prev.filter(id => id !== optionId))
+
+                    return prevHistory;
+                });
             }, 5000)
         } catch (error) {
             console.error("Error settling option:", error);
