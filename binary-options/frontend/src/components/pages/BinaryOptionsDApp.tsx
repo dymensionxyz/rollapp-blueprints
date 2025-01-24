@@ -110,6 +110,7 @@ const BinaryOptionsDApp = () => {
             };
 
             await dymensionConnectRef.current.sendMessage(msg);
+
             setTimeout(async () => {
                 await fetchBetHistory();
 
