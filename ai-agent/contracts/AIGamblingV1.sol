@@ -2,14 +2,14 @@
 pragma solidity ^0.8.18;
 
 import {AIOracle} from "./AIOracle.sol";
-import {House} from "./House.sol";
+import {HouseV1} from "./HouseV1.sol";
 
 /**
  * @title AIGambling
  * @dev A contract for placing bets and resolving them using an AI system.
  * Inherits from the House contract to manage balances and the AIOracle contract to interact with the AI.
  */
-contract AIGambling is House {
+contract AIGamblingV1 is HouseV1 {
     /**
      * @dev Structure to represent the game information.
      * @param houseSupply The total supply of the house.
@@ -73,7 +73,7 @@ contract AIGambling is House {
      */
     function initialize(address _initialOwner, address _aiOracle) public initializer {
         require(_aiOracle != address(0), "Invalid AIOracle address");
-        House.__House_init(_initialOwner);
+        HouseV1.__House_init(_initialOwner);
 
         aiOracle = AIOracle(_aiOracle);
     }
@@ -206,7 +206,7 @@ contract AIGambling is House {
         // So the reward is 10B - F, where B is a bet amount. The original bet amount is not counted,
         // and the community fee is deducted, so the result is
         // 9 * (B - C) * (100 - F) / 100, where C is the community fee.
-        return (9 * (betAmount - communityFee) * (100 - houseFeePercentage)) / 100;
+        return (10 * (betAmount - communityFee) * (100 - houseFeePercentage)) / 100;
     }
 
     /**
@@ -244,7 +244,7 @@ contract AIGambling is House {
         return history[user];
     }
 
-    function setAIOracle(address _aiOracle) external onlyGovernance {
+    function setAIOracle(address _aiOracle) external onlyOwner {
         require(_aiOracle != address(0), "Invalid AIOracle address");
         aiOracle = AIOracle(_aiOracle);
     }

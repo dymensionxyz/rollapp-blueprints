@@ -7,7 +7,7 @@ async function main() {
 
     console.log(`Executing AIGambling contract with: AIAgent: ${owner.address}`);
 
-    const AIGambling = await ethers.getContractAt("AIGambling", aiGamblingAddr);
+    const AIGambling = await ethers.getContractAt("AIGamblingV1", aiGamblingAddr);
 
     const txOptions = {
         maxFeePerGas: ethers.parseUnits('30', 'gwei'),

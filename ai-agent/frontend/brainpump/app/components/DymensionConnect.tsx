@@ -6,8 +6,8 @@ import { showErrorToast, showWarningToast } from '@/app/utils/toast-utils';
 import { formatEther } from 'ethers';
 import { getShortenedAddress } from '@/app/utils/address-utils';
 
-const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-const DYMENSION_CONNECT_NETWORK_IDS = [ 'desmosai_433519-1' ];
+const DYMENSION_CONNECT_URL = 'https://portal.dymension.xyz';
+const DYMENSION_CONNECT_NETWORK_IDS = [ 'desmosai_253368-1' ];
 const DYMENSION_CONNECT_NETWORK_MAIN_DENOM = 'adesmos';
 
 export function DymensionConnect() {
