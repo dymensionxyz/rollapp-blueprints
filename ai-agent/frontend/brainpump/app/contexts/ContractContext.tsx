@@ -4,7 +4,7 @@ import {createContext, ReactNode, useCallback, useContext, useEffect, useState} 
 import type {BigNumberish} from 'ethers'
 import {ethers} from 'ethers'
 import {AIGamblingABI} from '@/app/contexts/AIGamblingABI';
-import {showErrorToast, showSuccessToast} from '@/app/utils/toast-utils';
+import {showErrorToast, showInfoToast, showSuccessToast} from '@/app/utils/toast-utils';
 import Web3 from 'web3';
 import {
     CONTRACT_ADDRESS,
@@ -230,10 +230,10 @@ export function ContractProvider({children}: { children: ReactNode }) {
             setBroadcastingAttempts(0);
             if (broadcastingMessage === ContractFunction.placeBet) {
                 refreshAllInfo();
-                showSuccessToast(
+                showInfoToast(
                     <div>
-                        <p>Your bet has been successfully placed!</p>
-                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                        <p>Transaction successfully submitted!</p>
+                        <div className="text-sm text-gray-300">{response.hash}</div>
                     </div>
                 )
             } else if (broadcastingMessage === ContractFunction.resolveBet) {
@@ -241,10 +241,10 @@ export function ContractProvider({children}: { children: ReactNode }) {
                 setPersuasion('');
                 setGuessedNumber(undefined);
                 setBetAmount(undefined);
-                showSuccessToast(
+                showInfoToast(
                     <div>
-                        <p>Your bet has been successfully resolved!</p>
-                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                        <p>Transaction successfully submitted!</p>
+                        <div className="text-sm text-gray-300">{response.hash}</div>
                     </div>
                 )
                 handleLastGameResult().then();
@@ -253,7 +253,7 @@ export function ContractProvider({children}: { children: ReactNode }) {
                 showSuccessToast(
                     <div>
                         <p>🏆 Congratulations! Your rewards have been successfully claimed!</p>
-                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                        <div className="text-sm text-gray-300">{response.hash}</div>
                     </div>
                 )
             }

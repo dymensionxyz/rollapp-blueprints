@@ -242,9 +242,6 @@ export function BetForm() {
                                     <p>Estimated reward: <span
                                         className="text-[rgb(var(--neon-green))]">{+estimatedReward - +estimatedCommunityFee} DESMOS</span>
                                     </p>
-                                    <p>Estimated community fee: <span
-                                        className="text-[rgb(var(--neon-green))]">{estimatedCommunityFee} DESMOS</span>
-                                    </p>
                                 </div>
                             )}
                             <Button

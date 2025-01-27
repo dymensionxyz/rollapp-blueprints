@@ -155,7 +155,7 @@ export function RecentBetStatus() {
                                     ) : (
                                         <div className="flex items-center">
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
-                                            Waiting for AI answer...
+                                            I'm thinking of a number. Give me a second...
                                         </div>
                                     )}
                                 </div>
