@@ -19,10 +19,10 @@ export function FraudForm({ onClose, promptId }: FraudFormProps) {
                     <br />
                     <p>Title: Sequencer cheated in game result</p>
                     <p>Description: In Desmos, the sequencer cheated for game result with Game ID {promptId}</p>
-                    <p>Rollapp ID : &lt;desmos-rollapp-id&gt;</p>
-                    <p>IBC Client ID: &lt;desmos-ibc-client-id&gt;</p>
-                    <p>Fraudlent Height: &lt;resolve-tx-height&gt;</p>
-                    <p>Fraudlent Sequencer Address: &lt;desmose-sequencer-address&gt;</p>
+                    <p>Rollapp ID           : desmosai_253368-1</p>
+                    <p>IBC Client ID        : &lt;desmos-ibc-client-id&gt;</p>
+                    <p>Fraudulent Height    : &lt;resolve-tx-height&gt;</p>
+                    <p>Fraudulent Sequencer : &lt;desmos-sequencer-address&gt;</p>
                 </div>
             </DialogContent>
         </Dialog>
