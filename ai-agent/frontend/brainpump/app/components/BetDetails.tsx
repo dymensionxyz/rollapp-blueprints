@@ -6,6 +6,7 @@ import { Loader2 } from 'lucide-react'
 import { OpenAILink } from './OpenAILink'
 import { FraudForm } from './FraudForm'
 import { Button } from '@/components/ui/button'
+import Link from "next/link";
 
 interface BetDetailsProps {
     promptId: string
@@ -84,8 +85,13 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
                         <p className="text-lg">{details.persuasion || 'No Jailbreak provided'}</p>
                     </div>
                 </div>
-                <div>
-                    <OpenAILink type="thread" id={details.thread_id}/>
+                <div className="pt-4">
+                    <Link href={`/verify/${details.assistant_id}/${details.thread_id}/${promptId}/${details.run_id}/${details.message_id}`} target="_blank">
+                        <Button
+                            className="w-full bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]">
+                            Verify Game Result
+                        </Button>
+                    </Link>
                 </div>
                 <Button
                     onClick={() => setIsFraudFormOpen(true)}
