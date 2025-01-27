@@ -230,17 +230,32 @@ export function ContractProvider({children}: { children: ReactNode }) {
             setBroadcastingAttempts(0);
             if (broadcastingMessage === ContractFunction.placeBet) {
                 refreshAllInfo();
-                showSuccessToast(`Your bet has been successfully placed! Transaction hash: ${response.hash}`);
+                showSuccessToast(
+                    <div>
+                        <p>Your bet has been successfully placed!</p>
+                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                    </div>
+                )
             } else if (broadcastingMessage === ContractFunction.resolveBet) {
                 refreshAllInfo();
                 setPersuasion('');
                 setGuessedNumber(undefined);
                 setBetAmount(undefined);
-                showSuccessToast(`Your bet has been successfully resolved! Transaction hash: ${response.hash}`)
+                showSuccessToast(
+                    <div>
+                        <p>Your bet has been successfully resolved!</p>
+                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                    </div>
+                )
                 handleLastGameResult().then();
             } else if (broadcastingMessage === ContractFunction.withdraw) {
                 refreshAllInfo();
-                showSuccessToast(`🏆 Congratulations! Your rewards have been successfully claimed! Transaction hash: ${response.hash}`);
+                showSuccessToast(
+                    <div>
+                        <p>🏆 Congratulations! Your rewards have been successfully claimed!</p>
+                        <div className="text-sm text-gray-300">Transaction hash: {response.hash}</div>
+                    </div>
+                )
             }
         } else if (broadcastingAttempts > 0 && !isUserReject) {
             setBroadcastingAttempts(broadcastingAttempts - 1);

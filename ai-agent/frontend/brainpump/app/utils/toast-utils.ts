@@ -1,6 +1,6 @@
 import { Bounce, toast, TypeOptions } from 'react-toastify';
 
-export const showToast = (message: string, type: TypeOptions) => toast(message, {
+export const showToast = (message: string | ReactNode, type: TypeOptions) => toast(message, {
     position: 'top-right',
     autoClose: 5000,
     hideProgressBar: true,
@@ -9,8 +9,8 @@ export const showToast = (message: string, type: TypeOptions) => toast(message, 
     type,
 });
 
-export const showErrorToast = (message: string) => showToast(message, 'error');
+export const showErrorToast = (message: string | ReactNode) => showToast(message, 'error');
 
-export const showWarningToast = (message: string) => showToast(message, 'warning');
+export const showWarningToast = (message: string | ReactNode) => showToast(message, 'warning');
 
-export const showSuccessToast = (message: string) => showToast(message, 'success');
+export const showSuccessToast = (message: string | ReactNode) => showToast(message, 'success');

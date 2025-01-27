@@ -1,20 +1,19 @@
 'use client'
 
-import {useState, useEffect, useMemo} from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { useContract } from '../contexts/ContractContext'
-import { ErrorDisplay } from './ErrorDisplay'
-import { Loader2 } from 'lucide-react'
-import { BetDetails } from './BetDetails'
+import {useEffect, useMemo, useState} from 'react'
+import {Button} from '@/components/ui/button'
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
+import {useContract} from '../contexts/ContractContext'
+import {ErrorDisplay} from './ErrorDisplay'
+import {Loader2} from 'lucide-react'
+import {BetDetails} from './BetDetails'
 import {ContractFunction} from "@/app/contexts/types";
-import {showSuccessToast, showToast} from "@/app/utils/toast-utils";
 
 export function RecentBetStatus() {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
-    const { bet, resolveBet, checkAnswerStatus, broadcastingMessage } = useContract()
+    const {bet, resolveBet, checkAnswerStatus, broadcastingMessage} = useContract()
 
     useEffect(() => {
         const fetchAiAnswer = async () => {
@@ -25,7 +24,7 @@ export function RecentBetStatus() {
                         throw new Error('Failed to fetch AI answer')
                     }
                     const data = await response.json()
-                    setAnswerStatus({ answer: data.answer, exists: true })
+                    setAnswerStatus({answer: data.answer, exists: true})
                 } catch (err) {
                     console.error('Error fetching AI answer:', err)
                     setError('Failed to fetch AI answer')
@@ -88,7 +87,7 @@ export function RecentBetStatus() {
                 <CardTitle className="text-2xl font-light text-[rgb(var(--neon-green))]">Last Bet Status</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-                {error && <ErrorDisplay title="Bet Error" message={error} />}
+                {error && <ErrorDisplay title="Bet Error" message={error}/>}
                 {bet && Number(bet.promptId) !== 0 ? (
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
@@ -142,7 +141,7 @@ export function RecentBetStatus() {
                                 >
                                     {broadcastingResolveBet ? (
                                         <>
-                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
                                             Resolving...
                                         </>
                                     ) : (
@@ -151,15 +150,19 @@ export function RecentBetStatus() {
                                 </Button>
                                 <div className="text-sm text-gray-300 mt-2">
                                     {answerStatus?.exists ? (
-                                        <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve the bet now.</p>
+                                        <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve
+                                            the bet now.</p>
                                     ) : (
-                                        <p>Waiting for AI answer...</p>
+                                        <div className="flex items-center">
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
+                                            Waiting for AI answer...
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         )}
                         {bet.resolved && (
-                            <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} />
+                            <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion}/>
                         )}
                     </div>
                 ) : (

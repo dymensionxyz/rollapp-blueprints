@@ -6,7 +6,7 @@ import './globals.css'
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'BrainPump | Jailbreak an AI to Win',
+  title: 'Desmos | Jailbreak an AI to Win',
   description: 'AI-powered betting game on Dymension RollApp',
 }
 
