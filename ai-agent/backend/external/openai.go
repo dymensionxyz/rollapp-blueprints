@@ -40,7 +40,7 @@ type SubmitPromptResponse struct {
 func (SubmitPromptResponse) IsResponse() {}
 
 // SubmitPrompt sends a prompt to the OpenAI API.
-func (c *OpenAIClient) SubmitPrompt(ctx context.Context, promptID uint64, prompt string) (SubmitPromptResponse, error) {
+func (c *OpenAIClient) SubmitPrompt(ctx context.Context, promptID uint64, prompt []string) (SubmitPromptResponse, error) {
 	run, err := c.CreateThreadAndRunMessage(ctx, "user", prompt, promptID)
 	if err != nil {
 		return SubmitPromptResponse{}, fmt.Errorf("create run: %w", err)

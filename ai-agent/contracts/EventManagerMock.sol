@@ -17,4 +17,8 @@ contract EventManagerMock is EventManager {
     function eraseEventPublic(uint64 eventId, uint16 eventType) public {
         eraseEvent(eventId, eventType);
     }
+
+    function getEventsPublic(uint16 eventType) public view returns (Event[] memory) {
+        return getEvents(eventType);
+    }
 }

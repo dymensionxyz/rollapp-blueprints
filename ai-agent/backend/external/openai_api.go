@@ -36,7 +36,7 @@ func (c *OpenAIClient) CreateMessage(ctx context.Context, role, content string, 
 		return ThreadMessage{}, fmt.Errorf("failed to create message: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to create message: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessage{}, fmt.Errorf("failed to create message: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -57,7 +57,7 @@ func (c *OpenAIClient) RetrieveMessage(ctx context.Context, messageID string) (T
 		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -93,29 +93,38 @@ func (c *OpenAIClient) listMessages(ctx context.Context, threadID string, queryP
 		return ThreadMessageList{}, fmt.Errorf("failed to list messages: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadMessageList{}, fmt.Errorf("failed to list messages: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadMessageList{}, fmt.Errorf("failed to list messages: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
 }
 
 // CreateThreadAndRunMessage creates a thread and runs it with the message constructed from the given role and content.
-func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role, content string, promptID uint64) (ThreadRun, error) {
+func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role string, content []string, promptID uint64) (ThreadRun, error) {
 	var result ThreadRun
+
+	promptIDMeta := map[string]string{
+		"prompt_id": fmt.Sprintf("%d", promptID),
+	}
+
+	var msgs []CreateMessageReq
+	for _, msg := range content {
+		msgs = append(msgs, CreateMessageReq{
+			Role:     role,
+			Content:  msg,
+			Metadata: promptIDMeta,
+		})
+	}
 
 	resp, err := c.http.R().
 		SetContext(ctx).
 		SetBody(CreateRunReq{
 			AssistantId: defaultAssistantID,
 			Thread: CreateThreadReq{
-				Messages: []CreateMessageReq{{
-					Role:    role,
-					Content: content,
-				}},
-				Metadata: map[string]string{
-					"prompt_id": fmt.Sprintf("%d", promptID),
-				},
+				Messages: msgs,
+				Metadata: promptIDMeta,
 			},
+			Metadata: promptIDMeta,
 		}).
 		SetResult(&result).
 		SetError(&ErrorResp{}).
@@ -125,7 +134,7 @@ func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role, cont
 		return ThreadRun{}, fmt.Errorf("failed to create run: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadRun{}, fmt.Errorf("failed to create run: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadRun{}, fmt.Errorf("failed to create run: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -145,7 +154,14 @@ func (c *OpenAIClient) PollRunResult(ctx context.Context, threadID, runID string
 			c.logger.Debug("Polling run status...", "threadId", threadID, "runId", runID)
 			return r.Result().(*ThreadRun).Status != "completed"
 		})
-	return retrieveRun(ctx, pollingClient, threadID, runID)
+	run, err := retrieveRun(ctx, pollingClient, threadID, runID)
+	if err != nil {
+		return ThreadRun{}, err
+	}
+	if run.Status != "completed" {
+		return ThreadRun{}, fmt.Errorf("run is not completed after all retries: %s", run.Status)
+	}
+	return run, nil
 }
 
 func retrieveRun(ctx context.Context, client *resty.Client, threadID, runID string) (ThreadRun, error) {
@@ -163,7 +179,7 @@ func retrieveRun(ctx context.Context, client *resty.Client, threadID, runID stri
 		return ThreadRun{}, fmt.Errorf("failed to retrieve run: %w", err)
 	}
 	if resp.IsError() {
-		return ThreadRun{}, fmt.Errorf("failed to retrieve run: %s", resp.Error().(*ErrorResp).Error.Message)
+		return ThreadRun{}, fmt.Errorf("failed to retrieve run: status %s: %v", resp.Status(), resp.Error())
 	}
 
 	return result, nil
@@ -308,7 +324,7 @@ type ThreadRun struct {
 	MaxPromptTokens     int                `json:"max_prompt_tokens"`
 	MaxCompletionTokens int                `json:"max_completion_tokens"`
 	TruncationStrategy  TruncationStrategy `json:"truncation_strategy"`
-	ResponseFormat      string             `json:"response_format"`
+	ResponseFormat      interface{}        `json:"response_format"`
 	ToolChoice          string             `json:"tool_choice"`
 	ParallelToolCalls   bool               `json:"parallel_tool_calls"`
 }

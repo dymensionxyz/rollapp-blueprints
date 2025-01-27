@@ -3,8 +3,11 @@ use crate::msg::{
 };
 use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
-use cosmwasm_std::{entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order, Response, StdError, StdResult};
+use crate::token_fatory::{MsgBurn, MsgMint};
+use cosmwasm_std::{entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+    Order, Response, StdError, StdResult};
 use cw_storage_plus::Bound;
+use prost::Message;
 
 #[entry_point]
 pub fn instantiate(
@@ -35,20 +38,34 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 fn execute_place_option(
     deps: DepsMut,
     env: Env,
-    info: MessageInfo,
+    mut info: MessageInfo,
     msg: PlaceOptionMsg,
 ) -> StdResult<Response> {
     if info.funds.len() != 1 {
         return Err(StdError::generic_err("Please, send exactly one coin"));
     }
 
-    let sent_coin = &info.funds[0];
+    let sent_coin = info.funds.pop().unwrap();
 
     if sent_coin.amount != msg.bet_amount.amount || sent_coin.denom != msg.bet_amount.denom {
         return Err(StdError::generic_err(
             "Please, send the correct amount and denom",
         ));
     }
+
+    // create burn message
+    let burn_msg = MsgBurn {
+        sender: env.contract.address.to_string(),
+        amount: Some(crate::token_fatory::Coin {
+            denom: sent_coin.denom,
+            amount: sent_coin.amount.to_string(),
+        }),
+    };
+
+    let stargate_burn_msg = CosmosMsg::Stargate {
+        type_url: MsgBurn::TYPE_URL.to_string(),
+        value: burn_msg.encode_to_vec().into(),
+    };
 
     let config = CONFIG.load(deps.storage)?;
 
@@ -85,7 +102,8 @@ fn execute_place_option(
         .add_attribute("action", "place_option")
         .add_attribute("option_id", option_counter.to_string())
         .add_attribute("strike_price", current_price.to_string())
-        .add_attribute("expiration", expiration.to_string()))
+        .add_attribute("expiration", expiration.to_string())
+        .add_message(stargate_burn_msg))
 }
 
 fn execute_settle_option(
@@ -131,16 +149,22 @@ fn execute_settle_option(
 
     if did_win {
         let payout_amount = option.bet_amount.amount * config.payout_multiplier;
-        let send_msg = BankMsg::Send {
-            to_address: option.owner.to_string(),
-            amount: vec![Coin {
+
+        let mint_msg = MsgMint {
+            sender: env.contract.address.to_string(),
+            amount: Some(crate::token_fatory::Coin {
                 denom: option.bet_amount.denom.clone(),
-                amount: payout_amount,
-            }],
+                amount: payout_amount.to_string(),
+            }),
+        };
+
+        let stargate_mint_msg = CosmosMsg::Stargate {
+            type_url: MsgMint::TYPE_URL.to_string(),
+            value: mint_msg.encode_to_vec().into(),
         };
 
         Ok(Response::new()
-            .add_message(send_msg)
+            .add_message(stargate_mint_msg)
             .add_attribute("action", "settle_option")
             .add_attribute("option_id", option_id.to_string())
             .add_attribute("result", "won")
@@ -635,27 +659,16 @@ mod tests {
         // -------------------------------------------------------
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
-                // Check that it's hitting our known oracle contract
                 if contract_addr == "oracle_contract" {
-                    // Decode the inbound query
-                    let parsed: std::result::Result<OracleQueryMsg, _> = from_binary(msg);
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = parsed {
-                        // e.g. if the base="BTC" and quote="USD", we return some mocked price
-                        // but let's do something dynamic just to show we recognized the query
+                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
                         if base == "BTC" && quote == "USD" {
                             let resp = QueryGetPriceResponse {
                                 price: Some(Decimal::from_str("30000").unwrap()),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
-                        } else if base == "ATOM" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("10").unwrap()),
-                            };
-                            return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
                     }
                 }
-                // Fallback: not our oracle or unexpected query
                 SystemResult::Err(SystemError::UnsupportedRequest {
                     kind: format!("{query:?}"),
                 })
@@ -684,21 +697,38 @@ mod tests {
 
         // -------------------------------------------------------
         // 6) Check the response
+        //    We now expect a single Stargate "MsgBurn" rather than a bank burn or send
         // -------------------------------------------------------
-        // The response should have attributes for "place_option"
-        // and the updated option_id & strike_price
+        assert_eq!(res.messages.len(), 1);
+        let burn_cosmos_msg = &res.messages[0].msg;
+        match burn_cosmos_msg {
+            CosmosMsg::Stargate { type_url, value } => {
+                // Confirm it's the correct type_url for our custom MsgBurn
+                assert_eq!(type_url, MsgBurn::TYPE_URL);
+
+                // Decode the protobuf payload
+                let parsed_burn = MsgBurn::decode(value.as_slice()).unwrap();
+                assert_eq!(parsed_burn.sender, env.contract.address.to_string());
+                let amount = parsed_burn.amount.unwrap();
+                assert_eq!(amount.denom, "uatom");
+                assert_eq!(amount.amount, "1000000");
+            }
+            _ => panic!("Expected a Stargate MsgBurn message"),
+        }
+
+        // Check attributes
+        // "action" => "place_option"
+        // "option_id" => "1"
+        // "strike_price" => "30000"
+        // "expiration" => "1700000000"
         assert_eq!(res.attributes.len(), 4);
         assert_eq!(res.attributes[0].value, "place_option");
-        // e.g. the newly assigned option ID should be "1" if it was previously 0
-        let option_id = &res.attributes[1].value;
-        assert_eq!(option_id, "1");
-        // The strike_price from the oracle was "30000"
-        let strike_price = &res.attributes[2].value;
-        assert_eq!(strike_price, "30000");
-
-        // Also check if the expiration was recorded in attributes
-        let expiration_attr = &res.attributes[3].value;
-        assert_eq!(expiration_attr, "1571797719"); // Updated line
+        assert_eq!(res.attributes[1].key, "option_id");
+        assert_eq!(res.attributes[1].value, "1");
+        assert_eq!(res.attributes[2].key, "strike_price");
+        assert_eq!(res.attributes[2].value, "30000");
+        assert_eq!(res.attributes[3].key, "expiration");
+        assert_eq!(res.attributes[3].value, "1571797719"); // Updated line
 
         // -------------------------------------------------------
         // 7) Confirm that the new OptionInfo is stored
@@ -1030,17 +1060,26 @@ mod tests {
 
         // -------------------------------------------------------------------
         // 4) Check the Response
+        //    Now we expect a single Stargate MsgMint rather than a BankMsg::Send
         // -------------------------------------------------------------------
-        // Expect a BankMsg::Send -> user "winner" with payout = bet * payout_multiplier
-        // Bet = 1_000_000, multiplier = 1.5 => payout = 1_500_000
-        let expected_payout = 1_500_000u128;
-        assert_eq!(
-            res.messages[0].msg,
-            cosmwasm_std::CosmosMsg::Bank(BankMsg::Send {
-                to_address: "winner".to_string(),
-                amount: vec![coin(expected_payout, "uatom")],
-            })
-        );
+        assert_eq!(res.messages.len(), 1);
+        let mint_cosmos_msg = &res.messages[0].msg;
+        match mint_cosmos_msg {
+            CosmosMsg::Stargate { type_url, value } => {
+                // Confirm it's the correct type_url for our MsgMint
+                assert_eq!(type_url, MsgMint::TYPE_URL);
+
+                // Decode the protobuf payload
+                let parsed_mint = MsgMint::decode(value.as_slice()).unwrap();
+                assert_eq!(parsed_mint.sender, env.contract.address.to_string());
+
+                // payout = bet_amount (1,000,000) * 1.5 => 1,500,000
+                let amount = parsed_mint.amount.unwrap();
+                assert_eq!(amount.denom, "uatom");
+                assert_eq!(amount.amount, "1500000");
+            }
+            _ => panic!("Expected a Stargate MsgMint message"),
+        }
 
         // Check attributes
         // "action" => "settle_option"

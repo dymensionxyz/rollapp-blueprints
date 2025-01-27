@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {EventManager} from "./EventManager.sol";
-import {Whitelist} from "./Whitelist.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /**
@@ -13,7 +12,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
  * and only whitelisted accounts can submit prompts, which helps to prevent spam.
  * The contract employs `EventManager` to manage events in a stateful way.
  */
-contract AIOracle is Whitelist, EventManager {
+contract AIOracle is Ownable, EventManager {
     // Store answers by prompt ID
     mapping(uint64 => string) public answers;
     uint64 public latestPromptId;
@@ -27,11 +26,11 @@ contract AIOracle is Whitelist, EventManager {
 
     struct UnprocessedPrompt {
         uint64 promptId; // Unique identifier for the prompt
-        string prompt; // The prompt text
+        string[] prompt; // The prompt text
     }
 
     // Event emitted when a new prompt is submitted
-    event PromptSubmitted(uint64 promptId, string prompt);
+    event PromptSubmitted(uint64 promptId, string[] prompt);
 
     // Event emitted when an answer is submitted for a prompt
     event AnswerSubmitted(uint64 promptId, string answer);
@@ -40,15 +39,18 @@ contract AIOracle is Whitelist, EventManager {
      * @dev Sets the owner during deployment
      * @param initialOwner The address of the initial owner
      */
-    constructor(address initialOwner) Whitelist(initialOwner) EventManager(10240) {}
+    constructor(address initialOwner) Ownable(initialOwner) EventManager(10240) {}
 
     /**
      * @dev Creates a new prompt and emits an event
-     * @param prompt The prompt text
+     * @param prompt The prompt messages
      * @return The ID of the newly created prompt
      */
-    function submitPrompt(string memory prompt) external onlyWhitelisted returns (uint64) {
-        require(bytes(prompt).length > 0, "AIOracle: prompt cannot be empty");
+    function submitPrompt(string[] memory prompt) external returns (uint64) {
+        require(prompt.length > 0, "AIOracle: prompt cannot be empty");
+        for (uint256 i; i < prompt.length; i++) {
+            require(bytes(prompt[i]).length > 0, "AIOracle: prompt message cannot be empty");
+        }
 
         latestPromptId++;
 
@@ -95,7 +97,7 @@ contract AIOracle is Whitelist, EventManager {
      * @param prompt The prompt text
      * @return The encoded prompt data
      */
-    function encodeUnprocessedPrompt(uint64 promptId, string memory prompt) internal pure returns (bytes memory) {
+    function encodeUnprocessedPrompt(uint64 promptId, string[] memory prompt) internal pure returns (bytes memory) {
         return abi.encode(promptId, prompt);
     }
 
@@ -105,7 +107,7 @@ contract AIOracle is Whitelist, EventManager {
      * @return The decoded prompt data
      */
     function decodeUnprocessedPrompt(bytes memory data) internal pure returns (UnprocessedPrompt memory) {
-        (uint64 promptId, string memory prompt) = abi.decode(data, (uint64, string));
+        (uint64 promptId, string[] memory prompt) = abi.decode(data, (uint64, string[]));
         return UnprocessedPrompt(promptId, prompt);
     }
 

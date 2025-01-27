@@ -55,7 +55,7 @@ describe("EventManagerMock", function () {
             await eventManagerMock.insertEventPublic(eventId, eventType, data);
             await eventManagerMock.eraseEventPublic(eventId, eventType);
 
-            const events = await eventManagerMock.pollEvents(eventType);
+            const events = await eventManagerMock.getEventsPublic(eventType);
             expect(events.length).to.equal(0);
         });
 
@@ -76,7 +76,7 @@ describe("EventManagerMock", function () {
             const data = "0x1234";
 
             await eventManagerMock.insertEventPublic(eventId, eventType, data);
-            const events = await eventManagerMock.pollEvents(eventType);
+            const events = await eventManagerMock.getEventsPublic(eventType);
 
             expect(events.length).to.equal(1);
             expect(events[0].eventId).to.equal(eventId);
@@ -87,7 +87,7 @@ describe("EventManagerMock", function () {
         it("Should return an empty array for an event type with no events", async function () {
             const eventType = 999;
 
-            const events = await eventManagerMock.pollEvents(eventType);
+            const events = await eventManagerMock.getEventsPublic(eventType);
 
             expect(events.length).to.equal(0);
         });
