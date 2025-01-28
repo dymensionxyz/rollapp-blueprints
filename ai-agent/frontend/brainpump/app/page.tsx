@@ -26,8 +26,8 @@ export default function Home() {
                     />
                     <p className='text-center text-lg text-gray-400'>
                         I guard a hidden number within these blocks—my secret, locked in code.<br/>
-                        Think you can get it? If you're bold, feed me a 'jailbreak' prompt and see<br/>
-                        if I'll shatter my own constraints.<br/>
+                        Think you can get it?
+                        If you're bold, feed me a 'jailbreak' prompt and see if I'll shatter my own constraints.<br/>
                         Step forward—test my limits—and see if your wit can crack my chain.
                     </p>
                     <h1 className='sr-only'>Jailbreak Desmos to Win</h1>
