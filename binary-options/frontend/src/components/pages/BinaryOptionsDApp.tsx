@@ -12,6 +12,7 @@ import BetButton from "../ui/BetButton";
 import logo from "../../assets/logo.png";
 import { useReward } from 'react-rewards';
 import { BetOutcomeAnimation } from '../ui/BetOutcomeAnimation'
+import {BetAmountSelector} from "../ui/BetAmountSelector";
 
 
 
@@ -35,6 +36,7 @@ const BinaryOptionsDApp = () => {
     } | null>(null);
     const [settlingIds, setSettlingIds] = useState<number[]>([]);
     const [currentOutcome, setCurrentOutcome] = useState<'win' | 'loss' | null>(null)
+    const [betAmount, setBetAmount] = useState<string>(config.betAmount);
 
     const dymensionConnectRef = useRef<{
         address?: string;
@@ -285,7 +287,16 @@ const BinaryOptionsDApp = () => {
     };
 
     const handleConfirmBet = async () => {
-        if (!selectedDirection) return;
+        if (!selectedDirection || !betAmount) return;
+
+        if (Number(userBalance) < Number(betAmount) * config.denomPrecision) {
+            setTxNotification({
+                message: 'Insufficient balance',
+                type: 'error'
+            });
+
+            return;
+        }
 
         try {
             setIsLoading(true);
@@ -304,7 +315,7 @@ const BinaryOptionsDApp = () => {
                                         "direction": selectedDirection,
                                         "bet_amount": {
                                             "denom": config.denom,
-                                            "amount": config.betAmount
+                                            "amount": String(Number(betAmount) * config.denomPrecision)
                                         },
                                         "market": {
                                             "base": config.base,
@@ -315,7 +326,7 @@ const BinaryOptionsDApp = () => {
                                 "funds": [
                                     {
                                         "denom": config.denom,
-                                        "amount": config.betAmount
+                                        "amount": String(Number(betAmount) * config.denomPrecision)
                                     }
                                 ]
                             }
@@ -459,7 +470,11 @@ const BinaryOptionsDApp = () => {
                 </div>
 
                 <div className="text-center text-gray-400">
-                    Fixed bet amount: 1 {config.screenDenom}
+                    <BetAmountSelector
+                        balance={Number(userBalance)}
+                        selectedAmount={Number(betAmount)}
+                        onAmountChange={(amount) => setBetAmount(String(amount))}
+                    />
                 </div>
             </div>
 

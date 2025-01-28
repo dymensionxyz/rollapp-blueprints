@@ -15,16 +15,17 @@ interface ConfirmationDialogProps {
     direction: 'up' | 'down' | null;
     onConfirm: () => void;
     onCancel: () => void;
+    betAmount: number;
 }
 
-const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel }: ConfirmationDialogProps) => {
+const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel, betAmount }: ConfirmationDialogProps) => {
     return (
         <AlertDialog open={isOpen} onOpenChange={onCancel}>
             <AlertDialogContent className="bg-gray-800 text-white">
                 <AlertDialogHeader>
                     <AlertDialogTitle className="mb-4">Confirm Your Bet</AlertDialogTitle> {/* Añadido mb-4 */}
                     <AlertDialogDescription>
-                        You are betting 1 {config.screenDenom} that the price
+                        You are betting {betAmount} {config.screenDenom} that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
                         in 5 minutes.
                     </AlertDialogDescription>
