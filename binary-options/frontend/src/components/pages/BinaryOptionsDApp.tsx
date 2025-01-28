@@ -114,29 +114,27 @@ const BinaryOptionsDApp = () => {
             await dymensionConnectRef.current.sendMessage(msg);
 
             setTimeout(async () => {
-                await fetchBetHistory();
+                const updatedHistory = await fetchBetHistory(); // Obtener data actualizada
+                const settledBet = updatedHistory.find(b => b.id === optionId);
 
-                setBetHistory(prevHistory => {
-                    const settledBet = prevHistory.find(b => b.id === optionId);
+                if (!settledBet || settledBet.outcome === null) {
+                    setSettlingIds(prev => prev.filter(id => id !== optionId));
+                    return;
+                }
 
-                    if (!settledBet) return prevHistory;
+                const outcome = settledBet.outcome ? 'win' : 'loss';
 
-                    const outcome = settledBet.outcome === true ? 'win' : 'loss';
+                if (outcome === 'win') {
+                    confettiReward();
+                    setCurrentOutcome('win');
+                } else {
+                    explosionReward();
+                    setCurrentOutcome('loss');
+                }
 
-                    if (outcome === 'win') {
-                        confettiReward();
-                        setCurrentOutcome('win');
-                    } else {
-                        explosionReward();
-                        setCurrentOutcome('loss');
-                    }
-
-                    setTimeout(() => setCurrentOutcome(null), 3000);
-                    setSettlingIds(prev => prev.filter(id => id !== optionId))
-
-                    return prevHistory;
-                });
-            }, 5000)
+                setTimeout(() => setCurrentOutcome(null), 3000);
+                setSettlingIds(prev => prev.filter(id => id !== optionId));
+            }, 5000);
         } catch (error) {
             console.error("Error settling option:", error);
         }
@@ -155,7 +153,7 @@ const BinaryOptionsDApp = () => {
     const fetchBetHistory = async () => {
         try {
             const userAddress = dymensionConnectRef.current?.address;
-            if (!userAddress) return;
+            if (!userAddress) return [];
 
             const query = {
                 list_options_by_user: {
@@ -183,8 +181,10 @@ const BinaryOptionsDApp = () => {
             }));
 
             setBetHistory(formattedHistory);
+            return formattedHistory;
         } catch (err) {
             console.error("Failed to load bet history:", err);
+            return [];
         }
     };
 
@@ -337,13 +337,6 @@ const BinaryOptionsDApp = () => {
                 setTxNotification({ message: 'Sending transaction...', type: 'pending' });
 
                 dymensionConnectRef.current.sendMessage(msg);
-
-/*
-                setTimeout(() => {
-                    fetchBetHistory();
-                    fetchUserBalance();
-                }, 5000);
-*/
             }
 
         } catch (error) {
