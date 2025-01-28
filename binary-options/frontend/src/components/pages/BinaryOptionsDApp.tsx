@@ -444,9 +444,6 @@ const BinaryOptionsDApp = () => {
             BET NOW - DOUBLE YOUR MONEY!
         </span>
                     </h2>
-                    <div className="mt-6 text-xl text-gray-400 flex justify-center items-center gap-2">
-                        <span>🔥 LIMITED TIME ACTION 🔥</span>
-                    </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">

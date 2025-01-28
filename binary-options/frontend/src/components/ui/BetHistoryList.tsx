@@ -47,7 +47,6 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
                                     <div className="font-medium">
                                         ${bet.strikePrice.toFixed(2)} • {bet.betAmount}
                                     </div>
-                                    {/* Estado de ganado/perdido */}
                                     {bet.settled && (
                                         <div className={`text-sm ${
                                             bet.outcome ? 'text-green-500' : 'text-red-500'
@@ -81,10 +80,10 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
                                             {settlingIds.includes(bet.id) ? (
                                                 <span className="flex items-center gap-1">
                                                     <span className="animate-spin">🌀</span>
-                                                    Cashing Out...
+                                                    Finding Out...
                                                 </span>
                                             ) : (
-                                                'Cash Out'
+                                                'Find Out'
                                             )}
                                         </button>
                                     )}
