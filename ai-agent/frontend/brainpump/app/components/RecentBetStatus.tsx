@@ -150,8 +150,8 @@ export function RecentBetStatus() {
                                 </Button>
                                 <div className="text-sm text-gray-300 mt-2">
                                     {answerStatus?.exists ? (
-                                        <p className="text-[rgb(var(--neon-green))]">AI answer is ready. You can resolve
-                                            the bet now.</p>
+                                        <p className="text-[rgb(var(--neon-green))]">Locked and loaded—ready to see what
+                                            I've got?</p>
                                     ) : (
                                         <div className="flex items-center">
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin"/>
