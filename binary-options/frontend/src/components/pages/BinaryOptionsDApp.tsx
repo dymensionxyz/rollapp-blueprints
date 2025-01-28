@@ -483,6 +483,7 @@ const BinaryOptionsDApp = () => {
                 direction={selectedDirection}
                 onConfirm={handleConfirmBet}
                 onCancel={() => setShowConfirmation(false)}
+                betAmount={Number(betAmount)}
             />
 
             <div className="mt-8 bg-gray-800 p-4 rounded-lg border border-gray-700  overflow-y-auto">
