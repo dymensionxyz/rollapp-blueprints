@@ -293,7 +293,7 @@ const BinaryOptionsDApp = () => {
                                         "direction": selectedDirection,
                                         "bet_amount": {
                                             "denom": config.denom,
-                                            "amount": String(Number(betAmount) * config.denomPrecision)
+                                            "amount": BigInt(Number(betAmount) * config.denomPrecision).toString()
                                         },
                                         "market": {
                                             "base": config.base,
@@ -304,7 +304,7 @@ const BinaryOptionsDApp = () => {
                                 "funds": [
                                     {
                                         "denom": config.denom,
-                                        "amount": String(Number(betAmount) * config.denomPrecision)
+                                        "amount": BigInt(Number(betAmount) * config.denomPrecision).toString()
                                     }
                                 ]
                             }

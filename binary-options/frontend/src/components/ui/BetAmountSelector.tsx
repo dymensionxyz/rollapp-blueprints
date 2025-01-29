@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import config from "../../config/config";
 
-const PRESET_AMOUNTS = [1, 5, 10, 25];
+const PRESET_AMOUNTS = [1000, 5000, 10000, 25000];
 
 interface BetAmountSelectorProps {
     balance: number;
