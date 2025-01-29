@@ -112,31 +112,9 @@ const BinaryOptionsDApp = () => {
             };
 
             await dymensionConnectRef.current.sendMessage(msg);
-
-            setTimeout(async () => {
-                const updatedHistory = await fetchBetHistory(); // Obtener data actualizada
-                const settledBet = updatedHistory.find(b => b.id === optionId);
-
-                if (!settledBet || settledBet.outcome === null) {
-                    setSettlingIds(prev => prev.filter(id => id !== optionId));
-                    return;
-                }
-
-                const outcome = settledBet.outcome ? 'win' : 'loss';
-
-                if (outcome === 'win') {
-                    confettiReward();
-                    setCurrentOutcome('win');
-                } else {
-                    explosionReward();
-                    setCurrentOutcome('loss');
-                }
-
-                setTimeout(() => setCurrentOutcome(null), 3000);
-                setSettlingIds(prev => prev.filter(id => id !== optionId));
-            }, 5000);
         } catch (error) {
             console.error("Error settling option:", error);
+            setSettlingIds(prev => prev.filter(id => id !== optionId));
         }
     };
 
@@ -362,14 +340,50 @@ const BinaryOptionsDApp = () => {
                     : `Error (Code: ${txData?.rawData?.nativeResponse?.code || 'unknown'})`,
                 type: status
             });
-            fetchBetHistory();
-            fetchUserBalance();
         }
 
         if (status === 'success') {
-            setTimeout(() => {
-            }, 5000);
+            try {
+                const rawLog = txData.rawData.nativeResponse?.rawLog;
+                const logs = JSON.parse(rawLog);
+
+                const settleEvent = logs.flatMap((log: any) =>
+                    log.events?.filter((e: any) =>
+                        e.type === 'wasm' &&
+                        e.attributes?.some((a: any) => a.key === 'action' && a.value === 'settle_option')
+                    )
+                ).flat()[0];
+
+                if (settleEvent) {
+                    const resultAttr = settleEvent.attributes.find((a: any) => a.key === 'result');
+                    const optionIdAttr = settleEvent.attributes.find((a: any) => a.key === 'option_id');
+
+                    if (resultAttr && optionIdAttr) {
+                        const outcome = resultAttr.value === 'won' ? 'win' : 'loss';
+                        const optionId = parseInt(optionIdAttr.value);
+
+                        setBetHistory(prev => prev.map(bet =>
+                            bet.id === optionId ? {...bet, settled: true, outcome: outcome === 'win'} : bet
+                        ));
+
+                        if (outcome === 'win') {
+                            confettiReward();
+                            setCurrentOutcome('win');
+                        } else {
+                            explosionReward();
+                            setCurrentOutcome('loss');
+                        }
+
+                        setTimeout(() => setCurrentOutcome(null), 3000);
+                    }
+                }
+            } catch (error) {
+                console.error('Error parsing transaction logs:', error);
+            }
         }
+
+        fetchUserBalance();
+        fetchBetHistory();
     };
 
     return (

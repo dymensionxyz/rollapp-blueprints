@@ -85,23 +85,19 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
             }
             if (event.data.type === 'tx-response') {
                 try {
-                    // Parse nested response
                     const responseData = JSON.parse(event.data.response);
                     console.log('[DEBUG] Parsed transaction response:', responseData);
 
-                    // Determine success based on code and rawLog
                     const nativeResponse = responseData.nativeResponse;
                     const success = nativeResponse?.code === 0;
                     const hasNonCriticalErrors = nativeResponse?.rawLog?.includes('fee_consumption');
 
-                    // Send status and parsed data
                     props.onTxStatus?.(success ? 'success' : 'error', {
                         hash: responseData.hash,
                         rawData: responseData,
-                        isNonCriticalError: hasNonCriticalErrors
+                        isNonCriticalError: hasNonCriticalErrors,
                     });
 
-                    // Detailed log
                     if (!success || hasNonCriticalErrors) {
                         console.log('[DEBUG] Transaction details:', {
                             code: nativeResponse?.code,
@@ -118,6 +114,7 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
             }
             if (event.data.type === 'wallet-error') {
                 console.error('Wallet error:', event.data.error);
+                props.onTxStatus?.('error', { error: event.data.error });
             }
         };
         window.addEventListener('message', handleMessage);
