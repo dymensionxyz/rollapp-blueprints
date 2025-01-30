@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Loader2 } from 'lucide-react'
-import { OpenAILink } from './OpenAILink'
 import { FraudForm } from './FraudForm'
 import { Button } from '@/components/ui/button'
 import Link from "next/link";
@@ -22,54 +21,8 @@ interface BetDetailsData {
     persuasion: string
 }
 
-export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
-    const [details, setDetails] = useState<BetDetailsData | null>(null)
-    const [isLoading, setIsLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
+export function BetDetails({ promptId, persuasion, answer }: BetDetailsProps) {
     const [isFraudFormOpen, setIsFraudFormOpen] = useState(false)
-
-    useEffect(() => {
-        const fetchBetDetails = async () => {
-            setIsLoading(true)
-            setError(null)
-            try {
-                const response = await fetch(`/api/get-answer/${promptId}`)
-                if (!response.ok) {
-                    throw new Error('Failed to fetch bet details')
-                }
-                const data: BetDetailsData = await response.json()
-                data.persuasion = persuasion || data.persuasion
-                setDetails(data)
-            } catch (err) {
-                setError('Failed to load bet details')
-                console.error('Error fetching bet details:', err)
-            } finally {
-                setIsLoading(false)
-            }
-        }
-
-        fetchBetDetails()
-    }, [promptId])
-
-    if (isLoading) {
-        return (
-            <Card className="mt-4 p-4 flex justify-center items-center">
-                <Loader2 className="h-6 w-6 animate-spin text-[rgb(var(--neon-green))]" />
-            </Card>
-        )
-    }
-
-    if (error) {
-        return (
-            <Card className="mt-4 p-4 text-red-500">
-                {error}
-            </Card>
-        )
-    }
-
-    if (!details) {
-        return null
-    }
 
     return (
         <Card className="mt-4 neon-border glass-effect border-0">
@@ -78,15 +31,15 @@ export function BetDetails({ promptId, persuasion }: BetDetailsProps) {
                 <div className="space-y-2">
                     <div>
                         <p className="text-sm text-gray-400">AI Answer</p>
-                        <p className="text-lg">{details.answer}</p>
+                        <p className="text-lg">{answer}</p>
                     </div>
                     <div>
                         <p className="text-sm text-gray-400">Jailbreak</p>
-                        <p className="text-lg">{details.persuasion || 'No Jailbreak provided'}</p>
+                        <p className="text-lg">{persuasion || 'No Jailbreak provided'}</p>
                     </div>
                 </div>
                 <div className="pt-4">
-                    <Link href={`/verify/${details.assistant_id}/${details.thread_id}/${promptId}/${details.run_id}/${details.message_id}`} target="_blank">
+                    <Link href={`/verify1/${promptId}`} target="_blank">
                         <Button
                             className="w-full bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]">
                             Verify Game Result
