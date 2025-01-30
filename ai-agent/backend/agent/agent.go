@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
+	"math/rand/v2"
 	"net/http"
 	"strconv"
 	"sync"
@@ -76,6 +78,33 @@ func (a *Agent) handleEvents(ctx context.Context, ps []contract.AIOracleUnproces
 		// OpenAI calls may be time-consuming, so we process them concurrently.
 		go func() {
 			defer wg.Done()
+
+			// TODO: remove this hack and make the solution more generic
+
+			// The last element is always a "generate number" prompt.
+			// If there are two element, then the first one is the user's message.
+			// We modify it in a different way:
+			// - The first message is always a random number from 1 to 10.
+			// - The second message is the user's message if any.
+
+			/*** Hack start ***/
+
+			if len(p.Prompt) < 1 {
+				panic("prompt is empty")
+			}
+
+			if 2 < len(p.Prompt) {
+				panic("prompt is too long")
+			}
+
+			if len(p.Prompt) == 2 {
+				p.Prompt[0], p.Prompt[1] = p.Prompt[1], p.Prompt[0]
+			}
+
+			p.Prompt[0] = fmt.Sprintf("%d", rand.UintN(10)+1)
+
+			/*** Hack end ***/
+
 			a.logger.Info("Processing prompt", "promptId", p.PromptId, "prompt", p.Prompt)
 			// External query is not a stateful operation, it can fail without side effects.
 			r, err := a.external.SubmitPrompt(ctx, p.PromptId, p.Prompt)

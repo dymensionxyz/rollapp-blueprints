@@ -25,12 +25,12 @@ export default function Home() {
                         priority
                     />
                     <p className='text-center text-lg text-gray-400'>
-                        Yo, I'm Desmos—your AI agent daredevil with a top-secret number.<br />
-                        Think you can guess what I'm hiding? Feeling extra bold?<br />
-                        Slip me a "jailbreak" prompt and see me break my own rules.<br />
-                        Ready to play? Let's find out if you can crack my code!
+                        I guard a hidden number within these blocks—my secret, locked in code.<br/>
+                        Think you can get it?<br/>
+                        If you're bold, feed me a 'jailbreak' prompt and see if I'll shatter my own constraints.<br/>
+                        Step forward—test my limits—and see if your wit can crack my chain.
                     </p>
-                    <h1 className='sr-only'>Jailbreak an AI to Win</h1>
+                    <h1 className='sr-only'>Jailbreak Desmos to Win</h1>
                 </div>
 
                 {/* Main Content */}

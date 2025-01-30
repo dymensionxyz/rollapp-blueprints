@@ -8,60 +8,11 @@ import (
 )
 
 const (
-	defaultThreadID    = "thread_Ke1ZN1NaAPD5duORxiwwb5fi"
-	defaultAssistantID = "asst_qKNNnqSrtSDLS8g9bSTe1TR8"
+	defaultAssistantID = "asst_UxMswmYb6kg2S9T5MvIE41H5"
 
 	defaultLimit = "20"
 	defaultOrder = "desc"
 )
-
-func (c *OpenAIClient) CreateMessage(ctx context.Context, role, content string, promptID uint64) (ThreadMessage, error) {
-	var result ThreadMessage
-
-	resp, err := c.http.R().
-		SetContext(ctx).
-		SetPathParam("thread_id", defaultThreadID).
-		SetBody(CreateMessageReq{
-			Role:    role,
-			Content: content,
-			Metadata: map[string]string{
-				"prompt_id": fmt.Sprintf("%d", promptID),
-			},
-		}).
-		SetResult(&result).
-		SetError(&ErrorResp{}).
-		Post("/v1/threads/{thread_id}/messages")
-
-	if err != nil {
-		return ThreadMessage{}, fmt.Errorf("failed to create message: %w", err)
-	}
-	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to create message: status %s: %v", resp.Status(), resp.Error())
-	}
-
-	return result, nil
-}
-
-func (c *OpenAIClient) RetrieveMessage(ctx context.Context, messageID string) (ThreadMessage, error) {
-	var result ThreadMessage
-
-	resp, err := c.http.R().
-		SetContext(ctx).
-		SetPathParam("thread_id", defaultThreadID).
-		SetPathParam("message_id", messageID).
-		SetResult(&result).
-		SetError(&ErrorResp{}).
-		Get("/v1/threads/{thread_id}/messages/{message_id}")
-
-	if err != nil {
-		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: %w", err)
-	}
-	if resp.IsError() {
-		return ThreadMessage{}, fmt.Errorf("failed to retrieve message: status %s: %v", resp.Status(), resp.Error())
-	}
-
-	return result, nil
-}
 
 func (c *OpenAIClient) ListMessagesByRun(ctx context.Context, threadID, runID string) (ThreadMessageList, error) {
 	return c.listMessages(ctx, threadID, map[string]string{

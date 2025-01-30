@@ -255,7 +255,7 @@ export function BetForm() {
                                         Placing Bet...
                                     </>
                                 ) : (
-                                    'Place Bet'
+                                    'Fuck Around'
                                 )}
                             </Button>
                         </form>

@@ -72,7 +72,7 @@ export function BetHistory() {
                                     </div>
                                 </div>
                                 {expandedBetIndex === index && (
-                                    <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} />
+                                    <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} answer={bet.correctNumber} />
                                 )}
                             </div>
                         ))}
