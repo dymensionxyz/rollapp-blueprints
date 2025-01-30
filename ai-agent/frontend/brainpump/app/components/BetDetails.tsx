@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Loader2 } from 'lucide-react'
 import { FraudForm } from './FraudForm'
 import { Button } from '@/components/ui/button'
 import Link from "next/link";
@@ -10,15 +9,7 @@ import Link from "next/link";
 interface BetDetailsProps {
     promptId: string
     persuasion?: string
-}
-
-interface BetDetailsData {
-    answer: string
-    message_id: string
-    thread_id: string
-    run_id: string
-    assistant_id: string
-    persuasion: string
+    answer: number
 }
 
 export function BetDetails({ promptId, persuasion, answer }: BetDetailsProps) {
@@ -39,7 +30,7 @@ export function BetDetails({ promptId, persuasion, answer }: BetDetailsProps) {
                     </div>
                 </div>
                 <div className="pt-4">
-                    <Link href={`/verify1/${promptId}`} target="_blank">
+                    <Link href={`/verify/${promptId}`} target="_blank">
                         <Button
                             className="w-full bg-transparent hover:bg-[rgb(var(--neon-green))] hover:text-black border border-[rgb(var(--neon-green))] text-[rgb(var(--neon-green))]">
                             Verify Game Result
