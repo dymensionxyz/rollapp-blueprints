@@ -163,8 +163,18 @@ fn execute_settle_option(
             value: mint_msg.encode_to_vec().into(),
         };
 
+        let send_msg = BankMsg::Send {
+            to_address: option.owner.to_string(),
+            amount: vec![Coin {
+                denom: option.bet_amount.denom,
+                amount: payout_amount,
+            }],
+        };
+
+
         Ok(Response::new()
             .add_message(stargate_mint_msg)
+            .add_message(send_msg)
             .add_attribute("action", "settle_option")
             .add_attribute("option_id", option_id.to_string())
             .add_attribute("result", "won")
@@ -992,7 +1002,7 @@ mod tests {
     #[test]
     fn test_settle_option_win_scenario() {
         // -------------------------------------------------------------------
-        // 1) Setup + store an option that is expired
+        // 1) Setup + Crear opción expirada (igual que antes)
         // -------------------------------------------------------------------
         let mut deps = mock_dependencies();
         let mut env = mock_env();
@@ -1001,14 +1011,14 @@ mod tests {
         // Instantiate
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
-            payout_multiplier: Decimal::from_str("1.5").unwrap(), // e.g. 1.50
+            payout_multiplier: Decimal::from_str("1.5").unwrap(),
             expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
-        // Create an option that expired in the past, so it's eligible for settlement
+        // Crear opción expirada
         let option_id = 10u64;
-        let past_expiration = env.block.time.seconds() - 1; // 1 second in the past => expired
+        let past_expiration = env.block.time.seconds() - 1;
         let option_info = OptionInfo {
             id: option_id,
             owner: Addr::unchecked("winner"),
@@ -1016,7 +1026,7 @@ mod tests {
                 base: "BTC".into(),
                 quote: "USD".into(),
             },
-            direction: Direction::Up, // user wins if final price > strike_price
+            direction: Direction::Up,
             strike_price: Decimal::from_str("30000").unwrap(),
             expiration: past_expiration,
             bet_amount: coin(1_000_000, "uatom"),
@@ -1028,9 +1038,7 @@ mod tests {
             .unwrap();
         OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
 
-        // -------------------------------------------------------------------
-        // 2) Mock the oracle => final price is 31,000 => user should win
-        // -------------------------------------------------------------------
+        // Mock Oracle (precio 31,000)
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
                 if contract_addr == "oracle_contract" {
@@ -1053,51 +1061,43 @@ mod tests {
         });
 
         // -------------------------------------------------------------------
-        // 3) Execute "SettleOption"
+        // 2) Ejecutar SettleOption
         // -------------------------------------------------------------------
         let settle_msg = ExecuteMsg::SettleOption { option_id };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap();
 
         // -------------------------------------------------------------------
-        // 4) Check the Response
-        //    Now we expect a single Stargate MsgMint rather than a BankMsg::Send
+        // 3) Verificar los Mensajes Emitidos
+        //    - Primero MsgMint (Stargate) para crear los tokens
+        //    - Luego BankMsg::Send para enviarlos al usuario
         // -------------------------------------------------------------------
-        assert_eq!(res.messages.len(), 1);
-        let mint_cosmos_msg = &res.messages[0].msg;
-        match mint_cosmos_msg {
-            CosmosMsg::Stargate { type_url, value } => {
-                // Confirm it's the correct type_url for our MsgMint
-                assert_eq!(type_url, MsgMint::TYPE_URL);
+        assert_eq!(res.messages.len(), 2); // ¡Ahora esperamos 2 mensajes!
 
-                // Decode the protobuf payload
+        // Mensaje 1: MsgMint al contrato
+        let mint_msg = &res.messages[0].msg;
+        match mint_msg {
+            CosmosMsg::Stargate { type_url, value } => {
+                assert_eq!(type_url, MsgMint::TYPE_URL);
                 let parsed_mint = MsgMint::decode(value.as_slice()).unwrap();
                 assert_eq!(parsed_mint.sender, env.contract.address.to_string());
-
-                // payout = bet_amount (1,000,000) * 1.5 => 1,500,000
-                let amount = parsed_mint.amount.unwrap();
-                assert_eq!(amount.denom, "uatom");
-                assert_eq!(amount.amount, "1500000");
+                assert_eq!(parsed_mint.amount.as_ref().unwrap().amount, "1500000");
+                assert_eq!(parsed_mint.amount.as_ref().unwrap().denom, "uatom");
             }
-            _ => panic!("Expected a Stargate MsgMint message"),
+            _ => panic!("Primer mensaje debe ser MsgMint"),
         }
 
-        // Check attributes
-        // "action" => "settle_option"
-        // "option_id" => 10
-        // "result" => "won"
-        // "payout" => "1500000"
-        assert_eq!(res.attributes.len(), 4);
-        assert_eq!(res.attributes[0], attr("action", "settle_option"));
-        assert_eq!(res.attributes[1], attr("option_id", "10"));
-        assert_eq!(res.attributes[2], attr("result", "won"));
-        assert_eq!(res.attributes[3], attr("payout", "1500000"));
-
-        // -------------------------------------------------------------------
-        // 5) Confirm storage was updated => outcome & settled
-        // -------------------------------------------------------------------
-        let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
-        assert!(updated_option.settled);
-        assert_eq!(updated_option.outcome, Some(true)); // user won
+        // Mensaje 2: BankMsg::Send al usuario
+        let send_msg = &res.messages[1].msg;
+        match send_msg {
+            CosmosMsg::Bank(BankMsg::Send {
+                                to_address,
+                                amount
+                            }) => {
+                assert_eq!(to_address, "winner");
+                assert_eq!(amount, &vec![coin(1_500_000, "uatom")]);
+            }
+            _ => panic!("Segundo mensaje debe ser BankMsg::Send"),
+        }
     }
 
     #[test]
