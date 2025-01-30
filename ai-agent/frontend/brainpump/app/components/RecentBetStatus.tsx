@@ -10,30 +10,9 @@ import {BetDetails} from './BetDetails'
 import {ContractFunction} from "@/app/contexts/types";
 
 export function RecentBetStatus() {
-    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [answerStatus, setAnswerStatus] = useState<{ answer: string, exists: boolean } | null>(null)
     const {bet, resolveBet, checkAnswerStatus, broadcastingMessage} = useContract()
-
-    useEffect(() => {
-        const fetchAiAnswer = async () => {
-            if (bet?.promptId && bet.resolved) {
-                try {
-                    const response = await fetch(`/api/get-answer/${bet.promptId}`)
-                    if (!response.ok) {
-                        throw new Error('Failed to fetch AI answer')
-                    }
-                    const data = await response.json()
-                    setAnswerStatus({answer: data.answer, exists: true})
-                } catch (err) {
-                    console.error('Error fetching AI answer:', err)
-                    setError('Failed to fetch AI answer')
-                }
-            }
-        }
-
-        fetchAiAnswer()
-    }, [bet])
 
     useEffect(() => {
         const checkStatus = async () => {
@@ -48,24 +27,9 @@ export function RecentBetStatus() {
             }
         }
 
+        checkStatus()
         const interval = setInterval(checkStatus, 2000) // Poll every 2 seconds
         return () => clearInterval(interval)
-    }, [bet, checkAnswerStatus])
-
-    useEffect(() => {
-        const checkStatusImmediately = async () => {
-            if (bet?.promptId && !bet.resolved) {
-                try {
-                    const status = await checkAnswerStatus(bet.promptId)
-                    setAnswerStatus(status)
-                } catch (err) {
-                    console.error('Error checking answer status:', err)
-                    setError('Failed to check answer status')
-                }
-            }
-        }
-
-        checkStatusImmediately()
     }, [bet, checkAnswerStatus])
 
     const handleResolveBet = async () => {
@@ -145,7 +109,7 @@ export function RecentBetStatus() {
                                             Resolving...
                                         </>
                                     ) : (
-                                        'Resolve Bet'
+                                        'Find Out'
                                     )}
                                 </Button>
                                 <div className="text-sm text-gray-300 mt-2">
@@ -162,7 +126,7 @@ export function RecentBetStatus() {
                             </div>
                         )}
                         {bet.resolved && (
-                            <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion}/>
+                            <BetDetails promptId={bet.promptId.toString()} persuasion={bet.persuasion} answer={bet.correctNumber}/>
                         )}
                     </div>
                 ) : (

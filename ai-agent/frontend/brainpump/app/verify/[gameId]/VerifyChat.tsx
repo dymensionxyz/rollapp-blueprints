@@ -6,12 +6,12 @@ import { Button } from "@/components/ui/button"
 import { Loader2, Copy, Check } from "lucide-react"
 import {OPENAI_API_KEY} from "@/app/verify/[assistantId]/[threadId]/[gameId]/[runId]/[messageId]/types";
 
-interface VerifyManuallyProps {
+interface VerifyChatProps {
     threadId: string
     onRunSuccess: (data: any) => void
 }
 
-export function VerifyManually({ threadId, onRunSuccess }: VerifyManuallyProps) {
+export function VerifyChat({ threadId, onRunSuccess }: VerifyChatProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [copied, setCopied] = useState(false)

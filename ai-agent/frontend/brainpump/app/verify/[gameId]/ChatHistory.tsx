@@ -65,7 +65,8 @@ export function ChatHistory({messages, error}: ChatHistoryProps) {
                                     {message.metadata?.prompt_id && (
                                         <p className="text-xs opacity-50 mt-1">Game ID: {message.metadata.prompt_id}</p>
                                     )}
-                                    <p className={`text-xs mt-1 ${message.role === "assistant" ? "" : "opacity-50"}`} style={message.role === "assistant" ? { color: 'red' } : {}}>
+                                    <p className={`text-xs mt-1 ${message.role === "assistant" ? "" : "opacity-50"}`}
+                                       style={message.role === "assistant" ? {color: 'red'} : {}}>
                                         {message.id}
                                     </p>
                                     <p className="text-xs opacity-50 mt-1">{new Date(message.created_at * 1000).toLocaleString()}</p>
