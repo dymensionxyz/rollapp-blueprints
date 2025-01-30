@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Loader2, Copy, Check } from "lucide-react"
-import {OPENAI_API_KEY} from "@/app/verify/[assistantId]/[threadId]/[gameId]/[runId]/[messageId]/types";
+import {OPENAI_API_KEY} from "@/app/verify/[gameId]/types";
 
 interface VerifyChatProps {
     threadId: string

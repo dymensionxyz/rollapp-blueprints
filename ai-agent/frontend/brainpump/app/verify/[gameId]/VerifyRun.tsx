@@ -4,7 +4,7 @@ import {useState} from "react"
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card"
 import {Button} from "@/components/ui/button"
 import {Check, Copy, Loader2} from "lucide-react"
-import {OPENAI_API_KEY} from "@/app/verify/[assistantId]/[threadId]/[gameId]/[runId]/[messageId]/types";
+import {OPENAI_API_KEY} from "@/app/verify/[gameId]/types";
 
 interface VerifyRunProps {
     threadId: string
