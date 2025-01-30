@@ -1,11 +1,9 @@
-use crate::msg::{
-    Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg,
-};
+use crate::msg::{Config, Direction, ExecuteMsg, ListOptionsResponse, MigrateMsg, OptionInfo, PlaceOptionMsg, QueryMsg};
 use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
 use crate::token_fatory::{MsgBurn, MsgMint};
 use cosmwasm_std::{entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
-    Order, Response, StdError, StdResult};
+                   Order, Response, StdError, StdResult};
 use cw_storage_plus::Bound;
 use prost::Message;
 
@@ -199,6 +197,11 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_list_options_by_user(deps, deps.api.addr_validate(&user.as_str())?, start_after, limit)?)
         }
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new().add_attribute("migrate", "success"))
 }
 
 fn query_option(deps: Deps, option_id: u64) -> StdResult<OptionInfo> {

@@ -71,3 +71,5 @@ pub struct Config {
     pub expiration_period: u64,
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}
