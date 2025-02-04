@@ -83,6 +83,7 @@ export const GameContextProvider = ({ children }: { children: ReactNode }) => {
     const [ drawCount, setDrawCount ] = useState<number>(0);
     const [ requestedDrawShortInfo, setRequestedDrawShortInfo ] = useState<DrawInfo | null>(null)
     const [ requestedTickets, setRequestedTickets ] = useState<Ticket[]>([]);
+    const [ prepareFinalizeCalled, setPrepareFinalizeCalled ] = useState<boolean>(false);
 
     const {
         setTimeLeft
@@ -106,7 +107,7 @@ export const GameContextProvider = ({ children }: { children: ReactNode }) => {
                 .then((result) => {
                     const remainingTimeSeconds = Number(result?.toString() || '0'); // оставшееся время в секундах
                     const currentTimeSeconds = Math.floor(Date.now() / 1000); // текущее время в секундах
-                    const timeLeft = remainingTimeSeconds - currentTimeSeconds; // разница во времени в секундах
+                    const timeLeft = Math.max(remainingTimeSeconds - currentTimeSeconds, 0); // разница во времени в секундах
                     setTimeLeft(timeLeft);
                 })
                 .catch((error) => {
@@ -118,7 +119,9 @@ export const GameContextProvider = ({ children }: { children: ReactNode }) => {
             lotteryContract.methods.activeBalance().call()
                 .then((result) => setHouseBalance(formatEther(result?.toString() || '0'))),
             lotteryContract.methods.getDrawCount().call()
-                .then((result) => setDrawCount(Number(result?.toString() || '0')))
+                .then((result) => setDrawCount(Number(result?.toString() || '0'))),
+            lotteryContract.methods.curDraw().call()
+                .then((result) => setPrepareFinalizeCalled(result?.prepareFinalizeCalled))
         ];
 
         Promise.all(promises).catch((error) => {
@@ -131,6 +134,11 @@ export const GameContextProvider = ({ children }: { children: ReactNode }) => {
 
     const purchaseTicket = useCallback((retry?: boolean) => {
         if (!hexAddress || contractMessageToExecute || (!retry && broadcastingMessage)) {
+            return;
+        }
+
+        if (prepareFinalizeCalled) {
+            showErrorToast(`Purchasing tickets for the current draw is blocked. Winners computing process has been started.`);
             return;
         }
 

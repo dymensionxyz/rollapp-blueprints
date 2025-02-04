@@ -49,7 +49,7 @@ export default function DrawHistory({ drawHistory }: DrawHistoryProps) {
             totalWinnings: 0
         }
         const paginatedDraws = Array.from({ length: endIndex - startIndex }, (_, index) => ({
-            id: startIndex + index,
+            id: drawCount - 1 - (startIndex + index),
             data: empty
         }));
 

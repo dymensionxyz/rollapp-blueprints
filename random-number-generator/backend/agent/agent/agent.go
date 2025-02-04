@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/go-chi/chi/v5"
 	"log/slog"
 	"net/http"
-	"strconv"
-	"sync"
-	"time"
-
-	"github.com/go-chi/chi/v5"
 	"randomnessgenerator/agent/contract"
 	"randomnessgenerator/agent/external"
 	"randomnessgenerator/agent/repository"
+	"strconv"
+	"time"
 )
 
 type Agent struct {
@@ -63,44 +61,38 @@ func (a *Agent) Run(ctx context.Context) {
 		a.logger.Info("Got unprocessed randomness", "count", len(ps), "randomness", ps)
 		// We don't care about batching. We can process each event individually.
 		// If there are any errors, we will skip the event and try processing it on the next poll.
-		var wg sync.WaitGroup
-		wg.Add(len(ps))
 		for _, p := range ps {
-			go func() {
-				defer wg.Done()
-				a.logger.Info("Processing randomness", "randId", p.RandomnessId)
-				// External query is not a stateful operation, it can fail without side effects.
-				r, err := a.external.GetRandomness(ctx)
-				if err != nil {
-					a.logger.With("error", err, "randID", p.RandomnessId).
-						Error("Error on submitting randomness")
-					return
-				}
+			a.logger.Info("Processing randomness", "randId", p.RandomnessId)
+			// External query is not a stateful operation, it can fail without side effects.
+			r, err := a.external.GetRandomness(ctx)
+			if err != nil {
+				a.logger.With("error", err, "randID", p.RandomnessId).
+					Error("Error on submitting randomness")
+				return
+			}
 
-				a.logger.Info("Got randomness", "randID", p.RandomnessId, "answer", r.Randomness)
-				// Committing the result is a stateful operation. If it fails, we do not want to
-				// save the result to the repository. Contract should ensure that commit is atomic.
-				err = a.contract.PostRandomness(ctx, p.RandomnessId, r.Randomness)
-				if err != nil {
-					a.logger.With("error", err, "randID", p.RandomnessId).
-						Info("Error on submitting answer to contract")
-					return
-				}
+			a.logger.Info("Got randomness", "randID", p.RandomnessId, "answer", r.Randomness)
+			// Committing the result is a stateful operation. If it fails, we do not want to
+			// save the result to the repository. Contract should ensure that commit is atomic.
+			err = a.contract.PostRandomness(ctx, p.RandomnessId, r.Randomness)
+			if err != nil {
+				a.logger.With("error", err, "randID", p.RandomnessId).
+					Info("Error on submitting answer to contract")
+				return
+			}
 
-				a.logger.Info("Answer committed to contract", "randID", p.RandomnessId, "answer", r)
-				// It's not a big deal if we fail to save the response. At this point, the result
-				// is already committed to the contract, so this event will not be processed again.
-				err = a.repo.Save(p.RandomnessId, repository.Answer{
-					RandomnessResponse: r,
-				})
-				if err != nil {
-					a.logger.With("error", err, "randID", p.RandomnessId).
-						Info("Error on saving response to DB")
-					return
-				}
-			}()
+			a.logger.Info("Answer committed to contract", "randID", p.RandomnessId, "answer", r)
+			// It's not a big deal if we fail to save the response. At this point, the result
+			// is already committed to the contract, so this event will not be processed again.
+			err = a.repo.Save(p.RandomnessId, repository.Answer{
+				RandomnessResponse: r,
+			})
+			if err != nil {
+				a.logger.With("error", err, "randID", p.RandomnessId).
+					Info("Error on saving response to DB")
+				return
+			}
 		}
-		wg.Wait()
 	}
 }
 

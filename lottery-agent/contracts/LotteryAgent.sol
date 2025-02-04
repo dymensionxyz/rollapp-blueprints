@@ -157,6 +157,7 @@ contract LotteryAgent is Ownable {
 
     // Function to check if all randomness has been posted
     function allRandomnessPostedForCurDraw() public view returns (bool) {
+        require(curDraw.prepareFinalizeCalled, "prepareFinalizeCalled wasn't called and allRandomnessPostedForCurDraw requested")
         for (uint i = 0; i < curDraw.randomnessIDs.length; i++) {
             if (randomnessGenerator.getRandomness(curDraw.randomnessIDs[i]) == 0) {
                 return false;
