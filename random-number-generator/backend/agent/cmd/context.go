@@ -17,15 +17,10 @@ type Context struct {
 }
 
 // InitContext initializes Context from config file and cmd flags
-func InitContext() (Context, error) {
+func InitContext(configPath string) (Context, error) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	homeDir, err := GetHomeDir()
-	if err != nil {
-		return Context{}, fmt.Errorf("can't get home dir: %w", err)
-	}
-
-	configPath := filepath.Join(homeDir, "config", configFile)
+	homeDir := filepath.Dir(configPath)
 
 	cfg, err := GetConfig(configPath)
 	if err != nil {

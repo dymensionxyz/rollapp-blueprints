@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"github.com/spf13/cobra"
+
 	"randomnessgenerator/agent/agent"
 	"randomnessgenerator/agent/contract"
 	"randomnessgenerator/agent/external"
@@ -22,9 +23,7 @@ const (
 	configFile     = configFileName + "." + configFileExt
 )
 
-var (
-	DefaultAppDir = ".rollapp-agent"
-)
+var DefaultAppDir = ".rollapp-agent"
 
 // RootCmd builds commands for the CLI
 func RootCmd() (*cobra.Command, error) {
@@ -43,12 +42,10 @@ func InitCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-			homeDir, err := GetHomeDir()
+			configPath, err := cmd.Flags().GetString("config-path")
 			if err != nil {
-				return fmt.Errorf("get home dir: %w", err)
+				return fmt.Errorf("get config path flag: %w", err)
 			}
-
-			configPath := filepath.Join(homeDir, "config")
 
 			err = InitConfig(logger, configPath, configFile)
 			if err != nil {
@@ -58,6 +55,12 @@ func InitCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	err := addConfigFlags(cmd)
+	if err != nil {
+		panic(err)
+	}
+
 	return cmd
 }
 
@@ -66,7 +69,12 @@ func StartCmd() *cobra.Command {
 		Use:   "start",
 		Short: "Start agent",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmdCtx, err := InitContext()
+			configPath, err := cmd.Flags().GetString("config-path")
+			if err != nil {
+				return fmt.Errorf("get config path flag: %w", err)
+			}
+
+			cmdCtx, err := InitContext(configPath)
 			if err != nil {
 				return fmt.Errorf("init command context: %w", err)
 			}
@@ -86,9 +94,15 @@ func StartCmd() *cobra.Command {
 				return fmt.Errorf("new levelDB: %w", err)
 			}
 
-			aiAgent := agent.NewAgent(cmdCtx.Logger, cmdCtx.Config.Agent.HTTPServerAddress, rng, rngService, levelDB)
+			rngAgent := agent.NewAgent(
+				cmdCtx.Logger,
+				cmdCtx.Config.Agent.HTTPServerAddress,
+				rng,
+				rngService,
+				levelDB,
+			)
 
-			go aiAgent.Run(ctx)
+			go rngAgent.Run(ctx)
 
 			cmdCtx.Logger.Info("Agent started")
 
@@ -97,12 +111,29 @@ func StartCmd() *cobra.Command {
 			<-stop
 
 			cancel()
-			_ = aiAgent.Close()
+			_ = rngAgent.Close()
 
 			cmdCtx.Logger.Info("Agent stopped")
 
 			return nil
 		},
 	}
+
+	err := addConfigFlags(cmd)
+	if err != nil {
+		panic(err)
+	}
+
 	return cmd
+}
+
+func addConfigFlags(cmd *cobra.Command) error {
+	defaultConfigPath, err := GetHomeDir()
+	if err != nil {
+		return fmt.Errorf("get default config path: %w", err)
+	}
+
+	cmd.Flags().StringP("config-path", "", filepath.Join(defaultConfigPath, configFile), "config file")
+
+	return nil
 }
