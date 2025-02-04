@@ -7,6 +7,7 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"math/big"
@@ -79,7 +80,11 @@ func (rs *RandomService) handleGenerate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	response := fmt.Sprintf(`{"requestID": "%s", "randomness": "%s"}`, requestID, randomness.String())
+	response := fmt.Sprintf(
+		`{"requestID": "%s", "randomness": "%s"}`,
+		requestID,
+		randomness.String(),
+	)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte(response))
 }
@@ -124,7 +129,11 @@ func (rs *RandomService) handleRandomness(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	err = json.NewEncoder(w).Encode(response)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("error encoding response to JSON: %v", err), http.StatusInternalServerError)
+		http.Error(
+			w,
+			fmt.Sprintf("error encoding response to JSON: %v", err),
+			http.StatusInternalServerError,
+		)
 		return
 	}
 }
@@ -152,10 +161,15 @@ func (rs *RandomService) StartHTTPServer(ctx context.Context, address string) er
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
+	dbPath := flag.String("dbpath", "./db_randomness_service", "Path to LevelDB database")
+	flag.Parse()
+
 	config := Config{
 		HTTPServerAddr: ":8090",
-		LevelDBPath:    "./db_randomness_service",
+		LevelDBPath:    *dbPath,
 	}
+
+	log.Printf("dbpath: %s", config.LevelDBPath)
 
 	rs, err := NewRandomnessService(config)
 	if err != nil {
