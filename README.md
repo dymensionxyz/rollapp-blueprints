@@ -11,6 +11,7 @@
   - [AI Agent](#ai-agent)
   - [Binary Option](#binary-option)
   - [Random Number Generator](#random-number-generator)
+- [Oracle Contracts](#oracle-contracts)
 - [Installation](#installation)
 - [Usage](#usage)
 - [Contributing](#contributing)
@@ -35,6 +36,19 @@ A binary options application utilizing a price oracle to facilitate trading base
 A deterministic random number generator suitable for various applications requiring unpredictability.
 
 - **[Read the README](./random-number-generator/README.md)** for installation and usage instructions.
+
+## Oracle Contracts
+
+The `oracle-contracts` directory contains the core smart contracts used across all RollApp examples for oracle functionality:
+
+- Base oracle implementations
+- Interface definitions
+- Common utilities and helper contracts
+- Shared oracle types and structures
+
+These contracts serve as the foundation for oracle integration in the example RollApps. Each RollApp implements and extends these base contracts according to its specific requirements.
+
+- **[Read the README](./oracle-contracts/README.md)** for detailed documentation on the oracle contracts.
 
 ## Installation
 
