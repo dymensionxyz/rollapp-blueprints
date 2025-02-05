@@ -28,7 +28,7 @@ Use [roller](https://docs.dymension.xyz/launch/quickstart#roller-installation) t
 
 ## Step 2: Transferring Tokens
 
-To deploy the RNG contract, you need sufficient gas. Follow these steps to fund your deploy account:
+To deploy the RNG contract, you need sufficient gas. Follow these steps to fund your deploy account (or simply use [roller](https://docs.dymension.xyz/launch/integrate/rng-oracle)):
 
 1. **Identify the Deploy Account Address**
 
