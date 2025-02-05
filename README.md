@@ -2,7 +2,7 @@
 
 ## Overview
 
-**rollapp-blueprints** is a collection of blueprints designed to help you bootstrap RollApps which require Oracle. This repository provides three example RollApps to demonstrate various functionalities and use cases.
+**rollapp-blueprints** is a collection of blueprints designed to help you bootstrap RollApps which require Oracles. This repository provides three example RollApps to demonstrate various functionalities and use cases.
 
 ## Table of Contents
 
@@ -15,7 +15,6 @@
 - [Usage](#usage)
 - [Contributing](#contributing)
 - [License](#license)
-- [Contact](#contact)
 
 ## Examples
 
@@ -23,13 +22,13 @@
 
 Desmos is an AI Agent built on EVM and launched as a RollApp. Users can double their money by trying to jailbreak Desmos to choose a specific number within a range by providing a jailbreak prompt. All revenue made by Desmos is being distributed by it's stakers.
 
-- **[Read the README](./ai-agent/README.md)** for installation and usage instructions.
+- **[Read the README](./desmos-ai-agent/README.md)** for installation and usage instructions.
 
 ### Binary Option
 
 A binary options application utilizing a price oracle to facilitate trading based on asset price movements.
 
-- **[Read the README](./binary-option/README.md)** for installation and usage instructions.
+- **[Read the README](./binary-options/README.md)** for installation and usage instructions.
 
 ### Random Number Generator
 
