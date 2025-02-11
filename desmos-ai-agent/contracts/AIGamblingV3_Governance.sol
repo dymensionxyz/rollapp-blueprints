@@ -2,14 +2,14 @@
 pragma solidity ^0.8.18;
 
 import {AIOracle} from "./AIOracle.sol";
-import {HouseV2} from "./HouseV2.sol";
+import {HouseV3_Governance} from "./HouseV3_Governance.sol";
 
 /**
  * @title AIGambling
  * @dev A contract for placing bets and resolving them using an AI system.
  * Inherits from the House contract to manage balances and the AIOracle contract to interact with the AI.
  */
-contract AIGamblingV2 is HouseV2 {
+contract AIGamblingV3_Governance is HouseV3_Governance {
     /**
      * @dev Structure to represent the game information.
      * @param houseSupply The total supply of the house.
@@ -73,7 +73,7 @@ contract AIGamblingV2 is HouseV2 {
      */
     function initialize(address _initialOwner, address _aiOracle) public initializer {
         require(_aiOracle != address(0), "Invalid AIOracle address");
-        HouseV2.__House_init(_initialOwner);
+        HouseV3_Governance.__House_init(_initialOwner);
 
         aiOracle = AIOracle(_aiOracle);
     }

@@ -94,7 +94,7 @@ export const AIGamblingABI = [
                     }
                 ],
                 "indexed": false,
-                "internalType": "struct AIGamblingV1.Bet",
+                "internalType": "struct AIGamblingV2_Dividends.Bet",
                 "name": "bet",
                 "type": "tuple"
             }
@@ -160,7 +160,7 @@ export const AIGamblingABI = [
                     }
                 ],
                 "indexed": false,
-                "internalType": "struct AIGamblingV1.Bet",
+                "internalType": "struct AIGamblingV2_Dividends.Bet",
                 "name": "bet",
                 "type": "tuple"
             }
@@ -218,6 +218,11 @@ export const AIGamblingABI = [
             {
                 "internalType": "address",
                 "name": "_initialOwner",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_feeCollector",
                 "type": "address"
             }
         ],
@@ -356,10 +361,23 @@ export const AIGamblingABI = [
         "type": "function"
     },
     {
+        "inputs": [],
+        "name": "dividendsCollectorAddress",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
         "inputs": [
             {
                 "internalType": "uint256",
-                "name": "",
+                "name": "amount",
                 "type": "uint256"
             }
         ],
@@ -371,7 +389,7 @@ export const AIGamblingABI = [
                 "type": "uint256"
             }
         ],
-        "stateMutability": "pure",
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -425,7 +443,7 @@ export const AIGamblingABI = [
                         "type": "uint256"
                     }
                 ],
-                "internalType": "struct AIGamblingV1.GameInfo",
+                "internalType": "struct AIGamblingV2_Dividends.GameInfo",
                 "name": "",
                 "type": "tuple"
             }
@@ -491,7 +509,7 @@ export const AIGamblingABI = [
                         "type": "bool"
                     }
                 ],
-                "internalType": "struct AIGamblingV1.Bet[]",
+                "internalType": "struct AIGamblingV2_Dividends.Bet[]",
                 "name": "",
                 "type": "tuple[]"
             }
@@ -586,6 +604,11 @@ export const AIGamblingABI = [
             {
                 "internalType": "address",
                 "name": "_aiOracle",
+                "type": "address"
+            },
+            {
+                "internalType": "address",
+                "name": "_feeCollector",
                 "type": "address"
             }
         ],
@@ -700,6 +723,19 @@ export const AIGamblingABI = [
             }
         ],
         "name": "updateCommunityPoolPercentage",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "feeCollector",
+                "type": "address"
+            }
+        ],
+        "name": "updateDividendsCollector",
         "outputs": [],
         "stateMutability": "nonpayable",
         "type": "function"
