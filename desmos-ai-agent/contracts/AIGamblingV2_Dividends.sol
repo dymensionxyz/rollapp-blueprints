@@ -141,6 +141,7 @@ contract AIGamblingV2_Dividends is HouseV2_Dividends {
                 bet.communityFee = communityFee;
                 bet.won = true;
 
+                collectFee(communityFee);
                 addBalance(msg.sender, reward);
             }
         } else {
