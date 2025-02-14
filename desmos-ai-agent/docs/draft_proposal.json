@@ -3,6 +3,7 @@
     {
       "@type": "/rollapp.dividends.MsgCreateGauge",
       "authority": "ethm10d07y265gmmuvt4z0w9aw880jnsr700jpva843",
+      "approved_denoms": ["erc20/0x80b5a32E4F032B2a058b4F29EC95EEfEEB87aDcd"],
       "query_condition": {
         "stakers": {}
       },
