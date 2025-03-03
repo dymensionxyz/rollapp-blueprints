@@ -176,12 +176,14 @@ fn execute_settle_option(
             .add_attribute("action", "settle_option")
             .add_attribute("option_id", option_id.to_string())
             .add_attribute("result", "won")
-            .add_attribute("payout", payout_amount.to_string()))
+            .add_attribute("payout", payout_amount.to_string())
+            .add_attribute("current_price", current_price.to_string()))
     } else {
         Ok(Response::new()
             .add_attribute("action", "settle_option")
             .add_attribute("option_id", option_id.to_string())
-            .add_attribute("result", "lost"))
+            .add_attribute("result", "lost")
+            .add_attribute("current_price", current_price.to_string()))
     }
 }
 
