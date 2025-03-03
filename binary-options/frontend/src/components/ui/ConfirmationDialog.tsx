@@ -25,9 +25,9 @@ const ConfirmationDialog = ({ isOpen, direction, onConfirm, onCancel, betAmount 
                 <AlertDialogHeader>
                     <AlertDialogTitle className="mb-4">Confirm Your Bet</AlertDialogTitle> {/* Añadido mb-4 */}
                     <AlertDialogDescription>
-                        You are betting {betAmount} {config.screenDenom} that the price
+                        You are betting {Intl.NumberFormat().format(betAmount)} {config.screenDenom} that the price
                         {direction === 'up' ? ' will go up ' : ' will go down '}
-                        in 5 minutes.
+                        in 60 seconds.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 

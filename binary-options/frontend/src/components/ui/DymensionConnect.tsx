@@ -5,8 +5,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Wallet } from "lucide-react";
 
-const DYMENSION_CONNECT_URL = 'https://testnet.dymension.xyz';
-const DYMENSION_CONNECT_NETWORK_IDS = ['upordown_30607-1'];
+const DYMENSION_CONNECT_URL = 'https://portal.dymension.xyz';
+const DYMENSION_CONNECT_NETWORK_IDS = ['upordowngame_689603-1'];
 
 interface DymensionConnectProps {
     onTxStatus?: (status: 'success' | 'error', txData?: any) => void;
@@ -37,18 +37,7 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
 
     const initModal = useCallback(() => {
         updateTriggerBoundingRect();
-        sendMessage({
-            type: 'setStyles',
-            styles: {
-                '--black-light': 'rgb(63 81 59)',
-                '--black-light-rgb': '63, 81, 59',
-                '--black-dark': 'rgb(27 40 24)',
-                '--black-dark-rgb': '27, 40, 24',
-                '--background-color': 'rgb(42 59 42)',
-                '--background-color-secondary': 'rgb(63 78 63)'
-            }
-        });
-        sendMessage({ type: 'setMenuAlign', align: 'center' });
+        sendMessage({ type: 'setMenuAlign', align: 'right' });
     }, [sendMessage, updateTriggerBoundingRect]);
 
     useEffect(() => {
@@ -128,7 +117,7 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
     }));
 
     return (
-        <div className="flex items-center space-x-2 relative">
+        <div className="flex items-center relative">
             <button
                 disabled={!dymensionConnectReady}
                 ref={buttonRef}
@@ -150,10 +139,10 @@ export const DymensionConnect = forwardRef((props: DymensionConnectProps, ref) =
             </button>
 
             {!isConnected && (
-                <div className="absolute top-full left-0 mt-3 w-full min-w-[200px]">
+                <div className="absolute top-full right-0 mt-4 w-full min-w-[220px]">
                     <div className="bg-[rgb(60,179,113)] text-black px-3 py-2 rounded-md text-sm font-medium animate-bounce">
                         🔥 Connect to start winning!
-                        <div className="absolute -top-1 left-4 w-3 h-3 bg-[rgb(60,179,113)] rotate-45"></div>
+                        <div className="absolute -top-1 right-16 w-3 h-3 bg-[rgb(60,179,113)] rotate-45"></div>
                     </div>
                 </div>
             )}

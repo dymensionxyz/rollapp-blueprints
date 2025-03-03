@@ -34,14 +34,14 @@ export const BetAmountSelector = ({
                     <button
                         key={amount}
                         onClick={() => onAmountChange(amount)}
-                        className={`p-3 rounded-lg border-2 transition-all ${
+                        className={`flex p-3 text-[#f5f5f5] items-center font-bold text-[18px] justify-center rounded-lg border-2 transition-all ${
                             selectedAmount === amount
                                 ? "border-green-400 bg-green-400/10 scale-105"
                                 : "border-gray-600 hover:border-green-300 hover:bg-green-400/5"
                         }`}
                     >
-                        <span className="text-xl font-bold">{amount}</span>
-                        <span className="block text-xs text-gray-400 mt-1">{config.screenDenom}</span>
+                        {Intl.NumberFormat().format(amount)}
+                        <span className="block ml-1 text-[#f7931a]">{config.screenDenom}</span>
                     </button>
                 ))}
             </div>
@@ -52,9 +52,9 @@ export const BetAmountSelector = ({
                     value={customAmount}
                     onChange={handleCustomChange}
                     placeholder="Custom amount"
-                    className="w-full p-3 bg-gray-800 rounded-lg border-2 border-gray-600 focus:border-green-400 focus:ring-2 focus:ring-green-400/30 pr-20"
+                    className="w-full text-[#f5f5f5] text-[18px] p-3 bg-gray-800 rounded-lg border-2 border-gray-600 focus:border-green-400 focus:ring-2 focus:ring-green-400/30 pr-20"
                 />
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#f7931a] text-[18px] font-bold">
                     {config.screenDenom}
                 </div>
             </div>

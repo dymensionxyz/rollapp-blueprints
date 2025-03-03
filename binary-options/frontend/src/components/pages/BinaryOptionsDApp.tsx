@@ -1,42 +1,42 @@
-'use client'
+'use client';
 
 // @ts-ignore
 import React, { useState, useEffect, useRef } from 'react';
+import TradingViewWidget from '../trading-view-widget/TradingViewWidget';
 
-import { DymensionConnect } from "../ui/DymensionConnect";
-import config from "../../config/config";
-import BtcPriceDisplay from "../ui/BtcPriceDisplay";
-import BetHistoryList, {BetHistoryItem} from "../ui/BetHistoryList";
-import ConfirmationDialog from "../ui/ConfirmationDialog";
-import BetButton from "../ui/BetButton";
-import logo from "../../assets/logo.png";
+import { DymensionConnect } from '../ui/DymensionConnect';
+import config from '../../config/config';
+import BtcPriceDisplay from '../ui/BtcPriceDisplay';
+import BetHistoryList, { BetHistoryItem } from '../ui/BetHistoryList';
+import ConfirmationDialog from '../ui/ConfirmationDialog';
+import BetButton from '../ui/BetButton';
+import logo from '../../assets/logo.png';
 import { useReward } from 'react-rewards';
-import { BetOutcomeAnimation } from '../ui/BetOutcomeAnimation'
-import {BetAmountSelector} from "../ui/BetAmountSelector";
-
+import { BetOutcomeAnimation } from '../ui/BetOutcomeAnimation';
+import { BetAmountSelector } from '../ui/BetAmountSelector';
 
 
 const PRICE_UPDATE_INTERVAL = 15;
 
 const BinaryOptionsDApp = () => {
-    const [currentPrice, setCurrentPrice] = useState<number | null>(null);
-    const [timeLeft, setTimeLeft] = useState(PRICE_UPDATE_INTERVAL);
-    const [selectedDirection, setSelectedDirection] = useState<'up' | 'down' | null>(null);
-    const [showConfirmation, setShowConfirmation] = useState(false);
-    const [betHistory, setBetHistory] = useState<BetHistoryItem[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [userBalance, setUserBalance] = useState<string>("0");
-    const [isBalanceLoading, setIsBalanceLoading] = useState(false);
-    const [balanceError, setBalanceError] = useState<string | null>(null);
-    const [lastTxHash, setLastTxHash] = useState<string | null>(null);
-    const [txNotification, setTxNotification] = useState<{
+    const [ currentPrice, setCurrentPrice ] = useState<number | null>(null);
+    const [ timeLeft, setTimeLeft ] = useState(PRICE_UPDATE_INTERVAL);
+    const [ selectedDirection, setSelectedDirection ] = useState<'up' | 'down' | null>(null);
+    const [ showConfirmation, setShowConfirmation ] = useState(false);
+    const [ betHistory, setBetHistory ] = useState<BetHistoryItem[]>([]);
+    const [ isLoading, setIsLoading ] = useState(true);
+    const [ error, setError ] = useState<string | null>(null);
+    const [ userBalance, setUserBalance ] = useState<string>('0');
+    const [ isBalanceLoading, setIsBalanceLoading ] = useState(false);
+    const [ balanceError, setBalanceError ] = useState<string | null>(null);
+    const [ lastTxHash, setLastTxHash ] = useState<string | null>(null);
+    const [ txNotification, setTxNotification ] = useState<{
         message: string;
         type: 'pending' | 'success' | 'error';
     } | null>(null);
-    const [settlingIds, setSettlingIds] = useState<number[]>([]);
-    const [currentOutcome, setCurrentOutcome] = useState<'win' | 'loss' | null>(null)
-    const [betAmount, setBetAmount] = useState<string>(config.betAmount);
+    const [ settlingIds, setSettlingIds ] = useState<number[]>([]);
+    const [ currentOutcome, setCurrentOutcome ] = useState<'win' | 'loss' | null>(null);
+    const [ betAmount, setBetAmount ] = useState<string>(config.betAmount);
 
     const dymensionConnectRef = useRef<{
         address?: string;
@@ -48,13 +48,13 @@ const BinaryOptionsDApp = () => {
         elementCount: 150,
         spread: 100,
         lifetime: 300,
-        colors: ['#FFD700', '#FF0000', '#00FF00', '#0000FF']
+        colors: [ '#FFD700', '#FF0000', '#00FF00', '#0000FF' ],
     });
     const { reward: explosionReward } = useReward('explosionReward', 'emoji', {
-        emoji: ['💥','😭','💸','🔥'],
+        emoji: [ '💥', '😭', '💸', '🔥' ],
         elementCount: 20,
         spread: 100,
-        lifetime: 300
+        lifetime: 300,
     });
 
     const fetchUserBalance = async () => {
@@ -64,23 +64,25 @@ const BinaryOptionsDApp = () => {
 
             const address = dymensionConnectRef.current?.address;
             if (!address) {
-                setBalanceError("Wallet not connected");
+                setBalanceError('Wallet not connected');
                 return;
             }
 
             const response = await fetch(
-                `${config.apiBaseUrl}/cosmos/bank/v1beta1/balances/${address}`
+                `${config.apiBaseUrl}/cosmos/bank/v1beta1/balances/${address}`,
             );
 
-            if (!response.ok) throw new Error("Error fetching balance");
+            if (!response.ok) {
+                throw new Error('Error fetching balance');
+            }
 
             const { balances } = await response.json();
-            const auodBalance = balances.find((c: any) => c.denom === "auod")?.amount || "0";
+            const auodBalance = balances.find((c: any) => c.denom === 'auod')?.amount || '0';
 
             setUserBalance(auodBalance);
         } catch (err) {
-            console.error("Balance fetch failed:", err);
-            setBalanceError("Error fetching balance");
+            console.error('Balance fetch failed:', err);
+            setBalanceError('Error fetching balance');
         } finally {
             setIsBalanceLoading(false);
         }
@@ -88,22 +90,24 @@ const BinaryOptionsDApp = () => {
 
     const handleSettleOption = async (optionId: number) => {
         try {
-            if (!dymensionConnectRef.current?.address) return;
+            if (!dymensionConnectRef.current?.address) {
+                return;
+            }
 
-            setSettlingIds(prev => [...prev, optionId]);
+            setSettlingIds(prev => [ ...prev, optionId ]);
 
             const msg = {
-                type: "executeTx",
+                type: 'executeTx',
                 messages: [
                     {
-                        typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+                        typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
                         value: {
                             sender: dymensionConnectRef.current.address,
                             contract: config.binaryOptionsContractAddress,
                             msg: new TextEncoder().encode(
                                 JSON.stringify({
                                     settle_option: { option_id: optionId },
-                                })
+                                }),
                             ),
                             funds: [],
                         },
@@ -113,7 +117,7 @@ const BinaryOptionsDApp = () => {
 
             await dymensionConnectRef.current.sendMessage(msg);
         } catch (error) {
-            console.error("Error settling option:", error);
+            console.error('Error settling option:', error);
             setSettlingIds(prev => prev.filter(id => id !== optionId));
         }
     };
@@ -124,44 +128,48 @@ const BinaryOptionsDApp = () => {
             fetchUserBalance();
         } else {
             setBetHistory([]);
-            setUserBalance("0");
+            setUserBalance('0');
         }
     };
 
     const fetchBetHistory = async () => {
         try {
             const userAddress = dymensionConnectRef.current?.address;
-            if (!userAddress) return [];
+            if (!userAddress) {
+                return [];
+            }
 
             const query = {
                 list_options_by_user: {
                     user: userAddress,
                     start_after: null,
-                    limit: 10
-                }
+                    limit: 10,
+                },
             };
 
             const encodedQuery = btoa(JSON.stringify(query));
             const url = `${config.apiBaseUrl}/cosmwasm/wasm/v1/contract/${config.binaryOptionsContractAddress}/smart/${encodedQuery}`;
 
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Error fetching history');
+            if (!response.ok) {
+                throw new Error('Error fetching history');
+            }
 
             const { data } = await response.json();
             const formattedHistory = data.options.map((option: any) => ({
                 id: option.id,
-                direction: option.direction === "up" ? "up" : "down",
+                direction: option.direction === 'up' ? 'up' : 'down',
                 strikePrice: parseFloat(option.strike_price),
                 expiration: option.expiration,
                 betAmount: `${parseInt(option.bet_amount.amount) / config.denomPrecision} ${config.screenDenom}`,
                 outcome: option.outcome,
-                settled: option.settled
+                settled: option.settled,
             }));
 
             setBetHistory(formattedHistory);
             return formattedHistory;
         } catch (err) {
-            console.error("Failed to load bet history:", err);
+            console.error('Failed to load bet history:', err);
             return [];
         }
     };
@@ -173,7 +181,7 @@ const BinaryOptionsDApp = () => {
             }, 5000);
             return () => clearTimeout(timer);
         }
-    }, [txNotification]);
+    }, [ txNotification ]);
 
     useEffect(() => {
         let intervalId: NodeJS.Timeout;
@@ -189,7 +197,7 @@ const BinaryOptionsDApp = () => {
         intervalId = setInterval(checkAndFetchBalance, 500);
 
         return () => clearInterval(intervalId);
-    }, [dymensionConnectRef.current?.address]);
+    }, [ dymensionConnectRef.current?.address ]);
 
     const fetchBTCPrice = async () => {
         try {
@@ -207,10 +215,14 @@ const BinaryOptionsDApp = () => {
 
             console.log(`Fetching BTC price from contract: ${url}`);
             const response = await fetch(url);
-            if (!response.ok) throw new Error('Failed to fetch BTC price');
+            if (!response.ok) {
+                throw new Error('Failed to fetch BTC price');
+            }
 
             const { data } = await response.json();
-            if (!data?.price) throw new Error('Price data missing');
+            if (!data?.price) {
+                throw new Error('Price data missing');
+            }
 
             setCurrentPrice(parseFloat(data.price));
         } catch (err) {
@@ -240,9 +252,9 @@ const BinaryOptionsDApp = () => {
             await Promise.all([
                 fetchBTCPrice(),
                 fetchUserBalance(),
-                fetchBetHistory()
+                fetchBetHistory(),
             ]);
-        }
+        };
 
         const interval = setInterval(fetchBetHistory, 30000);
         fetchData();
@@ -257,7 +269,7 @@ const BinaryOptionsDApp = () => {
             }, 1000);
             return () => clearInterval(timer);
         }
-    }, [timeLeft]);
+    }, [ timeLeft ]);
 
     const handleDirectionSelect = (direction: 'up' | 'down') => {
         setSelectedDirection(direction);
@@ -265,12 +277,14 @@ const BinaryOptionsDApp = () => {
     };
 
     const handleConfirmBet = async () => {
-        if (!selectedDirection || !betAmount) return;
+        if (!selectedDirection || !betAmount) {
+            return;
+        }
 
         if (Number(userBalance) < Number(betAmount) * config.denomPrecision) {
             setTxNotification({
                 message: 'Insufficient balance',
-                type: 'error'
+                type: 'error',
             });
 
             return;
@@ -281,33 +295,33 @@ const BinaryOptionsDApp = () => {
 
             if (dymensionConnectRef.current) {
                 let msg = {
-                    type: "executeTx",
+                    type: 'executeTx',
                     messages: [
                         {
-                            typeUrl: "/cosmwasm.wasm.v1.MsgExecuteContract",
+                            typeUrl: '/cosmwasm.wasm.v1.MsgExecuteContract',
                             value: {
-                                "sender": dymensionConnectRef.current.address,
-                                "contract": `${config.binaryOptionsContractAddress}`,
-                                "msg": new TextEncoder().encode(JSON.stringify({
-                                    "place_option": {
-                                        "direction": selectedDirection,
-                                        "bet_amount": {
-                                            "denom": config.denom,
-                                            "amount": BigInt(Number(betAmount) * config.denomPrecision).toString()
+                                'sender': dymensionConnectRef.current.address,
+                                'contract': `${config.binaryOptionsContractAddress}`,
+                                'msg': new TextEncoder().encode(JSON.stringify({
+                                    'place_option': {
+                                        'direction': selectedDirection,
+                                        'bet_amount': {
+                                            'denom': config.denom,
+                                            'amount': BigInt(Number(betAmount) * config.denomPrecision).toString(),
                                         },
-                                        "market": {
-                                            "base": config.base,
-                                            "quote": config.quote,
-                                        }
-                                    }
+                                        'market': {
+                                            'base': config.base,
+                                            'quote': config.quote,
+                                        },
+                                    },
                                 })),
-                                "funds": [
+                                'funds': [
                                     {
-                                        "denom": config.denom,
-                                        "amount": BigInt(Number(betAmount) * config.denomPrecision).toString()
-                                    }
-                                ]
-                            }
+                                        'denom': config.denom,
+                                        'amount': BigInt(Number(betAmount) * config.denomPrecision).toString(),
+                                    },
+                                ],
+                            },
                         },
                     ],
                 };
@@ -318,7 +332,7 @@ const BinaryOptionsDApp = () => {
             }
 
         } catch (error) {
-            console.error("Error placing bet:", error);
+            console.error('Error placing bet:', error);
         } finally {
             setIsLoading(false);
             setShowConfirmation(false);
@@ -331,14 +345,14 @@ const BinaryOptionsDApp = () => {
         if (status === 'success' && txData?.isNonCriticalError) {
             setTxNotification({
                 message: 'Transaction successful with warnings (check logs)',
-                type: 'pending'
+                type: 'pending',
             });
         } else {
             setTxNotification({
                 message: status === 'success'
                     ? 'Transaction confirmed in block!'
                     : `Error (Code: ${txData?.rawData?.nativeResponse?.code || 'unknown'})`,
-                type: status
+                type: status,
             });
         }
 
@@ -350,8 +364,8 @@ const BinaryOptionsDApp = () => {
                 const settleEvent = logs.flatMap((log: any) =>
                     log.events?.filter((e: any) =>
                         e.type === 'wasm' &&
-                        e.attributes?.some((a: any) => a.key === 'action' && a.value === 'settle_option')
-                    )
+                        e.attributes?.some((a: any) => a.key === 'action' && a.value === 'settle_option'),
+                    ),
                 ).flat()[0];
 
                 if (settleEvent) {
@@ -363,7 +377,7 @@ const BinaryOptionsDApp = () => {
                         const optionId = parseInt(optionIdAttr.value);
 
                         setBetHistory(prev => prev.map(bet =>
-                            bet.id === optionId ? {...bet, settled: true, outcome: outcome === 'win'} : bet
+                            bet.id === optionId ? { ...bet, settled: true, outcome: outcome === 'win' } : bet,
                         ));
 
                         if (outcome === 'win') {
@@ -387,21 +401,23 @@ const BinaryOptionsDApp = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white p-4 pb-16">
-            <div className="fixed bottom-4 right-4 space-y-2 z-[1000]">
+        <div className='min-h-screen bg-gray-900 text-white p-4 pb-16'>
+            <div className='fixed bottom-4 right-4 space-y-2 z-[1000]'>
                 {txNotification && (
-                    <div className={`p-4 rounded-lg ${
-                        txNotification.type === 'pending' ? 'bg-blue-600' :
-                            txNotification.type === 'success' ? 'bg-green-600' :
-                                'bg-red-600'
-                    } text-white flex items-center space-x-3 min-w-[300px]`}>
+                    <div
+                        className={`p-4 rounded-lg ${
+                            txNotification.type === 'pending' ? 'bg-blue-600' :
+                                txNotification.type === 'success' ? 'bg-green-600' :
+                                    'bg-red-600'
+                        } text-white flex items-center space-x-3 min-w-[300px]`}
+                    >
                         {txNotification.type === 'pending' && (
-                            <div className="animate-spin">🌀</div>
+                            <div className='animate-spin'>🌀</div>
                         )}
-                        <div className="flex-1">
-                            <div className="font-medium">{txNotification.message}</div>
+                        <div className='flex-1'>
+                            <div className='font-medium'>{txNotification.message}</div>
                             {txNotification.type === 'success' && (
-                                <div className="text-xs mt-1 opacity-80">
+                                <div className='text-xs mt-1 opacity-80'>
                                     TX Hash: {lastTxHash?.slice(0, 6)}...{lastTxHash?.slice(-4)}
                                 </div>
                             )}
@@ -411,27 +427,12 @@ const BinaryOptionsDApp = () => {
             </div>
 
             {/* Header */}
-            <div className="flex justify-between items-center mb-10 px-4 py-4 bg-gray-900">
-                <div className="bg-gray-800 px-4 py-2 rounded-lg min-w-[160px] text-center">
-                    {isBalanceLoading ? (
-                        <div className="flex items-center gap-2">
-                            <span className="animate-spin">🌀</span>
-                            Loading...
-                        </div>
-                    ) : balanceError ? (
-                        <div className="text-red-400 text-sm">{balanceError}</div>
-                    ) : (
-                        `Balance: ${(Number(userBalance) / config.denomPrecision).toFixed(2)} ${config.screenDenom}`
-                    )}
-                </div>
-
-                <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
-                    <img
-                        src={logo}
-                        alt="Logo"
-                        className="w-40 h-40 object-contain hover:scale-105 transition-transform"
-                    />
-                </div>
+            <div className='flex justify-between items-center px-4 py-4 bg-gray-900 h-20 max-[480px]:p-0'>
+                <img
+                    src={logo}
+                    alt='Logo'
+                    className='-ml-[0.7rem] w-32 h-32 object-contain hover:scale-105 transition-transform'
+                />
 
                 <DymensionConnect
                     ref={dymensionConnectRef}
@@ -440,40 +441,40 @@ const BinaryOptionsDApp = () => {
                 />
             </div>
 
-            <div className="space-y-8">
+            <div className='space-y-4 min-[720px]:space-y-8 max-w-[720px] mx-auto min-[720px]:mt-[-32px]'>
                 <BtcPriceDisplay
                     currentPrice={currentPrice}
                     isLoading={isLoading}
                     error={error}
                 />
 
-                <div className="text-center animate-pulse">
-                    <h1 className="text-5xl font-black bg-gradient-to-r from-yellow-400 to-red-500 bg-clip-text text-transparent mb-4">
-                        🚨 BITCOIN SHOWDOWN! 🚨
-                    </h1>
-                    <h2 className="text-3xl font-bold text-gray-200">
-                        WILL BTC PUMP 🚀 OR DUMP 💥 IN 5 MINUTES?
+                <TradingViewWidget />
+
+                <div className='text-center animate-pulse'>
+                    <h2 className='text-xl min-[720px]:text-2xl font-bold text-[#f5f5f5]'>
+                        WILL BTC PUMP 🚀 OR DUMP 💥 IN 60 SECONDS?
                         <span
-                            className="block mt-4 text-2xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold">
+                            className='block mt-2 min-[720px]:mt-4 text-[18px] min-[720px]:text-xl min-[720px]:text-xl bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent font-extrabold'
+                        >
             BET NOW - DOUBLE YOUR MONEY!
         </span>
                     </h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className='grid grid-cols-2 gap-4'>
                     <BetButton
-                        direction="up"
+                        direction='up'
                         onSelect={handleDirectionSelect}
-                        disabled={isLoading || !dymensionConnectRef.current?.isConnected}
+                        disabled={(isLoading && !currentPrice) || !dymensionConnectRef.current?.isConnected}
                     />
                     <BetButton
-                        direction="down"
+                        direction='down'
                         onSelect={handleDirectionSelect}
-                        disabled={isLoading || !dymensionConnectRef.current?.isConnected}
+                        disabled={(isLoading && !currentPrice) || !dymensionConnectRef.current?.isConnected}
                     />
                 </div>
 
-                <div className="text-center text-gray-400">
+                <div className='text-center text-gray-400'>
                     <BetAmountSelector
                         balance={Number(userBalance)}
                         selectedAmount={Number(betAmount)}
@@ -490,17 +491,17 @@ const BinaryOptionsDApp = () => {
                 betAmount={Number(betAmount)}
             />
 
-            <div className="mt-8 bg-gray-800 p-4 rounded-lg border border-gray-700  overflow-y-auto">
-                <h3 className="text-lg font-bold mb-4">Active Bets</h3>
+            <div className='mt-8 bg-gray-800 p-4 max-w-[720px] mx-auto rounded-lg border border-gray-700  overflow-y-auto'>
+                <h3 className='text-lg font-bold mb-4'>Active Bets</h3>
                 <BetHistoryList
                     history={betHistory}
                     onSettle={handleSettleOption}
                     settlingIds={settlingIds}
                 />
             </div>
-            <BetOutcomeAnimation outcome={currentOutcome}/>
-            <span id="confettiReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
-            <span id="explosionReward" className="fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none"/>
+            <BetOutcomeAnimation outcome={currentOutcome} />
+            <span id='confettiReward' className='fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none' />
+            <span id='explosionReward' className='fixed top-0 left-1/2 -translate-x-1/2 pointer-events-none' />
         </div>
     );
 };
