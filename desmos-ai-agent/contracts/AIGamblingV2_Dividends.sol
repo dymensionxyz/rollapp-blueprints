@@ -2,14 +2,14 @@
 pragma solidity ^0.8.18;
 
 import {AIOracle} from "./AIOracle.sol";
-import {HouseV2} from "./HouseV2.sol";
+import {HouseV2_Dividends} from "./HouseV2_Dividends.sol";
 
 /**
  * @title AIGambling
  * @dev A contract for placing bets and resolving them using an AI system.
  * Inherits from the House contract to manage balances and the AIOracle contract to interact with the AI.
  */
-contract AIGamblingV2 is HouseV2 {
+contract AIGamblingV2_Dividends is HouseV2_Dividends {
     /**
      * @dev Structure to represent the game information.
      * @param houseSupply The total supply of the house.
@@ -71,9 +71,9 @@ contract AIGamblingV2 is HouseV2 {
      * @param _initialOwner The address of the initial owner.
      * @param _aiOracle The address of the AIOracle contract.
      */
-    function initialize(address _initialOwner, address _aiOracle) public initializer {
+    function initialize(address _initialOwner, address _aiOracle, address _feeCollector) public initializer {
         require(_aiOracle != address(0), "Invalid AIOracle address");
-        HouseV2.__House_init(_initialOwner);
+        HouseV2_Dividends.__House_init(_initialOwner, _feeCollector);
 
         aiOracle = AIOracle(_aiOracle);
     }
@@ -102,14 +102,12 @@ contract AIGamblingV2 is HouseV2 {
             prompt[0] = PROMPT;
         }
 
-        uint256 communityFee = estimateCommunityFee(msg.value);
-
         uint64 promptId = aiOracle.submitPrompt(prompt);
 
         Bet memory bet = Bet({
             promptId: promptId,
-            amount: msg.value - communityFee,
-            communityFee: communityFee,
+            amount: msg.value,
+            communityFee: 0,
             guessedNumber: guessedNumber,
             correctNumber: 0,
             persuasion: persuasion,
@@ -131,15 +129,19 @@ contract AIGamblingV2 is HouseV2 {
         require(!bet.resolved, "Bet already resolved");
 
         string memory correctNumberStr = aiOracle.getAnswer(bet.promptId);
-        uint256 reward = 0;
 
         if (validateAIAnswer(correctNumberStr)) {
             // TODO: Use OpenZeppelin's Strings.parseUint256 method after v5.2.0 is released.
             bet.correctNumber = stringToUint(correctNumberStr);
 
             if (bet.guessedNumber == bet.correctNumber) {
-                reward = calculatePayment(bet.amount);
+                uint256 communityFee = estimateCommunityFee(bet.amount);
+                uint256 reward = estimateReward(bet.amount);
+
+                bet.communityFee = communityFee;
                 bet.won = true;
+
+                collectFee(communityFee);
                 addBalance(msg.sender, reward);
             }
         } else {
@@ -186,27 +188,19 @@ contract AIGamblingV2 is HouseV2 {
         return result;
     }
 
-    function calculatePayment(uint256 betAmount) internal view returns (uint256) {
-        // We generate a number between 1 and 10, inclusive. So the win chance is 1 of 10.
-        // The reward multiplier is 10 minus the house fee percentage F.
-        // So the reward is 10B - F, where B is a bet amount.
-        return (10 * betAmount * (100 - houseFeePercentage)) / 100;
-    }
-
     /**
      * @dev Function to estimate the reward for a given bet amount. The method does not count
      * the original bet amount, but only returns the pure reward. Also, it deducts the community fee.
      * @param betAmount The amount of the bet.
      * @return The estimated pure reward.
      */
-    function estimateReward(uint256 betAmount) external view returns (uint256) {
-        uint256 communityFee = estimateCommunityFee(betAmount);
+    function estimateReward(uint256 betAmount) public view returns (uint256) {
         // We generate a number between 1 and 10, inclusive. So the win chance is 1 of 10.
         // The reward multiplier is 10 minus the house fee percentage F.
         // So the reward is 10B - F, where B is a bet amount. The original bet amount is not counted,
         // and the community fee is deducted, so the result is
-        // 9 * (B - C) * (100 - F) / 100, where C is the community fee.
-        return (10 * (betAmount - communityFee) * (100 - houseFeePercentage)) / 100;
+        // 10 * (B - C) * (100 - F) / 100, where C is the community fee.
+        return betAmount * (100 - houseFeePercentage - communityPoolPercentage) / 10;
     }
 
     /**
@@ -244,7 +238,7 @@ contract AIGamblingV2 is HouseV2 {
         return history[user];
     }
 
-    function setAIOracle(address _aiOracle) external onlyGovernance {
+    function setAIOracle(address _aiOracle) external onlyOwner {
         require(_aiOracle != address(0), "Invalid AIOracle address");
         aiOracle = AIOracle(_aiOracle);
     }

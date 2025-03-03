@@ -16,7 +16,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
  * internal functions {addBalance} and {reduceBalance} to manage the balances
  * of the players.
  */
-contract HouseV2 is OwnableUpgradeable, Governance {
+contract HouseV2_Dividends is OwnableUpgradeable, FeeCollector {
     // Minimum bet amount
     uint256 public minBetAmount;
 
@@ -41,13 +41,14 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * @dev Initializes the contract setting the initial owner.
      * @param _initialOwner The address of the initial owner.
      */
-    function __House_init(address _initialOwner) public initializer {
+    function __House_init(address _initialOwner, address _feeCollector) public initializer {
         OwnableUpgradeable.__Ownable_init(_initialOwner);
 
+        dividendsCollectorAddress = _feeCollector;
         minBetAmount = 0.01 ether;
         maxBetAmountPercentage = 1;
         houseFeePercentage = 5;
-        communityPoolPercentage = 10;
+        communityPoolPercentage = 5;
     }
 
     /// @custom:oz-upgrades-unsafe-allow constructor
@@ -136,8 +137,8 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * returns 0, as the community fee is not implemented yet.
      * @return The community fee.
      */
-    function estimateCommunityFee(uint256 /*amount*/) public pure returns (uint256) {
-        return 0; // currently no community fee
+    function estimateCommunityFee(uint256 amount) public view returns (uint256) {
+        return amount * communityPoolPercentage / 100;
     }
 
     /**
@@ -152,7 +153,7 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * @dev Function to update the minimum bet amount. Only callable by the owner.
      * @param newAmount The new minimum bet amount.
      */
-    function updateMinBetAmount(uint256 newAmount) external onlyGovernance {
+    function updateMinBetAmount(uint256 newAmount) external onlyOwner {
         minBetAmount = newAmount;
     }
 
@@ -160,7 +161,7 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * @dev Function to update the maximum bet amount percentage. Only callable by the owner.
      * @param newPercentage The new maximum bet amount percentage.
      */
-    function updateMaxBetAmountPercentage(uint256 newPercentage) external onlyGovernance {
+    function updateMaxBetAmountPercentage(uint256 newPercentage) external onlyOwner {
         maxBetAmountPercentage = newPercentage;
     }
 
@@ -168,7 +169,7 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * @dev Function to update the house fee percentage. Only callable by the owner.
      * @param newPercentage The new house fee percentage.
      */
-    function updateHouseFeePercentage(uint256 newPercentage) external onlyGovernance {
+    function updateHouseFeePercentage(uint256 newPercentage) external onlyOwner {
         houseFeePercentage = newPercentage;
     }
 
@@ -176,7 +177,15 @@ contract HouseV2 is OwnableUpgradeable, Governance {
      * @dev Function to update the community pool percentage. Only callable by the owner.
      * @param newPercentage The new community pool percentage.
      */
-    function updateCommunityPoolPercentage(uint256 newPercentage) external onlyGovernance {
+    function updateCommunityPoolPercentage(uint256 newPercentage) external onlyOwner {
         communityPoolPercentage = newPercentage;
+    }
+
+    /**
+     * @dev Function to update the dividends collector address. Only callable by the owner.
+     * @param feeCollector The new dividends collector address.
+     */
+    function updateDividendsCollector(address feeCollector) external onlyOwner {
+        dividendsCollectorAddress = feeCollector;
     }
 }
