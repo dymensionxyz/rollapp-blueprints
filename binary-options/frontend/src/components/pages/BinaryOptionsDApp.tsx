@@ -160,7 +160,7 @@ const BinaryOptionsDApp = () => {
                 id: option.id,
                 direction: option.direction === 'up' ? 'up' : 'down',
                 strikePrice: parseFloat(option.strike_price),
-                expiration: option.expiration,
+                expiration: Number(option.expiration) + 5,
                 betAmount: `${parseInt(option.bet_amount.amount) / config.denomPrecision} ${config.screenDenom}`,
                 outcome: option.outcome,
                 settled: option.settled,

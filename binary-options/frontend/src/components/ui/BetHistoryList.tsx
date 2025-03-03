@@ -30,9 +30,8 @@ const BetHistoryList = ({ history, onSettle, settlingIds }) => {
     return (
         <div className="space-y-3">
             {history.map((bet) => {
-                const timeLeft = getTimeLeft(bet.expiration);
-                const totalDuration = 300; // 5 minutos
-                const progressWidth = (timeLeft / totalDuration) * 100;
+                const timeLeft = Math.min(60, getTimeLeft(bet.expiration));
+                const progressWidth = (timeLeft / 60) * 100;
 
                 return (
                     <div key={bet.id} className="bg-gray-700 p-3 rounded-lg">
