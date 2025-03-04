@@ -46,10 +46,36 @@ impl QueryMsg {
         base: impl Into<String>,
         quote: impl Into<String>,
     ) -> StdResult<QueryGetPriceResponse> {
-        querier.query_wasm_smart(oracle, &QueryMsg::GetPrice {
-            base: base.into(),
-            quote: quote.into(),
-        })
+        querier.query_wasm_smart(
+            oracle,
+            &QueryMsg::GetPrice {
+                base: base.into(),
+                quote: quote.into(),
+            },
+        )
+    }
+
+    pub fn get_closest_price(
+        querier: &QuerierWrapper,
+        oracle: impl Into<String>,
+        base: impl Into<String>,
+        quote: impl Into<String>,
+        time_unix_ms: u64,
+        time_window_seconds: u64,
+    ) -> StdResult<QueryGetClosestPriceResponse> {
+        querier.query_wasm_smart(
+            oracle,
+            &QueryMsg::GetClosestPrice {
+                base: base.into(),
+                quote: quote.into(),
+                time_unix_ms,
+                time_window_seconds,
+            },
+        )
+    }
+
+    pub fn get_config(querier: &QuerierWrapper, oracle: impl Into<String>) -> StdResult<Config> {
+        querier.query_wasm_smart(oracle, &QueryMsg::Config {})
     }
 }
 

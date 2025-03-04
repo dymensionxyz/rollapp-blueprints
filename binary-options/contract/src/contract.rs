@@ -124,26 +124,40 @@ fn execute_settle_option(
 
     let config = CONFIG.load(deps.storage)?;
 
-    let current_price = OracleQueryMsg::get_price(
+    let oracle_config = OracleQueryMsg::get_config(&deps.querier, &config.oracle_addr)?;
+
+    let historical_price = OracleQueryMsg::get_closest_price(
         &deps.querier,
         &config.oracle_addr,
         &option.market.base,
         &option.market.quote,
+        option.expiration * 1_000, // convert to milliseconds
+        oracle_config.price_expiry_seconds,
     )?
     .price
-    .ok_or(StdError::generic_err("Price is required"))?;
+    .ok_or(StdError::generic_err(
+        "Cannot get historical price: undefined.",
+    ))?;
 
     let is_call = matches!(option.direction, Direction::Up);
     let did_win = if is_call {
-        current_price > option.strike_price
+        historical_price.price > option.strike_price
     } else {
-        current_price < option.strike_price
+        historical_price.price < option.strike_price
     };
 
     option.settled = true;
     option.outcome = Some(did_win);
 
     OPTIONS.save(deps.storage, option_id, &option)?;
+
+    let response = Response::new()
+        .add_attribute("action", "settle_option")
+        .add_attribute("option_id", option_id.to_string())
+        .add_attribute("historical_price", historical_price.price.to_string())
+        .add_attribute("historical_price_unix_ms", historical_price.time_unix_ms.to_string())
+        .add_attribute("expiration_unix_ms", (option.expiration * 1000).to_string())
+        .add_attribute("strike_price", option.strike_price.to_string());
 
     if did_win {
         let payout_amount = option.bet_amount.amount * config.payout_multiplier;
@@ -169,21 +183,13 @@ fn execute_settle_option(
             }],
         };
 
-
-        Ok(Response::new()
+        Ok(response
             .add_message(stargate_mint_msg)
             .add_message(send_msg)
-            .add_attribute("action", "settle_option")
-            .add_attribute("option_id", option_id.to_string())
             .add_attribute("result", "won")
-            .add_attribute("payout", payout_amount.to_string())
-            .add_attribute("current_price", current_price.to_string()))
+            .add_attribute("payout", payout_amount.to_string()))
     } else {
-        Ok(Response::new()
-            .add_attribute("action", "settle_option")
-            .add_attribute("option_id", option_id.to_string())
-            .add_attribute("result", "lost")
-            .add_attribute("current_price", current_price.to_string()))
+        Ok(response.add_attribute("result", "lost"))
     }
 }
 
@@ -269,7 +275,7 @@ mod tests {
     use super::*;
     use crate::contract::instantiate;
     use crate::msg::{Config, MarketPair};
-    use crate::oracle_api::QueryGetPriceResponse;
+    use crate::oracle_api::{HistoricalPrice, QueryGetClosestPriceResponse, QueryGetPriceResponse};
     use crate::state::{CONFIG, OPTION_COUNTER};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{
@@ -277,6 +283,7 @@ mod tests {
         SystemError, SystemResult, WasmQuery,
     };
     use std::str::FromStr;
+    use crate::oracle_api;
 
     #[test]
     fn test_instantiate_works() {
@@ -291,7 +298,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(150), // e.g. 1.5x payout
-            expiration_period: 300, // 5 minutes
+            expiration_period: 300,                   // 5 minutes
         };
 
         // Call instantiate
@@ -1047,13 +1054,24 @@ mod tests {
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
                 if contract_addr == "oracle_contract" {
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                    if let Ok(OracleQueryMsg::GetClosestPrice { base, quote, time_unix_ms, time_window_seconds}) = from_binary(msg) {
                         if base == "BTC" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("31000").unwrap()),
+                            let resp = QueryGetClosestPriceResponse {
+                                price: Some(HistoricalPrice {
+                                    price: Decimal::from_str("31000").unwrap(),
+                                    time_unix_ms: 1_741_106_304_407,
+                                }),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
+                    }
+                    if let Ok(OracleQueryMsg::Config {}) = from_binary(msg) {
+                        let resp = oracle_api::Config {
+                            updater: Addr::unchecked("owner"),
+                            price_expiry_seconds: 60,
+                            price_threshold_ratio: Decimal::from_str("1").unwrap(),
+                        };
+                        return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                     }
                 }
                 SystemResult::Err(SystemError::UnsupportedRequest {
@@ -1150,13 +1168,24 @@ mod tests {
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
                 if contract_addr == "oracle_contract" {
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                    if let Ok(OracleQueryMsg::GetClosestPrice { base, quote, time_unix_ms, time_window_seconds}) = from_binary(msg) {
                         if base == "ETH" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("1500").unwrap()),
+                            let resp = QueryGetClosestPriceResponse {
+                                price: Some(HistoricalPrice {
+                                    price: Decimal::from_str("1500").unwrap(),
+                                    time_unix_ms: 1_741_106_304_407,
+                                }),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
+                    }
+                    if let Ok(OracleQueryMsg::Config {}) = from_binary(msg) {
+                        let resp = oracle_api::Config {
+                            updater: Addr::unchecked("owner"),
+                            price_expiry_seconds: 60,
+                            price_threshold_ratio: Decimal::from_str("1").unwrap(),
+                        };
+                        return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                     }
                 }
                 SystemResult::Err(SystemError::UnsupportedRequest {
@@ -1184,10 +1213,14 @@ mod tests {
         // "action" => "settle_option"
         // "option_id" => "100"
         // "result" => "lost"
-        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes.len(), 7);
         assert_eq!(res.attributes[0], attr("action", "settle_option"));
         assert_eq!(res.attributes[1], attr("option_id", "100"));
-        assert_eq!(res.attributes[2], attr("result", "lost"));
+        assert_eq!(res.attributes[2], attr("historical_price", "1500"));
+        assert_eq!(res.attributes[3], attr("historical_price_unix_ms", "1741106304407"));
+        assert_eq!(res.attributes[4], attr("expiration_unix_ms", (past_expiration*1000).to_string()));
+        assert_eq!(res.attributes[5], attr("strike_price", "2000"));
+        assert_eq!(res.attributes[6], attr("result", "lost"));
 
         // -------------------------------------------------------------------
         // 5) Confirm storage was updated => outcome & settled
