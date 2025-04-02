@@ -16,3 +16,6 @@ node_modules
 ignition/deployments/chain-31337
 db*/
 bin*/
+
+# Next.js
+.next
