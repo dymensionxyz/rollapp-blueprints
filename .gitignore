@@ -23,3 +23,7 @@ Cargo.lock
 
 # Mac OS X clutter
 .DS_Store
+node_modules
+
+# Hardhat
+.hardhat
