@@ -16,7 +16,6 @@ pub enum Direction {
 #[cw_serde]
 pub struct PlaceOptionMsg {
     pub direction: Direction,
-    pub expiration: u64,
     pub bet_amount: Coin,
     pub market: MarketPair,
 }
@@ -37,6 +36,12 @@ pub enum QueryMsg {
         start_after: Option<u64>,
         limit: Option<u64>,
     },
+    #[returns(ListOptionsResponse)]
+    ListOptionsByUser {
+        user: Addr,
+        start_after: Option<u64>,
+        limit: Option<u64>,
+    },
     #[returns(Config)]
     GetConfig {},
 }
@@ -51,7 +56,7 @@ pub struct OptionInfo {
     pub expiration: u64,
     pub bet_amount: Coin,
     pub settled: bool,
-    pub outcome: Option<bool>, // true = ganó, false = perdió
+    pub outcome: Option<bool>,
 }
 
 #[cw_serde]
@@ -63,5 +68,8 @@ pub struct ListOptionsResponse {
 pub struct Config {
     pub oracle_addr: Addr,
     pub payout_multiplier: Decimal,
+    pub expiration_period: u64,
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}

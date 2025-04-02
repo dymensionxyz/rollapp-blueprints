@@ -1,13 +1,11 @@
-use crate::msg::{
-    Config, Direction, ExecuteMsg, ListOptionsResponse, OptionInfo, PlaceOptionMsg, QueryMsg,
-};
+use crate::msg::{Config, Direction, ExecuteMsg, ListOptionsResponse, MigrateMsg, OptionInfo, PlaceOptionMsg, QueryMsg};
 use crate::oracle_api::QueryMsg as OracleQueryMsg;
 use crate::state::{CONFIG, OPTIONS, OPTION_COUNTER};
-use cosmwasm_std::{
-    entry_point, to_json_binary, BankMsg, Binary, Coin, Deps, DepsMut, Env, MessageInfo, Order,
-    Response, StdError, StdResult,
-};
+use crate::token_fatory::{MsgBurn, MsgMint};
+use cosmwasm_std::{entry_point, to_json_binary, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
+                   Order, Response, StdError, StdResult};
 use cw_storage_plus::Bound;
+use prost::Message;
 
 #[entry_point]
 pub fn instantiate(
@@ -37,15 +35,15 @@ pub fn execute(deps: DepsMut, env: Env, info: MessageInfo, msg: ExecuteMsg) -> S
 
 fn execute_place_option(
     deps: DepsMut,
-    _env: Env,
-    info: MessageInfo,
+    env: Env,
+    mut info: MessageInfo,
     msg: PlaceOptionMsg,
 ) -> StdResult<Response> {
     if info.funds.len() != 1 {
         return Err(StdError::generic_err("Please, send exactly one coin"));
     }
 
-    let sent_coin = &info.funds[0];
+    let sent_coin = info.funds.pop().unwrap();
 
     if sent_coin.amount != msg.bet_amount.amount || sent_coin.denom != msg.bet_amount.denom {
         return Err(StdError::generic_err(
@@ -53,7 +51,23 @@ fn execute_place_option(
         ));
     }
 
+    // create burn message
+    let burn_msg = MsgBurn {
+        sender: env.contract.address.to_string(),
+        amount: Some(crate::token_fatory::Coin {
+            denom: sent_coin.denom,
+            amount: sent_coin.amount.to_string(),
+        }),
+    };
+
+    let stargate_burn_msg = CosmosMsg::Stargate {
+        type_url: MsgBurn::TYPE_URL.to_string(),
+        value: burn_msg.encode_to_vec().into(),
+    };
+
     let config = CONFIG.load(deps.storage)?;
+
+    let expiration = env.block.time.seconds() + config.expiration_period;
 
     let current_price = OracleQueryMsg::get_price(
         &deps.querier,
@@ -74,7 +88,7 @@ fn execute_place_option(
         market: msg.market,
         direction: msg.direction,
         strike_price: current_price,
-        expiration: msg.expiration,
+        expiration,
         bet_amount: msg.bet_amount.clone(),
         settled: false,
         outcome: None,
@@ -86,7 +100,8 @@ fn execute_place_option(
         .add_attribute("action", "place_option")
         .add_attribute("option_id", option_counter.to_string())
         .add_attribute("strike_price", current_price.to_string())
-        .add_attribute("expiration", msg.expiration.to_string()))
+        .add_attribute("expiration", expiration.to_string())
+        .add_message(stargate_burn_msg))
 }
 
 fn execute_settle_option(
@@ -109,20 +124,26 @@ fn execute_settle_option(
 
     let config = CONFIG.load(deps.storage)?;
 
-    let current_price = OracleQueryMsg::get_price(
+    let oracle_config = OracleQueryMsg::get_config(&deps.querier, &config.oracle_addr)?;
+
+    let historical_price = OracleQueryMsg::get_closest_price(
         &deps.querier,
         &config.oracle_addr,
         &option.market.base,
         &option.market.quote,
+        option.expiration * 1_000, // convert to milliseconds
+        oracle_config.price_expiry_seconds,
     )?
     .price
-    .ok_or(StdError::generic_err("Price is required"))?;
+    .ok_or(StdError::generic_err(
+        "Cannot get historical price: undefined.",
+    ))?;
 
     let is_call = matches!(option.direction, Direction::Up);
     let did_win = if is_call {
-        current_price > option.strike_price
+        historical_price.price > option.strike_price
     } else {
-        current_price < option.strike_price
+        historical_price.price < option.strike_price
     };
 
     option.settled = true;
@@ -130,27 +151,45 @@ fn execute_settle_option(
 
     OPTIONS.save(deps.storage, option_id, &option)?;
 
+    let response = Response::new()
+        .add_attribute("action", "settle_option")
+        .add_attribute("option_id", option_id.to_string())
+        .add_attribute("historical_price", historical_price.price.to_string())
+        .add_attribute("historical_price_unix_ms", historical_price.time_unix_ms.to_string())
+        .add_attribute("expiration_unix_ms", (option.expiration * 1000).to_string())
+        .add_attribute("strike_price", option.strike_price.to_string());
+
     if did_win {
         let payout_amount = option.bet_amount.amount * config.payout_multiplier;
+
+        let mint_msg = MsgMint {
+            sender: env.contract.address.to_string(),
+            amount: Some(crate::token_fatory::Coin {
+                denom: option.bet_amount.denom.clone(),
+                amount: payout_amount.to_string(),
+            }),
+        };
+
+        let stargate_mint_msg = CosmosMsg::Stargate {
+            type_url: MsgMint::TYPE_URL.to_string(),
+            value: mint_msg.encode_to_vec().into(),
+        };
+
         let send_msg = BankMsg::Send {
             to_address: option.owner.to_string(),
             amount: vec![Coin {
-                denom: option.bet_amount.denom.clone(),
+                denom: option.bet_amount.denom,
                 amount: payout_amount,
             }],
         };
 
-        Ok(Response::new()
+        Ok(response
+            .add_message(stargate_mint_msg)
             .add_message(send_msg)
-            .add_attribute("action", "settle_option")
-            .add_attribute("option_id", option_id.to_string())
             .add_attribute("result", "won")
             .add_attribute("payout", payout_amount.to_string()))
     } else {
-        Ok(Response::new()
-            .add_attribute("action", "settle_option")
-            .add_attribute("option_id", option_id.to_string())
-            .add_attribute("result", "lost"))
+        Ok(response.add_attribute("result", "lost"))
     }
 }
 
@@ -162,7 +201,15 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
             to_json_binary(&query_list_options(deps, start_after, limit)?)
         }
         QueryMsg::GetConfig {} => to_json_binary(&query_config(deps)?),
+        QueryMsg::ListOptionsByUser { user, start_after, limit } => {
+            to_json_binary(&query_list_options_by_user(deps, deps.api.addr_validate(&user.as_str())?, start_after, limit)?)
+        }
     }
+}
+
+#[entry_point]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::new().add_attribute("migrate", "success"))
 }
 
 fn query_option(deps: Deps, option_id: u64) -> StdResult<OptionInfo> {
@@ -179,13 +226,41 @@ fn query_list_options(
     let start = start_after.map(Bound::exclusive);
 
     let options: Vec<OptionInfo> = OPTIONS
-        .range(deps.storage, start, None, Order::Ascending)
+        .range(deps.storage, start, None, Order::Descending)
         .take(limit)
         .map(|res| {
             let (_key, option_info) = res?;
             Ok(option_info)
         })
         .collect::<StdResult<Vec<OptionInfo>>>()?;
+
+    Ok(ListOptionsResponse { options })
+}
+
+fn query_list_options_by_user(
+    deps: Deps,
+    user: Addr,
+    start_after: Option<u64>,
+    limit: Option<u64>,
+) -> StdResult<ListOptionsResponse> {
+    let limit = limit.unwrap_or(30) as usize;
+    let start = start_after.map(Bound::exclusive);
+
+    let options: Vec<OptionInfo> = OPTIONS
+        .range(deps.storage, start, None, Order::Descending)
+        .filter(|res| {
+            if let Ok((_, option)) = res {
+                option.owner == user
+            } else {
+                false
+            }
+        })
+        .take(limit)
+        .map(|res| {
+            let (_, option) = res?;
+            Ok(option)
+        })
+        .collect::<StdResult<Vec<_>>>()?;
 
     Ok(ListOptionsResponse { options })
 }
@@ -200,7 +275,7 @@ mod tests {
     use super::*;
     use crate::contract::instantiate;
     use crate::msg::{Config, MarketPair};
-    use crate::oracle_api::QueryGetPriceResponse;
+    use crate::oracle_api::{HistoricalPrice, QueryGetClosestPriceResponse, QueryGetPriceResponse};
     use crate::state::{CONFIG, OPTION_COUNTER};
     use cosmwasm_std::testing::{mock_dependencies, mock_env, mock_info};
     use cosmwasm_std::{
@@ -208,6 +283,7 @@ mod tests {
         SystemError, SystemResult, WasmQuery,
     };
     use std::str::FromStr;
+    use crate::oracle_api;
 
     #[test]
     fn test_instantiate_works() {
@@ -222,6 +298,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(150), // e.g. 1.5x payout
+            expiration_period: 300,                   // 5 minutes
         };
 
         // Call instantiate
@@ -269,6 +346,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(150), // e.g., 1.50
+            expiration_period: 300, // 5 minutes
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -348,6 +426,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -384,6 +463,7 @@ mod tests {
         let init_config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::percent(200), // e.g. 2.00 (200% or x2 payout)
+            expiration_period: 300,
         };
         let _res = instantiate(deps.as_mut(), env.clone(), info, init_config.clone())
             .expect("instantiation should work");
@@ -424,6 +504,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -511,9 +592,9 @@ mod tests {
 
         assert_eq!(res.options.len(), 3);
         // Options should come in ascending order by ID
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 3);
         assert_eq!(res.options[1].id, 2);
-        assert_eq!(res.options[2].id, 3);
+        assert_eq!(res.options[2].id, 1);
 
         // ---------------------------------------------------
         // 3b) Query: limit = 2 (we should only get 2 results)
@@ -527,7 +608,7 @@ mod tests {
 
         println!("{:?}", res.options);
         assert_eq!(res.options.len(), 2);
-        assert_eq!(res.options[0].id, 1);
+        assert_eq!(res.options[0].id, 3);
         assert_eq!(res.options[1].id, 2);
 
         // ---------------------------------------------------
@@ -542,8 +623,8 @@ mod tests {
         let res: ListOptionsResponse = from_binary(&bin).unwrap();
 
         assert_eq!(res.options.len(), 2);
-        assert_eq!(res.options[0].id, 2);
-        assert_eq!(res.options[1].id, 3);
+        assert_eq!(res.options[0].id, 3);
+        assert_eq!(res.options[1].id, 2);
 
         // ---------------------------------------------------
         // 3d) Query: start_after = 2, limit = Some(1)
@@ -575,6 +656,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::from_str("1.5").unwrap(), // 1.50
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg.clone())
             .expect("instantiate should work");
@@ -599,27 +681,16 @@ mod tests {
         // -------------------------------------------------------
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
-                // Check that it's hitting our known oracle contract
                 if contract_addr == "oracle_contract" {
-                    // Decode the inbound query
-                    let parsed: std::result::Result<OracleQueryMsg, _> = from_binary(msg);
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = parsed {
-                        // e.g. if the base="BTC" and quote="USD", we return some mocked price
-                        // but let's do something dynamic just to show we recognized the query
+                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
                         if base == "BTC" && quote == "USD" {
                             let resp = QueryGetPriceResponse {
                                 price: Some(Decimal::from_str("30000").unwrap()),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
-                        } else if base == "ATOM" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("10").unwrap()),
-                            };
-                            return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
                     }
                 }
-                // Fallback: not our oracle or unexpected query
                 SystemResult::Err(SystemError::UnsupportedRequest {
                     kind: format!("{query:?}"),
                 })
@@ -634,7 +705,6 @@ mod tests {
         // -------------------------------------------------------
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Up,             // e.g. call option
-            expiration: 1_700_000_000,            // some future time
             bet_amount: coin(1_000_000, "uatom"), // must match info.funds
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -649,21 +719,38 @@ mod tests {
 
         // -------------------------------------------------------
         // 6) Check the response
+        //    We now expect a single Stargate "MsgBurn" rather than a bank burn or send
         // -------------------------------------------------------
-        // The response should have attributes for "place_option"
-        // and the updated option_id & strike_price
+        assert_eq!(res.messages.len(), 1);
+        let burn_cosmos_msg = &res.messages[0].msg;
+        match burn_cosmos_msg {
+            CosmosMsg::Stargate { type_url, value } => {
+                // Confirm it's the correct type_url for our custom MsgBurn
+                assert_eq!(type_url, MsgBurn::TYPE_URL);
+
+                // Decode the protobuf payload
+                let parsed_burn = MsgBurn::decode(value.as_slice()).unwrap();
+                assert_eq!(parsed_burn.sender, env.contract.address.to_string());
+                let amount = parsed_burn.amount.unwrap();
+                assert_eq!(amount.denom, "uatom");
+                assert_eq!(amount.amount, "1000000");
+            }
+            _ => panic!("Expected a Stargate MsgBurn message"),
+        }
+
+        // Check attributes
+        // "action" => "place_option"
+        // "option_id" => "1"
+        // "strike_price" => "30000"
+        // "expiration" => "1700000000"
         assert_eq!(res.attributes.len(), 4);
         assert_eq!(res.attributes[0].value, "place_option");
-        // e.g. the newly assigned option ID should be "1" if it was previously 0
-        let option_id = &res.attributes[1].value;
-        assert_eq!(option_id, "1");
-        // The strike_price from the oracle was "30000"
-        let strike_price = &res.attributes[2].value;
-        assert_eq!(strike_price, "30000");
-
-        // Also check if the expiration was recorded in attributes
-        let expiration_attr = &res.attributes[3].value;
-        assert_eq!(expiration_attr, "1700000000");
+        assert_eq!(res.attributes[1].key, "option_id");
+        assert_eq!(res.attributes[1].value, "1");
+        assert_eq!(res.attributes[2].key, "strike_price");
+        assert_eq!(res.attributes[2].value, "30000");
+        assert_eq!(res.attributes[3].key, "expiration");
+        assert_eq!(res.attributes[3].value, "1571797719"); // Updated line
 
         // -------------------------------------------------------
         // 7) Confirm that the new OptionInfo is stored
@@ -679,7 +766,7 @@ mod tests {
             saved_option.strike_price,
             Decimal::from_str("30000").unwrap()
         );
-        assert_eq!(saved_option.expiration, 1_700_000_000);
+        assert_eq!(saved_option.expiration, 1571797719);
         assert!(!saved_option.settled);
         assert_eq!(saved_option.outcome, None);
         // Also check that the bet_amount matches
@@ -698,13 +785,13 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
         // Build ExecuteMsg
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Down,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uatom"),
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -733,6 +820,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -752,7 +840,6 @@ mod tests {
         // Build ExecuteMsg
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Down,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uatom"), // we expected 1000
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -781,6 +868,7 @@ mod tests {
         let config_msg = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config_msg).unwrap();
 
@@ -800,7 +888,6 @@ mod tests {
         // Build ExecuteMsg with mismatch denom
         let place_msg = ExecuteMsg::PlaceOption(PlaceOptionMsg {
             direction: Direction::Up,
-            expiration: 1_700_000_000,
             bet_amount: coin(1000, "uluna"),
             market: MarketPair {
                 base: "BTC".to_string(),
@@ -831,6 +918,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -883,6 +971,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::one(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -925,7 +1014,7 @@ mod tests {
     #[test]
     fn test_settle_option_win_scenario() {
         // -------------------------------------------------------------------
-        // 1) Setup + store an option that is expired
+        // 1) Setup + Crear opción expirada (igual que antes)
         // -------------------------------------------------------------------
         let mut deps = mock_dependencies();
         let mut env = mock_env();
@@ -934,13 +1023,14 @@ mod tests {
         // Instantiate
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
-            payout_multiplier: Decimal::from_str("1.5").unwrap(), // e.g. 1.50
+            payout_multiplier: Decimal::from_str("1.5").unwrap(),
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
-        // Create an option that expired in the past, so it's eligible for settlement
+        // Crear opción expirada
         let option_id = 10u64;
-        let past_expiration = env.block.time.seconds() - 1; // 1 second in the past => expired
+        let past_expiration = env.block.time.seconds() - 1;
         let option_info = OptionInfo {
             id: option_id,
             owner: Addr::unchecked("winner"),
@@ -948,7 +1038,7 @@ mod tests {
                 base: "BTC".into(),
                 quote: "USD".into(),
             },
-            direction: Direction::Up, // user wins if final price > strike_price
+            direction: Direction::Up,
             strike_price: Decimal::from_str("30000").unwrap(),
             expiration: past_expiration,
             bet_amount: coin(1_000_000, "uatom"),
@@ -960,19 +1050,28 @@ mod tests {
             .unwrap();
         OPTION_COUNTER.save(&mut deps.storage, &option_id).unwrap();
 
-        // -------------------------------------------------------------------
-        // 2) Mock the oracle => final price is 31,000 => user should win
-        // -------------------------------------------------------------------
+        // Mock Oracle (precio 31,000)
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
                 if contract_addr == "oracle_contract" {
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                    if let Ok(OracleQueryMsg::GetClosestPrice { base, quote, time_unix_ms, time_window_seconds}) = from_binary(msg) {
                         if base == "BTC" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("31000").unwrap()),
+                            let resp = QueryGetClosestPriceResponse {
+                                price: Some(HistoricalPrice {
+                                    price: Decimal::from_str("31000").unwrap(),
+                                    time_unix_ms: 1_741_106_304_407,
+                                }),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
+                    }
+                    if let Ok(OracleQueryMsg::Config {}) = from_binary(msg) {
+                        let resp = oracle_api::Config {
+                            updater: Addr::unchecked("owner"),
+                            price_expiry_seconds: 60,
+                            price_threshold_ratio: Decimal::from_str("1").unwrap(),
+                        };
+                        return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                     }
                 }
                 SystemResult::Err(SystemError::UnsupportedRequest {
@@ -985,42 +1084,43 @@ mod tests {
         });
 
         // -------------------------------------------------------------------
-        // 3) Execute "SettleOption"
+        // 2) Ejecutar SettleOption
         // -------------------------------------------------------------------
         let settle_msg = ExecuteMsg::SettleOption { option_id };
         let res = execute(deps.as_mut(), env.clone(), info.clone(), settle_msg).unwrap();
 
         // -------------------------------------------------------------------
-        // 4) Check the Response
+        // 3) Verificar los Mensajes Emitidos
+        //    - Primero MsgMint (Stargate) para crear los tokens
+        //    - Luego BankMsg::Send para enviarlos al usuario
         // -------------------------------------------------------------------
-        // Expect a BankMsg::Send -> user "winner" with payout = bet * payout_multiplier
-        // Bet = 1_000_000, multiplier = 1.5 => payout = 1_500_000
-        let expected_payout = 1_500_000u128;
-        assert_eq!(
-            res.messages[0].msg,
-            cosmwasm_std::CosmosMsg::Bank(BankMsg::Send {
-                to_address: "winner".to_string(),
-                amount: vec![coin(expected_payout, "uatom")],
-            })
-        );
+        assert_eq!(res.messages.len(), 2); // ¡Ahora esperamos 2 mensajes!
 
-        // Check attributes
-        // "action" => "settle_option"
-        // "option_id" => 10
-        // "result" => "won"
-        // "payout" => "1500000"
-        assert_eq!(res.attributes.len(), 4);
-        assert_eq!(res.attributes[0], attr("action", "settle_option"));
-        assert_eq!(res.attributes[1], attr("option_id", "10"));
-        assert_eq!(res.attributes[2], attr("result", "won"));
-        assert_eq!(res.attributes[3], attr("payout", "1500000"));
+        // Mensaje 1: MsgMint al contrato
+        let mint_msg = &res.messages[0].msg;
+        match mint_msg {
+            CosmosMsg::Stargate { type_url, value } => {
+                assert_eq!(type_url, MsgMint::TYPE_URL);
+                let parsed_mint = MsgMint::decode(value.as_slice()).unwrap();
+                assert_eq!(parsed_mint.sender, env.contract.address.to_string());
+                assert_eq!(parsed_mint.amount.as_ref().unwrap().amount, "1500000");
+                assert_eq!(parsed_mint.amount.as_ref().unwrap().denom, "uatom");
+            }
+            _ => panic!("Primer mensaje debe ser MsgMint"),
+        }
 
-        // -------------------------------------------------------------------
-        // 5) Confirm storage was updated => outcome & settled
-        // -------------------------------------------------------------------
-        let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
-        assert!(updated_option.settled);
-        assert_eq!(updated_option.outcome, Some(true)); // user won
+        // Mensaje 2: BankMsg::Send al usuario
+        let send_msg = &res.messages[1].msg;
+        match send_msg {
+            CosmosMsg::Bank(BankMsg::Send {
+                                to_address,
+                                amount
+                            }) => {
+                assert_eq!(to_address, "winner");
+                assert_eq!(amount, &vec![coin(1_500_000, "uatom")]);
+            }
+            _ => panic!("Segundo mensaje debe ser BankMsg::Send"),
+        }
     }
 
     #[test]
@@ -1036,6 +1136,7 @@ mod tests {
         let config = Config {
             oracle_addr: Addr::unchecked("oracle_contract"),
             payout_multiplier: Decimal::from_str("2").unwrap(), // x2, irrelevant if lost
+            expiration_period: 300,
         };
         instantiate(deps.as_mut(), env.clone(), info.clone(), config).unwrap();
 
@@ -1067,13 +1168,24 @@ mod tests {
         deps.querier.update_wasm(|query| match query {
             WasmQuery::Smart { contract_addr, msg } => {
                 if contract_addr == "oracle_contract" {
-                    if let Ok(OracleQueryMsg::GetPrice { base, quote }) = from_binary(msg) {
+                    if let Ok(OracleQueryMsg::GetClosestPrice { base, quote, time_unix_ms, time_window_seconds}) = from_binary(msg) {
                         if base == "ETH" && quote == "USD" {
-                            let resp = QueryGetPriceResponse {
-                                price: Some(Decimal::from_str("1500").unwrap()),
+                            let resp = QueryGetClosestPriceResponse {
+                                price: Some(HistoricalPrice {
+                                    price: Decimal::from_str("1500").unwrap(),
+                                    time_unix_ms: 1_741_106_304_407,
+                                }),
                             };
                             return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                         }
+                    }
+                    if let Ok(OracleQueryMsg::Config {}) = from_binary(msg) {
+                        let resp = oracle_api::Config {
+                            updater: Addr::unchecked("owner"),
+                            price_expiry_seconds: 60,
+                            price_threshold_ratio: Decimal::from_str("1").unwrap(),
+                        };
+                        return SystemResult::Ok(ContractResult::Ok(to_binary(&resp).unwrap()));
                     }
                 }
                 SystemResult::Err(SystemError::UnsupportedRequest {
@@ -1101,10 +1213,14 @@ mod tests {
         // "action" => "settle_option"
         // "option_id" => "100"
         // "result" => "lost"
-        assert_eq!(res.attributes.len(), 3);
+        assert_eq!(res.attributes.len(), 7);
         assert_eq!(res.attributes[0], attr("action", "settle_option"));
         assert_eq!(res.attributes[1], attr("option_id", "100"));
-        assert_eq!(res.attributes[2], attr("result", "lost"));
+        assert_eq!(res.attributes[2], attr("historical_price", "1500"));
+        assert_eq!(res.attributes[3], attr("historical_price_unix_ms", "1741106304407"));
+        assert_eq!(res.attributes[4], attr("expiration_unix_ms", (past_expiration*1000).to_string()));
+        assert_eq!(res.attributes[5], attr("strike_price", "2000"));
+        assert_eq!(res.attributes[6], attr("result", "lost"));
 
         // -------------------------------------------------------------------
         // 5) Confirm storage was updated => outcome & settled
@@ -1112,5 +1228,160 @@ mod tests {
         let updated_option = OPTIONS.load(&deps.storage, option_id).unwrap();
         assert!(updated_option.settled);
         assert_eq!(updated_option.outcome, Some(false)); // user lost
+    }
+
+    #[test]
+
+    fn test_query_list_options_by_user() {
+        // ---------------------------------------------------
+        // 1. Initial Setup
+        // ---------------------------------------------------
+        let mut deps = mock_dependencies();
+        let env = mock_env();
+        let owner = Addr::unchecked("admin");
+        let user_a = Addr::unchecked("user_a");
+        let user_b = Addr::unchecked("user_b");
+
+        // Initial contract configuration
+        let config_msg = Config {
+            oracle_addr: Addr::unchecked("oracle"),
+            payout_multiplier: Decimal::one(),
+            expiration_period: 300,
+        };
+        instantiate(deps.as_mut(), env.clone(), mock_info(owner.as_str(), &[]), config_msg).unwrap();
+
+        // ---------------------------------------------------
+        // 2. Insert Test Options
+        // ---------------------------------------------------
+        let test_options = vec![
+            // User A - Active options
+            OptionInfo {
+                id: 1,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "BTC".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("30000").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(1000, "uatom"),
+                settled: false,
+                outcome: None,
+            },
+            OptionInfo {
+                id: 3,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "ETH".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Down,
+                strike_price: Decimal::from_str("2000").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(500, "uluna"),
+                settled: false,
+                outcome: None,
+            },
+            // User A - Settled option (should not appear)
+            OptionInfo {
+                id: 5,
+                owner: user_a.clone(),
+                market: MarketPair {
+                    base: "ATOM".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("10").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(2000, "uatom"),
+                settled: true,
+                outcome: Some(false),
+            },
+            // User B - Active option
+            OptionInfo {
+                id: 2,
+                owner: user_b.clone(),
+                market: MarketPair {
+                    base: "DOT".to_string(),
+                    quote: "USD".to_string(),
+                },
+                direction: Direction::Up,
+                strike_price: Decimal::from_str("7").unwrap(),
+                expiration: 1_700_000_000,
+                bet_amount: coin(1500, "udot"),
+                settled: false,
+                outcome: None,
+            },
+        ];
+
+        for opt in test_options {
+            OPTIONS.save(&mut deps.storage, opt.id, &opt).unwrap();
+        }
+
+        // ---------------------------------------------------
+        // 3. Test 1: Get all options for User A
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: None,
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 3);
+        assert_eq!(res.options[0].id, 5);
+        assert_eq!(res.options[1].id, 3);
+        assert!(res.options.iter().all(|o| o.owner == user_a));
+
+        // ---------------------------------------------------
+        // 4. Test 2: Pagination with limit
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: None,
+            limit: Some(1),
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 1);
+        assert_eq!(res.options[0].id, 5);
+
+        // ---------------------------------------------------
+        // 5. Test 3: Pagination with start_after
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: user_a.clone(),
+            start_after: Some(1),
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert_eq!(res.options.len(), 2);
+        assert_eq!(res.options[0].id, 5);
+
+        // ---------------------------------------------------
+        // 6. Test 4: User with no options
+        // ---------------------------------------------------
+        let query_msg = QueryMsg::ListOptionsByUser {
+            user: Addr::unchecked("user_c"),
+            start_after: None,
+            limit: None,
+        };
+
+        let res: ListOptionsResponse = from_binary(
+            &query(deps.as_ref(), env.clone(), query_msg).unwrap()
+        ).unwrap();
+
+        assert!(res.options.is_empty());
     }
 }
