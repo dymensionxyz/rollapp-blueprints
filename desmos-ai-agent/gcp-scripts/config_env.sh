@@ -1,0 +1,35 @@
+#!/bin/bash
+#
+#Common variables
+
+# TODO: Populate Verifier and App Project IDs
+# export VERIFIER_PROJECT_ID=your-verifier-project-id
+# export APP_PROJECT_ID=your-app-project-id
+
+# VERIFIER project related variables
+export VERIFIER_PROJECT_REGION=${VERIFIER_PROJECT_REGION:-'us-west1'}
+export VERIFIER_PROJECT_ZONE=${VERIFIER_PROJECT_ZONE:-'us-west1-b'}
+export VERIFIER_PROJECT_LOCATION=${VERIFIER_PROJECT_LOCATION:-'global'}
+
+# APP project related variables
+export APP_PROJECT_REGION=${APP_PROJECT_REGION:-'us-west1'}
+export APP_PROJECT_ZONE=${APP_PROJECT_ZONE:-'us-west1-b'}
+export APP_PROJECT_LOCATION=${APP_PROJECT_LOCATION:-'global'}
+
+# VERIFIER resource related variables
+export VERIFIER_ARTIFACT_REPOSITORY=${VERIFIER_ARTIFACT_REPOSITORY:-${VERIFIER_PROJECT_ID}-artifact-repo}
+export VERIFIER_PROJECT_REPOSITORY_REGION=${VERIFIER_PROJECT_REPOSITORY_REGION:-'us'}
+
+# APP resource related variables
+export APP_ARTIFACT_REPOSITORY=${APP_ARTIFACT_REPOSITORY:-${APP_PROJECT_ID}-artifact-repo}
+export APP_PROJECT_REPOSITORY_REGION=${APP_PROJECT_REPOSITORY_REGION:-'us'}
+
+# VERIFIER Workload related variables
+export VERIFIER_WORKLOAD_SERVICE_ACCOUNT=${VERIFIER_WORKLOAD_SERVICE_ACCOUNT:-veifier-sa}
+export VERIFIER_WORKLOAD_IMAGE_NAME=${VERIFIER_WORKLOAD_IMAGE_NAME:-veifier-container}
+export VERIFIER_WORKLOAD_IMAGE_TAG=${VERIFIER_WORKLOAD_IMAGE_TAG:-latest}
+
+# APP Workload related variables
+export APP_WORKLOAD_SERVICE_ACCOUNT=${APP_WORKLOAD_SERVICE_ACCOUNT:-app-sa}
+export APP_WORKLOAD_IMAGE_NAME=${APP_WORKLOAD_IMAGE_NAME:-app-container}
+export APP_WORKLOAD_IMAGE_TAG=${APP_WORKLOAD_IMAGE_TAG:-latest}
