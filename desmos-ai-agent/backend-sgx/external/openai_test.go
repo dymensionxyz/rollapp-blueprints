@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"agent/config"
-	"agent/external"
+	"oracle/config"
+	"oracle/external"
 	"github.com/stretchr/testify/require"
 )
 

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"agent/config"
+	"oracle/config"
 	"github.com/go-resty/resty/v2"
 )
 

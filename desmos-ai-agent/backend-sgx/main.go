@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
-	"agent/agent"
-	"agent/contract"
-	"agent/external"
-	"agent/repository"
+	"oracle/agent"
+	"oracle/contract"
+	"oracle/external"
+	"oracle/repository"
 )
 
 func f() error {

@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"agent/config"
+	"oracle/config"
 )
 
 const (

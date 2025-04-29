@@ -8,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"agent/contract"
-	"agent/external"
-	"agent/repository"
+	"oracle/contract"
+	"oracle/external"
+	"oracle/repository"
 )
 
 type Agent struct {

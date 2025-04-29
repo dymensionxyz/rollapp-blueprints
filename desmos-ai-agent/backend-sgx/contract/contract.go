@@ -7,13 +7,13 @@ import (
 	"log/slog"
 	"strings"
 
-	"agent/config"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/tyler-smith/go-bip32"
 	"github.com/tyler-smith/go-bip39"
+	"oracle/config"
 )
 
 type AIOracleClient struct {
