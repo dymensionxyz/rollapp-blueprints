@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 
-	"oracle/config"
 	"github.com/go-resty/resty/v2"
+	"oracle/config"
 )
 
 type OpenAIClient struct {

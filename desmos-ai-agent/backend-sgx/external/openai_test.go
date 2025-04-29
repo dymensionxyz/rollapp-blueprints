@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"oracle/config"
 	"oracle/external"
-	"github.com/stretchr/testify/require"
 )
 
 func TestOpenAIClient_SubmitPrompt(t *testing.T) {
