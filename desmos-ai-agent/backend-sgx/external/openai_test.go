@@ -16,7 +16,7 @@ func TestOpenAIClient_SubmitPrompt(t *testing.T) {
 	apiKey := "put your OpenAI API key here"
 	baseUrl := "https://api.openai.com"
 
-	client := external.NewOpenAIClient(config.OpenAIConfig{
+	client := external.NewOpenAIClient(nil, config.OpenAIConfig{
 		APIKey:               apiKey,
 		BaseURL:              baseUrl,
 		PollRetryCount:       10,
@@ -38,13 +38,12 @@ func TestOpenAIClient_SubmitPrompt(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := client.SubmitPrompt(context.Background(), tt.promptID, tt.prompt)
+			result, err := client.SubmitPrompt(context.Background(), tt.promptID, []string{tt.prompt})
 
 			t.Logf("result: %+v\n", result)
 
 			require.NoError(t, err)
 			require.NotEmpty(t, result.Answer)
-			require.NotEmpty(t, result.PromptMessageID)
 			require.NotEmpty(t, result.MessageID)
 			require.NotEmpty(t, result.ThreadID)
 			require.NotEmpty(t, result.RunID)

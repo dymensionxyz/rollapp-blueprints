@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
-	"os"
 
-	"github.com/edgelesssys/estore"
+	"github.com/edgelesssys/ego/enclave"
 	"oracle/agent"
 	"oracle/contract"
 	"oracle/external"
@@ -37,43 +35,35 @@ func f() error {
 		return fmt.Errorf("new AI oracle client: %w", err)
 	}
 
-	levelDB, err := repository.NewLevelDB(cmdCtx.Config.DB.DBPath)
+	estore, err := repository.NewEStore(cmdCtx.Logger.With("module", "estore"))
 	if err != nil {
-		return fmt.Errorf("new levelDB: %w", err)
+		return fmt.Errorf("new estore: %w", err)
 	}
 
-	cmdCtx.Logger.Info("Starting Oracle")
+	sealKey, _, err := enclave.GetUniqueSealKey()
+	if err != nil {
+		return fmt.Errorf("get unique seal key: %w", err)
+	}
+	sealKeyID, err := enclave.GetSealKeyID()
+	if err != nil {
+		return fmt.Errorf("get seal key id: %w", err)
+	}
+	productSealKey, _, err := enclave.GetProductSealKey()
+	if err != nil {
+		return fmt.Errorf("get product seal key: %w", err)
+	}
+	cmdCtx.Logger.
+		With("seal_key", sealKey, "seal_key_id", sealKeyID, "product_seal_key", productSealKey).
+		Info("Starting Oracle")
 
-	aiAgent := agent.NewAgent(cmdCtx.Logger, aiOracle, openAI, levelDB)
+	aiAgent := agent.NewAgent(cmdCtx.Logger, aiOracle, openAI, estore)
 	aiAgent.Run(ctx)
 
 	return nil
 }
 
 func main() {
-	var db *estore.DB
-	sealedKey, err := os.ReadFile(keyFile)
-	if err == nil {
-		fmt.Println("Found existing DB")
-		db, err = openExistingDB(sealedKey)
-	} else if errors.Is(err, os.ErrNotExist) {
-		fmt.Println("Creating new DB")
-		db, err = createNewDB()
-	}
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	// Get the value of the key
-	value, closer, err := db.Get([]byte("hello"))
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer closer.Close()
-	fmt.Printf("hello=%s\n", value)
-
-	err = f()
+	err := f()
 	if err != nil {
 		log.Fatalf("init command context: %v", err)
 		return

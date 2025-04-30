@@ -1,0 +1,27 @@
+{
+  "exe": "oracle",
+  "key": "private.pem",
+  "debug": true,
+  "heapSize": 512,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 1,
+  "env": null,
+  "mounts": [
+    {
+      "source": "db",
+      "target": "/db",
+      "type": "hostfs"
+    }
+  ],
+  "files": [
+    {
+      "source": "config.json",
+      "target": "config.json"
+    },
+    {
+      "source": "/etc/ssl/certs/ca-certificates.crt",
+      "target": "/etc/ssl/certs/ca-certificates.crt"
+    }
+  ]
+}

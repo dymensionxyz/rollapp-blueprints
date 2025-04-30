@@ -3,30 +3,48 @@ package repository
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
-	"github.com/syndtr/goleveldb/leveldb"
+	"github.com/edgelesssys/estore"
+)
+
+const (
+	dbPath  = "/db"
+	keyFile = "/store_sealed_key"
+	keyPath = dbPath + keyFile
 )
 
 type DB struct {
-	conn *leveldb.DB
+	db *estore.DB
 }
 
-func NewLevelDB(dbPath string) (*DB, error) {
-	db, err := leveldb.OpenFile(dbPath, nil)
-	if err != nil {
-		return nil, fmt.Errorf("can't connect to db: %v", err)
+func NewEStore(logger *slog.Logger) (*DB, error) {
+	var db *estore.DB
+	storeSealedKey, err := os.ReadFile(keyPath)
+	if err == nil {
+		logger.Info("Found existing DB")
+		db, err = openExistingDB(storeSealedKey)
+	} else if errors.Is(err, os.ErrNotExist) {
+		logger.Info("Found existing DB")
+		db, err = createNewDB()
 	}
-	return &DB{conn: db}, nil
+	if err != nil {
+		return nil, fmt.Errorf("can't connect to DB: %v", err)
+	}
+	return &DB{db: db}, nil
 }
 
 func (db *DB) Get(promptID uint64) (Answer, error) {
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, promptID)
-	b, err := db.conn.Get(key, nil)
+	b, closer, err := db.db.Get(key)
 	if err != nil {
 		return Answer{}, fmt.Errorf("get answer from DB: %v", err)
 	}
+	defer closer.Close()
 	var a Answer
 	a.MustFromBytes(b)
 	return a, nil
@@ -35,11 +53,11 @@ func (db *DB) Get(promptID uint64) (Answer, error) {
 func (db *DB) Save(promptID uint64, a Answer) error {
 	key := make([]byte, 8)
 	binary.BigEndian.PutUint64(key, promptID)
-	return db.conn.Put(key, a.MustToBytes(), nil)
+	return db.db.Set(key, a.MustToBytes(), nil)
 }
 
 func (db *DB) Close() error {
-	return db.conn.Close()
+	return db.db.Close()
 }
 
 type Answer struct {
