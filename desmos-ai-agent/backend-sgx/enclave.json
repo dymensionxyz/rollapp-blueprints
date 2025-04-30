@@ -12,6 +12,11 @@
       "source": "db",
       "target": "/db",
       "type": "hostfs"
+    },
+    {
+      "source": "signing_key",
+      "target": "/signing_key",
+      "type": "hostfs"
     }
   ],
   "files": [

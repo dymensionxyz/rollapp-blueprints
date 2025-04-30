@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
-const signingKeyFile = "signing_key"
+const signingKeyFile = "/signing_key"
 
 func getSigningKey(logger *slog.Logger) (*ecdsa.PrivateKey, error) {
 	var priKey *ecdsa.PrivateKey

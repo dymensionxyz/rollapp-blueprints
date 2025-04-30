@@ -28,7 +28,7 @@ func NewEStore(logger *slog.Logger) (*DB, error) {
 		logger.Info("Found existing DB")
 		db, err = openExistingDB(storeSealedKey)
 	} else if errors.Is(err, os.ErrNotExist) {
-		logger.Info("Found existing DB")
+		logger.Info("Creating new DB")
 		db, err = createNewDB()
 	}
 	if err != nil {
