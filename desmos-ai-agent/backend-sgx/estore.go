@@ -34,7 +34,7 @@ func createNewDB() (*estore.DB, error) {
 	opts := &estore.Options{
 		EncryptionKey: encryptionKey,
 	}
-	db, err := estore.Open("/db", opts)
+	db, err := estore.Open("/db1", opts)
 	if err != nil {
 		return nil, err
 	}
