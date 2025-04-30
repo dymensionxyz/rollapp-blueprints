@@ -2,9 +2,12 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
+	"os"
 
+	"github.com/edgelesssys/estore"
 	"oracle/agent"
 	"oracle/contract"
 	"oracle/external"
@@ -48,7 +51,29 @@ func f() error {
 }
 
 func main() {
-	err := f()
+	var db *estore.DB
+	sealedKey, err := os.ReadFile(keyFile)
+	if err == nil {
+		fmt.Println("Found existing DB")
+		db, err = openExistingDB(sealedKey)
+	} else if errors.Is(err, os.ErrNotExist) {
+		fmt.Println("Creating new DB")
+		db, err = createNewDB()
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	// Get the value of the key
+	value, closer, err := db.Get([]byte("hello"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer closer.Close()
+	fmt.Printf("hello=%s\n", value)
+
+	err = f()
 	if err != nil {
 		log.Fatalf("init command context: %v", err)
 		return
