@@ -42,7 +42,7 @@ func verifyReport(report attestation.Report) error {
 	if report.SecurityVersion != 1 {
 		return errors.New("invalid security version")
 	}
-	if binary.LittleEndian.Uint16(report.ProductID) != 1234 {
+	if binary.LittleEndian.Uint16(report.ProductID) != 1 {
 		return errors.New("invalid product")
 	}
 	if !bytes.Equal(report.SignerID, signer) {
