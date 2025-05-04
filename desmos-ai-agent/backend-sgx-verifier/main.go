@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -18,19 +17,14 @@ import (
 var signer []byte
 
 func main() {
-	signerArg := flag.String("s", "", "signer ID")
-	serverAddr := flag.String("a", "20.169.182.8:8080", "server address")
-	flag.Parse()
+	signerArg := "45b53b8770c322dcf1305c394bee9ff89ea8fbc5a1b6d00ba19204db0abacb54"
+	serverAddr := "localhost:8080"
 
 	// get signer command line argument
 	var err error
-	signer, err = hex.DecodeString(*signerArg)
+	signer, err = hex.DecodeString(signerArg)
 	if err != nil {
 		panic(err)
-	}
-	if len(signer) == 0 {
-		flag.Usage()
-		return
 	}
 
 	// Create a TLS config that verifies a certificate with embedded report.
@@ -38,7 +32,7 @@ func main() {
 
 	secret := "aaa"
 
-	httpGet(tlsConfig, "https://"+*serverAddr+"/open_ai_key?s="+secret)
+	httpGet(tlsConfig, "https://"+serverAddr+"/open_ai_key?s="+secret)
 	fmt.Println("Sent secret over attested TLS channel.")
 }
 
