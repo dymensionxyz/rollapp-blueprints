@@ -21,7 +21,7 @@
   ],
   "files": [
     {
-      "source": "config.json",
+      "source": "appdata/config.json",
       "target": "config.json"
     },
     {
