@@ -24,7 +24,6 @@ RUN egodeb=ego_${egover}_amd64_ubuntu-$(grep -oP 'VERSION_ID="\K[^"]+' /etc/os-r
 WORKDIR /app
 
 COPY . ./
-RUN go mod download
 RUN ego-go build -trimpath
 
 RUN --mount=type=secret,id=signingkey,dst=private.pem,required=true ego sign oracle
