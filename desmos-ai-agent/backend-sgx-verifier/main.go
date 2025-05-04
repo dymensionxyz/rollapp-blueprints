@@ -7,7 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 
 	"github.com/edgelesssys/ego/attestation"
@@ -32,7 +32,10 @@ func main() {
 
 	secret := "aaa"
 
-	httpGet(tlsConfig, "https://"+serverAddr+"/open_ai_key?s="+secret)
+	_, err = httpGet(tlsConfig, "https://"+serverAddr+"/open_ai_key?s="+secret)
+	if err != nil {
+		panic(fmt.Sprintf("httpGet err: %s", err.Error()))
+	}
 	fmt.Println("Sent secret over attested TLS channel.")
 }
 
@@ -54,19 +57,20 @@ func verifyReport(report attestation.Report) error {
 	return nil
 }
 
-func httpGet(tlsConfig *tls.Config, url string) []byte {
+func httpGet(tlsConfig *tls.Config, url string) ([]byte, error) {
 	client := http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
 	resp, err := client.Get(url)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("http get error: %v", err)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("http get body error: %v", err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		panic(resp.Status)
+		fmt.Println(string(body))
+		return nil, fmt.Errorf("http get error: %v", err)
 	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	return body
+	return body, nil
 }
