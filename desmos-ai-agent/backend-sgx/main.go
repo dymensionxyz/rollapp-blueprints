@@ -46,6 +46,9 @@ func f() error {
 		cmdCtx.Config.External,
 		openAIKey,
 	)
+	if err != nil {
+		return fmt.Errorf("new openAI client: %w", err)
+	}
 
 	sealKey, _, err := enclave.GetUniqueSealKey()
 	if err != nil {
