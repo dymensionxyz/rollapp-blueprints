@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -45,7 +46,7 @@ func NewAIOracleClient(ctx context.Context, logger *slog.Logger, config Config) 
 		return nil, fmt.Errorf("contract does not exist at address: %s", contractAddress.Hex())
 	}
 
-	rawPriKey, err := keys.OpenCreateData(keys.AppdataDir+signingKeyFile, func() ([]byte, error) {
+	rawPriKey, err := keys.OpenCreateData(filepath.Join(keys.AppdataDir, signingKeyFile), func() ([]byte, error) {
 		priKey, err := crypto.GenerateKey()
 		if err != nil {
 			return nil, fmt.Errorf("generate private key: %w", err)

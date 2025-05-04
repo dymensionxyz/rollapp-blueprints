@@ -20,6 +20,7 @@ var signer []byte
 func main() {
 	signerArg := "45b53b8770c322dcf1305c394bee9ff89ea8fbc5a1b6d00ba19204db0abacb54"
 	serverAddr := "localhost:8080"
+	// unique ID = 336752e7db8c6c2f8c4f33ef84a9b35f5fee4c7bcc8e528808657b763d0d2cf3
 
 	// get signer command line argument
 	var err error
@@ -59,7 +60,7 @@ func verifyReport(report attestation.Report) error {
 	}
 	fmt.Println("Attestation Report:")
 	fmt.Println(string(reportJSON))
-	
+
 	// For production, you must also verify that report.Debug == false
 
 	return nil

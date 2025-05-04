@@ -2,11 +2,9 @@ package main
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 	"log"
 
-	"github.com/edgelesssys/ego/enclave"
 	"oracle/agent"
 	"oracle/contract"
 	"oracle/external"
@@ -50,11 +48,7 @@ func f() error {
 		return fmt.Errorf("new openAI client: %w", err)
 	}
 
-	sealKey, _, err := enclave.GetUniqueSealKey()
-	if err != nil {
-		return fmt.Errorf("get unique seal key: %w", err)
-	}
-	cmdCtx.Logger.With("seal_key", hex.EncodeToString(sealKey)).Info("Starting Oracle")
+	cmdCtx.Logger.Info("Starting Oracle")
 
 	aiAgent := agent.NewAgent(cmdCtx.Logger, aiOracle, openAI, estore)
 	aiAgent.Run(ctx)

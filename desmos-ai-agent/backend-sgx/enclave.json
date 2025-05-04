@@ -31,11 +31,11 @@
   ],
   "files": [
     {
-      "source": "appdata/config.json",
+      "source": "config.json",
       "target": "config.json"
     },
     {
-      "source": "appdata/ca-certificates.crt",
+      "source": "ca-certificates.crt",
       "target": "/etc/ssl/certs/ca-certificates.crt"
     }
   ]

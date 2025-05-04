@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	"github.com/edgelesssys/estore"
 	"oracle/keys"
@@ -20,7 +21,7 @@ type DB struct {
 }
 
 func NewEStore() (*DB, error) {
-	encKey, err := keys.OpenCreateData(keys.AppdataDir+storeKey, func() ([]byte, error) {
+	encKey, err := keys.OpenCreateData(filepath.Join(keys.AppdataDir, storeKey), func() ([]byte, error) {
 		// Generate an encryption key. This is the key used for store encryption and decryption.
 		storeEncKey := make([]byte, 32)
 		_, err := rand.Read(storeEncKey)
@@ -31,7 +32,7 @@ func NewEStore() (*DB, error) {
 	}
 
 	// Create an encrypted store
-	db, err := estore.Open(DBDir, &estore.Options{
+	db, err := estore.Open(filepath.Join(keys.AppdataDir, DBDir), &estore.Options{
 		EncryptionKey: encKey,
 	})
 	if err != nil {

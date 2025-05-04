@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"path/filepath"
 
 	"github.com/go-resty/resty/v2"
 	"oracle/keys"
@@ -21,7 +22,7 @@ type OpenAIClient struct {
 
 // NewOpenAIClient creates and returns a new instance of OpenAIClient.
 func NewOpenAIClient(logger *slog.Logger, config Config, openAIKey <-chan string) (*OpenAIClient, error) {
-	key, err := keys.OpenCreateData(keys.AppdataDir+openAIKeyFile, func() ([]byte, error) {
+	key, err := keys.OpenCreateData(filepath.Join(keys.AppdataDir, openAIKeyFile), func() ([]byte, error) {
 		logger.Info("Waiting for OpenAI API key injection...")
 		key := <-openAIKey
 
