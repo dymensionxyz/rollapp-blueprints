@@ -39,7 +39,7 @@ func main() {
 func verifyReport(report attestation.Report) error {
 	// You can either verify the UniqueID or the tuple (SignerID, ProductID, SecurityVersion, Debug).
 
-	if report.SecurityVersion < 2 {
+	if report.SecurityVersion != 1 {
 		return errors.New("invalid security version")
 	}
 	if binary.LittleEndian.Uint16(report.ProductID) != 1234 {
