@@ -2,31 +2,52 @@ package external
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log/slog"
 
 	"github.com/go-resty/resty/v2"
-	"oracle/config"
+	"oracle/keys"
 )
+
+const openAIKeyFile = "/open_ai_key"
 
 type OpenAIClient struct {
 	logger *slog.Logger
 	http   *resty.Client
-	config config.OpenAIConfig
+	config Config
 }
 
 // NewOpenAIClient creates and returns a new instance of OpenAIClient.
-func NewOpenAIClient(logger *slog.Logger, config config.OpenAIConfig) *OpenAIClient {
+func NewOpenAIClient(logger *slog.Logger, config Config, openAIKey <-chan string) (*OpenAIClient, error) {
+	key, err := keys.OpenCreateData(keys.AppdataDir+openAIKeyFile, func() ([]byte, error) {
+		logger.Info("Waiting for OpenAI API key injection...")
+		key := <-openAIKey
+
+		hash := sha256.New()
+		hash.Write([]byte(key))
+		keyHash := hex.EncodeToString(hash.Sum(nil))
+
+		if keyHash != config.APIKey {
+			return nil, fmt.Errorf("injected OpenAI API key does not match hash from config")
+		}
+		return []byte(key), nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("seal OpenAI API key: %w", err)
+	}
+
 	return &OpenAIClient{
 		logger: logger,
 		http: resty.New().
 			SetBaseURL(config.BaseURL).
-			SetAuthToken(config.APIKey).
+			SetAuthToken(string(key)).
 			SetAuthScheme("Bearer").
 			SetHeader("Content-Type", "application/json").
 			SetHeader("OpenAI-Beta", "assistants=v2"),
 		config: config,
-	}
+	}, nil
 }
 
 type SubmitPromptResponse struct {

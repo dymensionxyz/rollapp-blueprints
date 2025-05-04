@@ -1,0 +1,18 @@
+{
+  "external": {
+    "open_ai_api_key_hash": "5bfc79fcd1076854ec5de08e8b4aa6c903aeaa83250d1a302041fbf07d489062",
+    "open_ai_base_url": "https://api.openai.com",
+    "assistant_id": "asst_UxMswmYb6kg2S9T5MvIE41H5",
+    "poll_retry_count": 4,
+    "poll_retry_wait_time": 2000000000,
+    "poll_retry_max_wait_time": 30000000000
+  },
+  "contract": {
+    "poll_interval": 1000000000,
+    "node_url": "https://json-rpc.desmosai.evm.ra.mn.rollapp.network",
+    "contract_address": "0x813c3A4CC989000FA93bdB0183618EAcef2d193b",
+    "gas_limit": 50000000,
+    "gas_fee_cap": 30000000000,
+    "gas_tip_cap": 1000
+  }
+}

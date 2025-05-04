@@ -8,20 +8,23 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
-	"oracle/config"
+	"oracle/keys"
 )
+
+const signingKeyFile = "/signing_key"
 
 type AIOracleClient struct {
 	logger *slog.Logger
 
-	config      config.ContractConfig
+	config      Config
 	ethClient   *ethclient.Client
 	contractAPI *AIOracle
 	txAuth      *bind.TransactOpts
 }
 
-func NewAIOracleClient(ctx context.Context, logger *slog.Logger, config config.ContractConfig) (*AIOracleClient, error) {
+func NewAIOracleClient(ctx context.Context, logger *slog.Logger, config Config) (*AIOracleClient, error) {
 	client, err := ethclient.Dial(config.NodeURL)
 	if err != nil {
 		return nil, fmt.Errorf("eth client dial: %w", err)
@@ -42,10 +45,20 @@ func NewAIOracleClient(ctx context.Context, logger *slog.Logger, config config.C
 		return nil, fmt.Errorf("contract does not exist at address: %s", contractAddress.Hex())
 	}
 
-	priKey, err := getSigningKey(logger)
+	rawPriKey, err := keys.OpenCreateData(keys.AppdataDir+signingKeyFile, func() ([]byte, error) {
+		priKey, err := crypto.GenerateKey()
+		if err != nil {
+			return nil, fmt.Errorf("generate private key: %w", err)
+		}
+		return crypto.FromECDSA(priKey), nil
+	})
 	if err != nil {
-		return nil, fmt.Errorf("derive private key: %w", err)
+		return nil, fmt.Errorf("seal private key: %w", err)
 	}
+	priKey := crypto.ToECDSAUnsafe(rawPriKey)
+
+	publicKey := priKey.Public().(*ecdsa.PublicKey)
+	logger.Info("Signing key", "address", crypto.PubkeyToAddress(*publicKey).Hex())
 
 	auth, err := createTransactor(ctx, client, priKey, config)
 	if err != nil {
@@ -70,7 +83,7 @@ func contractExists(ctx context.Context, client *ethclient.Client, address commo
 }
 
 // createTransactor creates a signed transactor for sending transactions
-func createTransactor(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, config config.ContractConfig) (*bind.TransactOpts, error) {
+func createTransactor(ctx context.Context, client *ethclient.Client, privateKey *ecdsa.PrivateKey, config Config) (*bind.TransactOpts, error) {
 	chainID, err := client.NetworkID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("get network ID: %w", err)

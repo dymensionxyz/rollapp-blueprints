@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	defaultAssistantID = "asst_UxMswmYb6kg2S9T5MvIE41H5"
-
 	defaultLimit = "20"
 	defaultOrder = "desc"
 )
@@ -70,7 +68,7 @@ func (c *OpenAIClient) CreateThreadAndRunMessage(ctx context.Context, role strin
 	resp, err := c.http.R().
 		SetContext(ctx).
 		SetBody(CreateRunReq{
-			AssistantId: defaultAssistantID,
+			AssistantId: c.config.AssistantID,
 			Thread: CreateThreadReq{
 				Messages: msgs,
 				Metadata: promptIDMeta,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"log"
 
@@ -21,10 +22,10 @@ func f() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	openAI := external.NewOpenAIClient(
-		cmdCtx.Logger.With("module", "openAI"),
-		cmdCtx.Config.External,
-	)
+	openAIKey := make(chan string)
+	defer close(openAIKey)
+
+	go RunServer(ctx, cmdCtx.Logger, openAIKey)
 
 	aiOracle, err := contract.NewAIOracleClient(
 		ctx,
@@ -35,26 +36,22 @@ func f() error {
 		return fmt.Errorf("new AI oracle client: %w", err)
 	}
 
-	estore, err := repository.NewEStore(cmdCtx.Logger.With("module", "estore"))
+	estore, err := repository.NewEStore()
 	if err != nil {
 		return fmt.Errorf("new estore: %w", err)
 	}
+
+	openAI, err := external.NewOpenAIClient(
+		cmdCtx.Logger.With("module", "openAI"),
+		cmdCtx.Config.External,
+		openAIKey,
+	)
 
 	sealKey, _, err := enclave.GetUniqueSealKey()
 	if err != nil {
 		return fmt.Errorf("get unique seal key: %w", err)
 	}
-	sealKeyID, err := enclave.GetSealKeyID()
-	if err != nil {
-		return fmt.Errorf("get seal key id: %w", err)
-	}
-	productSealKey, _, err := enclave.GetProductSealKey()
-	if err != nil {
-		return fmt.Errorf("get product seal key: %w", err)
-	}
-	cmdCtx.Logger.
-		With("seal_key", sealKey, "seal_key_id", sealKeyID, "product_seal_key", productSealKey).
-		Info("Starting Oracle")
+	cmdCtx.Logger.With("seal_key", hex.EncodeToString(sealKey)).Info("Starting Oracle")
 
 	aiAgent := agent.NewAgent(cmdCtx.Logger, aiOracle, openAI, estore)
 	aiAgent.Run(ctx)

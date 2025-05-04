@@ -1,38 +1,41 @@
 package repository
 
 import (
+	"crypto/rand"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"log/slog"
-	"os"
 
 	"github.com/edgelesssys/estore"
+	"oracle/keys"
 )
 
 const (
-	dbPath  = "/db"
-	keyFile = "/store_sealed_key"
-	keyPath = dbPath + keyFile
+	DBDir    = "db"
+	storeKey = "/store_key"
 )
 
 type DB struct {
 	db *estore.DB
 }
 
-func NewEStore(logger *slog.Logger) (*DB, error) {
-	var db *estore.DB
-	storeSealedKey, err := os.ReadFile(keyPath)
-	if err == nil {
-		logger.Info("Found existing DB")
-		db, err = openExistingDB(storeSealedKey)
-	} else if errors.Is(err, os.ErrNotExist) {
-		logger.Info("Creating new DB")
-		db, err = createNewDB()
-	}
+func NewEStore() (*DB, error) {
+	encKey, err := keys.OpenCreateData(keys.AppdataDir+storeKey, func() ([]byte, error) {
+		// Generate an encryption key. This is the key used for store encryption and decryption.
+		storeEncKey := make([]byte, 32)
+		_, err := rand.Read(storeEncKey)
+		return storeEncKey, err
+	})
 	if err != nil {
-		return nil, fmt.Errorf("can't connect to DB: %v", err)
+		return nil, fmt.Errorf("create encryption key: %w", err)
+	}
+
+	// Create an encrypted store
+	db, err := estore.Open(DBDir, &estore.Options{
+		EncryptionKey: encKey,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("open estore: %w", err)
 	}
 	return &DB{db: db}, nil
 }

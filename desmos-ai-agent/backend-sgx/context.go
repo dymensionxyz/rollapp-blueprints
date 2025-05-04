@@ -5,19 +5,17 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 
-	"oracle/config"
+	"oracle/keys"
+	"oracle/repository"
 )
 
-const (
-	configFileName = "config"
-	configFileExt  = "json"
-	configFile     = configFileName + "." + configFileExt
-)
+const configFile = "config.json"
 
 type Context struct {
 	Logger *slog.Logger
-	Config config.Config
+	Config Config
 }
 
 // InitContext initializes Context from config file and cmd flags
@@ -29,22 +27,28 @@ func InitContext() (Context, error) {
 		return Context{}, fmt.Errorf("can't get observer config: %w", err)
 	}
 
+	// Create a directory for keys and database
+	err = os.MkdirAll(filepath.Join(keys.AppdataDir, repository.DBDir), 0o700)
+	if err != nil {
+		return Context{}, fmt.Errorf("create database dir: %w", err)
+	}
+
 	return Context{
 		Logger: logger,
 		Config: cfg,
 	}, nil
 }
 
-func GetConfig(configPath string) (config.Config, error) {
+func GetConfig(configPath string) (Config, error) {
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		return config.Config{}, fmt.Errorf("read file: %w", err)
+		return Config{}, fmt.Errorf("read file: %w", err)
 	}
 
-	var cfg config.Config
+	var cfg Config
 	err = json.Unmarshal(data, &cfg)
 	if err != nil {
-		return config.Config{}, fmt.Errorf("unmarshal config: %w", err)
+		return Config{}, fmt.Errorf("unmarshal config: %w", err)
 	}
 
 	return cfg, nil
