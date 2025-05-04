@@ -19,7 +19,7 @@ var signer []byte
 
 func main() {
 	signerArg := flag.String("s", "", "signer ID")
-	serverAddr := flag.String("a", "localhost:8080", "server address")
+	serverAddr := flag.String("a", "20.169.182.8:8080", "server address")
 	flag.Parse()
 
 	// get signer command line argument
