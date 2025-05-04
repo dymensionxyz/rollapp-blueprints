@@ -32,7 +32,7 @@ func main() {
 
 	secret := "aaa"
 
-	_, err = httpGet(tlsConfig, "https://"+serverAddr+"/open_ai_key?s="+secret)
+	_, err = httpGet(tlsConfig, "https://"+serverAddr+"/open-ai-key?s="+secret)
 	if err != nil {
 		panic(fmt.Sprintf("httpGet err: %s", err.Error()))
 	}
@@ -69,7 +69,7 @@ func httpGet(tlsConfig *tls.Config, url string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		fmt.Println(string(body))
+		fmt.Println("body", string(body))
 		return nil, fmt.Errorf("http get error: %v", err)
 	}
 	return body, nil
