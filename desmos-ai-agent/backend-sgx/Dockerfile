@@ -1,7 +1,6 @@
-ARG egover=1.4.1
+ARG egover=1.7.0
 
-# Use this to build an executable for Ubuntu 22.04
-FROM ghcr.io/edgelesssys/ego/build-base:v${egover} AS build
+FROM ghcr.io/edgelesssys/ego-dev:v${egover} AS build
 
 ARG egover
 

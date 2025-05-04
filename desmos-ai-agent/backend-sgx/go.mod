@@ -1,6 +1,6 @@
 module oracle
 
-go 1.23
+go 1.23.5
 
 require (
 	github.com/edgelesssys/ego v1.7.0
