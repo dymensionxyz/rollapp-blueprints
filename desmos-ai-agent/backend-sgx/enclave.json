@@ -9,23 +9,8 @@
   "env": null,
   "mounts": [
     {
-      "source": "db",
-      "target": "db",
-      "type": "hostfs"
-    },
-    {
-      "source": "appdata/signing_key",
-      "target": "appdata/signing_key",
-      "type": "hostfs"
-    },
-    {
-      "source": "appdata/store_key",
-      "target": "appdata/store_key",
-      "type": "hostfs"
-    },
-    {
-      "source": "appdata/open_ai_key",
-      "target": "appdata/open_ai_key",
+      "source": "appdata",
+      "target": "appdata",
       "type": "hostfs"
     }
   ],
