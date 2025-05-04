@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -42,16 +43,23 @@ func main() {
 func verifyReport(report attestation.Report) error {
 	// You can either verify the UniqueID or the tuple (SignerID, ProductID, SecurityVersion, Debug).
 
-	if report.SecurityVersion != 1 {
+	if report.SecurityVersion < 1 {
 		return errors.New("invalid security version")
 	}
-	if binary.LittleEndian.Uint16(report.ProductID) != 1 {
+	if binary.LittleEndian.Uint16(report.ProductID) != 1234 {
 		return errors.New("invalid product")
 	}
 	if !bytes.Equal(report.SignerID, signer) {
 		return errors.New("invalid signer")
 	}
 
+	reportJSON, err := json.MarshalIndent(report, "", "  ")
+	if err != nil {
+		return fmt.Errorf("failed to marshal report: %v", err)
+	}
+	fmt.Println("Attestation Report:")
+	fmt.Println(string(reportJSON))
+	
 	// For production, you must also verify that report.Debug == false
 
 	return nil

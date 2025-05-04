@@ -4,7 +4,7 @@
   "debug": true,
   "heapSize": 512,
   "executableHeap": false,
-  "productID": 1,
+  "productID": 1234,
   "securityVersion": 1,
   "env": null,
   "mounts": [

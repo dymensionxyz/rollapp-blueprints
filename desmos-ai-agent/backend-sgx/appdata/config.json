@@ -1,6 +1,6 @@
 {
   "external": {
-    "open_ai_api_key_hash": "5bfc79fcd1076854ec5de08e8b4aa6c903aeaa83250d1a302041fbf07d489062",
+    "open_ai_api_key_hash": "2d9b117ad48fae0d40425129a95c518cfaa17063214cb558c684d92f7ae90db0",
     "open_ai_base_url": "https://api.openai.com",
     "assistant_id": "asst_UxMswmYb6kg2S9T5MvIE41H5",
     "poll_retry_count": 4,
