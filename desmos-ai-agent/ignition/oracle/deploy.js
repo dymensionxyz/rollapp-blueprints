@@ -28,9 +28,12 @@ async function main() {
         const aiOracle = await AIOracle.deploy(ownerAddr, deployOptions);
 
         await aiOracle.waitForDeployment();
-        console.log("AIOracle deployed at:", aiOracle.target);
+        const address = await aiOracle.getAddress();
+        // Output the address in a format that can be easily parsed
+        console.log("AIOracle_address=" + address);
     } catch (error) {
         console.error("Error during AIOracle deployment:", error);
+        process.exit(1);
     }
 }
 
