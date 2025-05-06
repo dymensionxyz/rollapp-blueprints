@@ -26,11 +26,10 @@ func NewOpenAIClient(logger *slog.Logger, config Config, openAIKey <-chan string
 		logger.Info("Waiting for OpenAI API key injection...")
 		key := <-openAIKey
 
-		hash := sha256.New()
-		hash.Write([]byte(key))
-		keyHash := hex.EncodeToString(hash.Sum(nil))
+		hash := sha256.Sum256([]byte(key))
+		hexHash := hex.EncodeToString(hash[:])
 
-		if keyHash != config.APIKey {
+		if hexHash != config.APIKey {
 			return nil, fmt.Errorf("injected OpenAI API key does not match hash from config")
 		}
 		return []byte(key), nil
