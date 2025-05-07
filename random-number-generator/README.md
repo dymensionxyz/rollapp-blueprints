@@ -4,14 +4,16 @@ Welcome to the **Random Number Generator (RNG) RollApp**! This guide will walk y
 
 ## Table of Contents
 
-1. [Prerequisites](#prerequisites)
-2. [Step 1: Deploying EVM RollApp](#step-1-deploying-evm-rollapp)
-3. [Step 2: Transferring Tokens](#step-2-transferring-tokens)
-4. [Step 3: Deploying the RNG Contract](#step-3-deploying-the-rng-contract)
-5. [Step 4: Deploying RNG Agent and Service](#step-4-deploying-rng-agent-and-service)
-6. [Step 5: Execute the Playground](#step-5-execute-the-playground)
-7. [Troubleshooting](#troubleshooting)
-8. [Additional Resources](#additional-resources)
+- [Random Number Generator (RNG) RollApp](#random-number-generator-rng-rollapp)
+  - [Table of Contents](#table-of-contents)
+  - [Prerequisites](#prerequisites)
+  - [Step 1: Deploying EVM RollApp](#step-1-deploying-evm-rollapp)
+  - [Step 2: Transferring Tokens](#step-2-transferring-tokens)
+  - [Step 3: Deploying the RNG Contract](#step-3-deploying-the-rng-contract)
+  - [Step 4: Deploying RNG Agent and Service](#step-4-deploying-rng-agent-and-service)
+  - [Step 5: Execute the Playground](#step-5-execute-the-playground)
+  - [Troubleshooting](#troubleshooting)
+  - [Additional Resources](#additional-resources)
 
 ## Prerequisites
 
