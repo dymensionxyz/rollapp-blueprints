@@ -123,11 +123,11 @@ The application needs a way to inject the keys without revealing them. Furthermo
 
 ## Diagrams
 
-### Attest
-![](img/tee_oracle_attest-Attest.svg)
-
 ### Deploy
 ![](img/tee_oracle_deploy-Deploy.svg)
+
+### Attest
+![](img/tee_oracle_attest-Attest.svg)
 
 ### Runtime Modifications
 ![](img/tee_oracle_runtime_failure-Runtime_Modifications.svg)
