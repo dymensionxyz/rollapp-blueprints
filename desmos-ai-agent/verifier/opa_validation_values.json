@@ -1,0 +1,23 @@
+{
+  "allowed_submods_container_image_digest": [
+    "sha256:6cd3dd6f9c8e95b09a4468766bb49fd62189c9ce3ef48af88b3920bccbbb2141"
+  ],
+  "allowed_hwmodel": [
+    "GCP_INTEL_TDX",
+    "GCP_SHIELDED_VM",
+    "GCP_AMD_SEV_ES",
+    "GCP_AMD_SEV"
+  ],
+  "allowed_aud": [
+    "verifier"
+  ],
+  "allowed_issuer": [
+    "https://confidentialcomputing.googleapis.com"
+  ],
+  "allowed_secboot": [
+    true
+  ],
+  "allowed_sw_name": [
+    "CONFIDENTIAL_SPACE"
+  ]
+}

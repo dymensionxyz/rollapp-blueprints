@@ -10,6 +10,7 @@ import (
 	"syscall"
 
 	"agent/agent"
+	"agent/attestation"
 	"agent/contract"
 	"agent/external"
 	"agent/repository"
@@ -95,7 +96,17 @@ func StartCmd() *cobra.Command {
 
 			aiAgent := agent.NewAgent(cmdCtx.Logger, cmdCtx.Config.Agent.HTTPServerAddress, aiOracle, openAI, levelDB)
 
+			attestationSrv, err := attestation.NewServer(
+				cmdCtx.Logger.With("attestation_srv"),
+				":8081", // TODO: move to config
+			)
+			if err != nil {
+				return fmt.Errorf("new attestation server: %w", err)
+			}
+
 			go aiAgent.Run(ctx)
+
+			go attestationSrv.Run("", "") // use default files TODO: make configurable
 
 			cmdCtx.Logger.Info("Agent started")
 
@@ -104,7 +115,10 @@ func StartCmd() *cobra.Command {
 			<-stop
 
 			cancel()
-			_ = aiAgent.Close()
+
+			_ = aiAgent.Stop()
+			_ = attestationSrv.Stop()
+			_ = levelDB.Close()
 
 			cmdCtx.Logger.Info("Agent stopped")
 
